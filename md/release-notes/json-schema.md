@@ -1,3 +1,179 @@
+# [4.0.0 (beta 1)](https://github.com/gregsdennis/json-everything/pull/326)
+
+This update adds support for the latest version of JSON Schema while also making a few architectural changes to ease the burden for implementing custom keywords.
+
+It also renames several methods from "Validate" to "Evaluate" to reflect the idea that processing a schema has more uses than merely validation.  Extension methods have been created (and marked with `[Obsolete]`) to ease the transition in consuming code.  These extension methods will be removed with the next major version.
+
+## Breaking Changes
+
+- `JsonSchema`
+  - `Validate()` renamed to `Evaluate()`
+  - `ValidateSubschema()` removed, replaced with `EvaluationContext.Evaluate()`
+- `ValidationOptions`
+  - renamed to `EvaluationOptions`
+  - `ValidateAs` renamed to `EvaluateAs`
+  - `ValidateMetaSchema` renamed to `ValidateAgainstMetaSchema`
+  - `DefaultBaseUri` removed.  Schemas now generate a random base URI upon creation.  The pre-evaluation scan has been updated to set base URIs for all schemas and subschemas.
+- `ValidationResults`
+  - renamed to `EvaluationResults`
+  - `ConsolidateAnnotations()` removed
+  - `TryGetAnnotation()` updated to well-known "try" pattern: `bool TryGetAnnotations(string, out JsonNode)`
+  - `Pass()` removed (keyword is assumed to pass unless `Fail` is called)
+- `Annotation` type removed (annotations are simply saved as `JsonNode`s in `EvaluationResults`)
+- `ValidationContext`
+  - renamed to `EvaluationContext`
+  - `ValidationOptions` renamed to `EvaluationOptions`
+  - `Push()` optional parameters removed and overloads created
+    - `Push(JsonPointer instanceLocation, JsonNode? instance, JsonPointer evaluationPath, JsonSchema subschema, Uri? newUri = null)` used for new schema & instance locations (e.g. keywords like `properties`)
+    - `Push(JsonPointer evaluationPath, JsonSchema subschema, Uri? newUri = null)` used for new schema locations evaluating the same instance location (e.g. keywords like `anyOf`)
+- `IJsonSchemaKeyword.Validate()` renamed to `IJsonSchemaKeyword.Evaluate()` (applies to all keyword types as well)
+- `ErrorMessages` & associated string resources
+  - `Contains` replaced with `ContainsTooFew` and `ContainsTooMany`
+  - `MaxContains` and `MinContains` removed
+  - reference-related errors removed
+- `JsonSchemaExtensions.Validate()` renamed to `JsonSchemaExtensions.Evaluate()`
+- `Draft` renamed to `SpecVersion` to align with the JSON Schema movement toward a stable specification
+  - `SchemaDraftAttribute` renamed to `SchemaSpecVersionAttribute`
+  - related methods and properties have also been updated
+- `ApplicatorAttribute` has been removed as it was unused
+  - `KeywordExtensions.IsApplicator()` also removed
+- `IAnchorProvider` has been removed as its function has been internalized
+- `IRefResolvable` has been removed as its function has been internalized
+- `SchemaRegistry`
+  - `RegisterAnchor()` remove as its function has been internalized
+  - `anchor` parameter removed from `Get()`
+
+### Changes Driven by JSON Schema
+
+- Output formats are now `Flag`, `List`, and `Hierarchical`
+  - `ToBasic()` has been renamed to `ToList()`
+  - `ToDetailed()` has been removed
+  - `Pre202012EvaluationResultsJsonConverter` has been added to serialize output as per draft 2020-12 and previous (with the exception of `Detailed`).
+- Output structure now modelled after JSON Schema `draft-next` output
+  - `ValidationResults.SchemaLocation` renamed to `EvaluationResults.EvaluationPath`
+  - `ValidationResults.AbsoluteSchemaLocation` renamed to `EvaluationResults.SchemaLocation` (note the same property name and different function)
+- A new exception `JsonSchemaException` will now be thrown for various scenarios where previously a failed validation would have been returned
+  - failure to resolve `$schema`, `$ref`, `$recursiveRef`, and `$dynamicRef`
+  - a keyword's value is in a form that the current specification version does not allow (e.g. array form of `items` in draft 2020-12)
+
+## Additional Changes
+
+- Exposed static property `Name` on all keywords
+- `JsonSchema`
+  - `BaseUri` is now available
+  - `IsResourceRoot` has been added
+  - `DeclaredVersion` has been added
+- Added `JsonSchemaExtensions.Validate()` extensions to help ease transition from "Validate" to "Evaluate"
+- Added `PropertyDependenciesKeyword`
+- Added `ICustomSchemaCollector` to handle keywords that contain subschemas but don't fit into one of the other "container" interfaces, e.g. `propertyDependencies`.
+- Added `MetaSchemas.DraftNext` and associated properties
+- Added `Vocabularies.DraftNext` and associated properties
+- Added `EvaluationOptions.IgnoredAnnotations` to ignore annotations from specified keywords.  These keywords are managed using:
+  - `IgnoreAnnotationsFrom<T>() where T : IJsonSchemaKeyword`
+  - `IgnoreAllAnnotations()`
+  - `ClearIgnoredAnnotations()`
+  - `CollectAnnotationsFrom<T>()`
+- Added `DependsOnAnnotationsFromAttribute` to support collecting annotations that have been configured to be excluded but are required for other keywords to function
+- Added `Vocabularies.DraftNext`, `MetaSchemas.DraftNext` and associated vocabs and meta-schemas
+  - these will be renamed to match the next release of the JSON Schema specification before v4.0 is fully released
+
+Also includes various performance enhancements, both increasing processing speed and reducing memory allocations.
+
+# [3.3.2](https://github.com/gregsdennis/json-everything/pull/347)
+
+Fixed issue where annotation collection is skipped but shouldn't be when output format is configured to `flag` and `unevaluated*` keywords are present in the schema.
+
+# [3.3.1](https://github.com/gregsdennis/json-everything/pull/346)
+
+Fixed issue where dynamically-loaded schemas were not scanned for URI identifier keywords.  Was not an issue if all referenced schemas were explicitly reloaded.
+
+# [3.3.0](https://github.com/gregsdennis/json-everything/pull/344)
+
+[#340](https://github.com/gregsdennis/json-everything/issues/340) - Added `ValidationOptions.ProcessCustomKeywords` to allow custom keywords for schema versions 2019-09 and later.
+
+# [3.2.1](https://github.com/gregsdennis/json-everything/pull/330)
+
+Fixed absolute schema location in output.  The JSON Schema team identified some edge cases involving `$dynamicRef` where the wrong URI was reported.
+
+# [3.2.0](https://github.com/gregsdennis/json-everything/pull/300)
+
+Added `JsonSchemaBuilderExtensions.PatternProperties()` overloads that take strings in place of `Regex`es.  There is no syntax highlighting support for these overloads, however.
+
+# [3.1.5](https://github.com/gregsdennis/json-everything/pull/299)
+
+🤦There were multiple issues with the meta-schemas because the self-validation tests were initially disabled (equality hadn't been implemented yet).  Re-enabling these tests highlighted several problems.
+
+- All meta-schemas adjusted to conform to online versions.
+- It's `contentEncoding` not `contentMediaEncoding`...
+
+# 3.1.4 (No PR)
+
+Continuation of v3.1.3 - Fixed array-valued `items`.
+
+# [3.1.3](https://github.com/gregsdennis/json-everything/pull/297)
+
+Fixed an issue with handling JSON null in instance data for keywords which change the instance location:
+
+- `additionalItems`
+- `additionalProperties`
+- `contains`
+- `items`
+- `patternProperties`
+- `prefixItems`
+- `properties`
+- `unevaluatedItems`
+- `unevaluatedProperties`
+
+# [3.1.2](https://github.com/gregsdennis/json-everything/pull/294)
+
+Updated `min*`/`max*` keywords to accept numbers with decimals as long as they still represent non-negative integer values, e.g. `1.0`.
+
+# 3.1.1 (no PR)
+
+[#288](https://github.com/gregsdennis/json-everything/issues/288) - Just bumping version to pick up the latest Json.More.Net by default.  This package pull Json.More.Net transitively via JsonPointer.Net which wasn't updated with the move to `JsonNode`.
+
+# [3.1.0](https://github.com/gregsdennis/json-everything/pull/285)
+
+[#284](https://github.com/gregsdennis/json-everything/issues/284) - Added optional `JsonSerializerOptions` parameter in `JsonSchema.FromFile()`, `.FromText()`, and `.FromStream()`.
+
+# [3.0.0](https://github.com/gregsdennis/json-everything/pull/280)
+
+Updated all functionality to use `JsonNode` instead of `JsonElement`.
+
+## Breaking Changes
+
+_`JsonElement` -> `JsonNode` type exchange changes not listed._
+
+- Removed obsolete members
+  - `IRefResolvable.ResolvePointerSegment()` (and implementations)
+  - `Format.Validate()` (and implementations)
+  - `JsonSchema.OtherData` (and associated constructor parameter) which is now supported by `UnrecognizedKeyword`
+- Removed all `JsonBuilderExtensions` methods which take `JsonElementProxy` since `JsonNode` defines implicit casts from the appropriate types
+- `LogExtensions.WrongValueKind()` now takes `SchemaValueType` instead of `JsonValueKind`
+- Removed `JsonSchemaExtensions(this JsonSchema, string, ValidationOptions)` since the implicit cast from `JsonNode` was taking precendence
+
+    ***IMPORTANT** Removal of this extension will only manifest at runtime.  Code that called this extension method will still compile, but the validations will most likely fail.*
+
+## Additional Changes
+
+- Added `JsonNodeExtensions` to provide schema-specific functionality on top of what's provided in Json.More.Net
+  - `.GetSchemaValueType()` to get the JSON Schema type represented by a node
+  - `.VerifyJsonObject()` to verify that the underlying data of a `JsonObject` can be processed.  See [this issue](https://github.com/dotnet/runtime/issues/70604) for more information.
+- Added `JsonSchemaExtensions.Validate(this JsonSchema, JsonElement, ValidationOptions)` to continue supporting elements
+- Added `JsonSchemaBuilderExtensions.Validate(this JsonSchemaBuilder, JsonNode, ValidationOptions)` as a convenience method
+    ```c#
+    // instead of
+    var schema = builder.Build();
+    var results = schema.Validate(json);
+
+    // you can do
+    var results = builder.Validate(json);
+    ```
+
+# [2.4.0](https://github.com/gregsdennis/json-everything/pull/270)
+
+Added `UnrecognizedKeyword` to represent keywords that were not recognized by any known vocabulary.  The values of these keywords are then captured in the validation results as annotations.  As a result of this change `JsonSchema.OtherData` has been marked obsolete.  
+
 # [2.3.0](https://github.com/gregsdennis/json-everything/pull/249)
 
 [#190](https://github.com/gregsdennis/json-everything/issues/190) - Added support for custom and localized error messages.

@@ -18,7 +18,7 @@ The ID for this vocabulary is `https://gregsdennis.github.io/json-everything/voc
 
 A draft 2020-12 meta-schema which includes this vocabulary has been defined for convenience.  The ID for the meta-schema is `https://gregsdennis.github.io/json-everything/meta/data`, and it can also be found at this address.
 
-***EDITOR'S COMMENT** Since this page has been moved to `json-everything.net`, these URLs will be updated soon to reflect the new domain.  I'm not sure how to go about versioning them yet.  While I figure that out, the meta-schema should still be available at this address.  The IDs remain the same.*
+***EDITOR'S COMMENT** Since this page has been moved to `json-everything.net`, these URIs may be updated soon to reflect the new domain.  I'm not sure how to go about versioning them yet.  While I figure that out, the meta-schema should still be available at this address.  The IDs remain the same.*
 
 ## 3. The `data` Keyword
 
@@ -30,7 +30,7 @@ The keys MUST be interpreted and evaluated as if they were keywords specified in
 
 The set of keywords in the schema or subschema containing `data` SHOULD be distinct from the set of keys defined within `data`.  Behavior in the event of an overlap is not defined.
 
-### 3.3 Contextual Behavior
+### 3.2 Contextual Behavior
 
 `data` MUST be processed contextually in accordance with the draft of the schema in which it is used.  For example, if `data` is used in a schema that declares draft 2019-09, then
 
@@ -39,7 +39,7 @@ The set of keywords in the schema or subschema containing `data` SHOULD be disti
 
 If a key is not a recognized keyword in the schema's draft (e.g. `$dynamicAnchor` in a draft 2019-09 schema), then this key is ignored just as it would be ignored if it were in the schema or subschema containing `data`.
 
-### 3.4 URI Resolution
+### 3.3 URI Resolution
 
 The instance being validated serves as the initial document for URI resolution.  This case is recognized by a fragment-only URI.  The fragment MUST be a valid JSON Pointer as defined by [RFC 6901](https://tools.ietf.org/html/rfc6901).
 
@@ -51,7 +51,7 @@ If a URI reference cannot be resolved, validation MUST fail; otherwise the full 
 
 If the resolved value is not valid for the associated keyword, validation MUST fail.
 
-### 3.5 Errors
+### 3.4 Errors
 
 The output formatting specified by the JSON Schema Core specification can only indicate that something failed at the `data` node, but there is no provision for providing further detail.
 

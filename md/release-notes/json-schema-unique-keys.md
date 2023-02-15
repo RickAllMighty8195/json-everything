@@ -1,3 +1,19 @@
+# [2.1.0 (beta 2)](https://github.com/gregsdennis/json-everything/pull/366)
+
+[#288](https://github.com/gregsdennis/json-everything/issues/288) - `duplicates` token in error message was not being replaced with the appropriate value.  Thanks to [@szilajka](https://github.com/szilajka) for finding and reporting this.
+
+# [2.1.0 (beta 1)](https://github.com/gregsdennis/json-everything/pull/326)
+
+Updated to use JsonSchema.Net v4.
+
+# 2.0.1 (no PR)
+
+[#288](https://github.com/gregsdennis/json-everything/issues/288) - Just bumping version to pick up the latest Json.More.Net by default.  This package pull Json.More.Net transitively via JsonPointer.Net which wasn't updated with the move to `JsonNode`.
+
+# [2.0.0](https://github.com/gregsdennis/json-everything/pull/280)
+
+Updated all functionality to use `JsonNode` instead of `JsonElement` in line with JsonSchema.Net v3.
+
 # [1.1.0](https://github.com/gregsdennis/json-everything/pull/249)
 
 [#243](https://github.com/gregsdennis/json-everything/pull/243) - Updated System.Text.Json to version 6.

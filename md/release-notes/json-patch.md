@@ -1,6 +1,39 @@
-# (coming soon)
+# [2.0.4](https://github.com/gregsdennis/json-everything/pull/323)
+
+[#322](https://github.com/gregsdennis/json-everything/pull/322) - [@z4kn4fein](https://github.com/z4kn4fein) discovered and fixed an issue in the `move` operation logic.
+
+# [2.0.3](https://github.com/gregsdennis/json-everything/pull/317)
+
+[#315](https://github.com/gregsdennis/json-everything/pull/315) - [@z4kn4fein](https://github.com/z4kn4fein) noticed that the serializer options weren't actually being passed into the `.Apply()` call.
+
+# 2.0.2 (no PR)
+
+[#291](https://github.com/gregsdennis/json-everything/pull/291) - Improved patch generation for arrays.
+
+# 2.0.1 (no PR)
+
+[#288](https://github.com/gregsdennis/json-everything/issues/288) - Just bumping version to pick up the latest Json.More.Net by default.  This package pull Json.More.Net transitively via JsonPointer.Net which wasn't updated with the move to `JsonNode`.
+
+# [2.0.0](https://github.com/gregsdennis/json-everything/pull/280)
 
 [#243](https://github.com/gregsdennis/json-everything/pull/243) - Updated System.Text.Json to version 6.
+
+Updated all functionality to use `JsonNode` instead of `JsonElement`.
+
+## Breaking Changes
+
+_`JsonElement` -> `JsonNode` type exchange changes not listed._
+
+- `JsonPatch.Apply()` now takes `JsonNode`
+- `.CreatePatch(JsonDocument, JsonDocument)` removed
+- `.CreatePatch(JsonElement, JsonElement)` replaced with `.CreatePatch(JsonNode?, JsonNode?)`
+- `PatchOperation` converted to a class
+- `PatchOperation` static methods which take `JsonElementProxy` removed as `JsonNode` defines implicit casts for the supported types
+- `PatchResult.Result` update to `JsonNode?`
+
+## Additional Changes
+
+- `.Apply<T>()` extension method now takes optional serializer options
 
 # [1.1.2](https://github.com/gregsdennis/json-everything/pull/196)
 

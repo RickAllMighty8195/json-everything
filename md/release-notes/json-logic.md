@@ -1,6 +1,58 @@
-# (coming soon)
+# [3.3.1](https://github.com/gregsdennis/json-everything/pull/376)
+
+[#373](https://github.com/gregsdennis/json-everything/issues/373) - Updated `<` and `<=` rules for the three-input case ("between" rule) to properly coerce values.  Thanks to [@alexkharuk](https://github.com/alexkharuk) for finding and fixing this bug.
+
+# [3.3.0](https://github.com/gregsdennis/json-everything/pull/370)
+
+[#368](https://github.com/gregsdennis/json-everything/issues/368)/[#369](https://github.com/gregsdennis/json-everything/issues/369) - Updated rule class accessibility to allow users to customize rule behavior.  Thanks to [@dcook-net](https://github.com/dcook-net) for suggesting and implementing this change.
+
+# [3.2.0](https://github.com/gregsdennis/json-everything/pull/329)
+
+[#328](https://github.com/gregsdennis/json-everything/issues/328) - Added serialization support.
+
+# [3.1.2](https://github.com/gregsdennis/json-everything/pull/320)
+
+[#318](https://github.com/gregsdennis/json-everything/issues/318)/[#319](https://github.com/gregsdennis/json-everything/pull/319) - Conversions to numbers shouldn't be culture-dependent.  Thanks to [@warappa](https://github.com/warappa) for reporting and fixing this.
+
+# 3.1.1 (no PR)
+
+[#313](https://github.com/gregsdennis/json-everything/issues/313) - Deserialization of nulls resulted in an actual null rule instead of a variable rule with a null value.  Thanks to [@jhspinpanel](https://github.com/jhspinpanel) for reporting this.
+
+# 3.1.0 (no PR)
+
+[#302](https://github.com/gregsdennis/json-everything/issues/302) - Predefined rule types should be public to enable analysis.
+
+[#286](https://github.com/gregsdennis/json-everything/pull/286) - Remainder of operators aligned to function like the pre-existing playground.
+
+# 3.0.1 (no PR)
+
+[#286](https://github.com/gregsdennis/json-everything/pull/286) - `in` operation throws exception when second arg is not array.  Original implementation returns false.
+
+[#288](https://github.com/gregsdennis/json-everything/issues/288) - Just bumping version to pick up the latest Json.More.Net by default.  This package pull Json.More.Net transitively via JsonPointer.Net which wasn't updated with the move to `JsonNode`.
+
+
+# [3.0.0](https://github.com/gregsdennis/json-everything/issues/280)
+
+Updated all functionality to use `JsonNode` instead of `JsonElement`.
+
+## Breaking Changes
+
+_`JsonElement` -> `JsonNode` type exchange changes not listed._
+
+- Remove all `JsonLogic.Literal()` methods and replaced with a single `Liternal(JsonNode?)`.  Typed methods are unnecessary as `JsonNode` contains implicit casts from them.
+- `JsonElementExtensions` converted into `JsonNodeExtensions`.  Same functionality exists, but for `JsonNode` instead.
+- `Rule` and all of its subclasses now take and return `JsonNode?`
+
+# [2.0.0](https://github.com/gregsdennis/json-everything/pull/265)
 
 [#243](https://github.com/gregsdennis/json-everything/pull/243) - Updated System.Text.Json to version 6.
+
+[#263](https://github.com/gregsdennis/json-everything/issues/263) - `{"var": ""}` is used by some operations to pass context data into inner rules, but the external data is also available.
+
+## Breaking Changes
+
+- Added optional parameter to `Rule.Apply()` in order to supply context data.
+- `"var"` will now prioritize context data over external data.  If the path yields no result for context data, it will search the external data.  This means that if both the context data and the external data have the given path, the context data will be used.
 
 # [1.4.0](https://github.com/gregsdennis/json-everything/pull/205)
 
