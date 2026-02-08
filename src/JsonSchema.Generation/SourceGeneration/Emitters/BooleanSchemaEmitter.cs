@@ -6,9 +6,12 @@ internal class BooleanSchemaEmitter : ISchemaEmitter
 {
 	public bool Handles(TypeInfo type) => type.Kind == TypeKind.Boolean;
 
-	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent)
+	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent, SchemaEmissionContext context)
 	{
 		sb.AppendLine();
-		sb.Append($"{indent}.Type(SchemaValueType.Boolean)");
+		if (type.IsNullable)
+			sb.Append($"{indent}.Type(SchemaValueType.Boolean, SchemaValueType.Null)");
+		else
+			sb.Append($"{indent}.Type(SchemaValueType.Boolean)");
 	}
 }

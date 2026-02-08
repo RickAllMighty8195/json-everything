@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Json.Schema.Generation.SourceGeneration.Emitters;
+using Json.Schema.Generation.Serialization;
+using Microsoft.CodeAnalysis;
 
 namespace Json.Schema.Generation.SourceGeneration;
 
@@ -11,19 +13,119 @@ namespace Json.Schema.Generation.SourceGeneration;
 /// </summary>
 internal static class SchemaCodeEmitter
 {
-	private static readonly List<ISchemaEmitter> _emitters = new()
+	/// <summary>
+	/// Emits schema code for a type using the appropriate emitter from the registry.
+	/// </summary>
+	public static void EmitSchemaForType(StringBuilder sb, ITypeSymbol typeSymbol, bool isNullable, string indent, SchemaEmissionContext? context = null)
 	{
-		new BooleanSchemaEmitter(),
-		new IntegerSchemaEmitter(),
-		new NumberSchemaEmitter(),
-		new StringSchemaEmitter(),
-		new DateTimeSchemaEmitter(),
-		new GuidSchemaEmitter(),
-		new UriSchemaEmitter(),
-		new EnumSchemaEmitter(),
-		new ArraySchemaEmitter(),
-		new ObjectSchemaEmitter(),
-	};
+		// Check if we should use $ref for this type
+		if (context != null && context.ShouldUseRef(typeSymbol))
+		{
+			var refUri = context.GetRefUri(typeSymbol);
+			sb.AppendLine();
+			
+			if (isNullable)
+			{
+				// For nullable refs, use anyOf with $ref and null
+				sb.Append($"{indent}.AnyOf(");
+				sb.AppendLine();
+				sb.Append($"{indent}\tnew JsonSchemaBuilder().Ref(\"{refUri}\"),");
+				sb.AppendLine();
+				sb.Append($"{indent}\tnew JsonSchemaBuilder().Type(SchemaValueType.Null)");
+				sb.AppendLine();
+				sb.Append($"{indent})");
+			}
+			else
+			{
+				sb.Append($"{indent}.Ref(\"{refUri}\")");
+			}
+			return;
+		}
+		
+		var typeKind = DetermineTypeKind(typeSymbol);
+		
+		// Try to use type emitters for types that have them
+		if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
+		{
+			// Build a minimal TypeInfo for the type so we can use the type emitters
+			var typeInfo = new TypeInfo
+			{
+				TypeSymbol = namedTypeSymbol,
+				FullyQualifiedName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+				SchemaPropertyName = "",
+				PropertyNaming = NamingConvention.AsDeclared,
+				PropertyOrder = PropertyOrder.AsDeclared,
+				Kind = typeKind,
+				IsNullable = isNullable
+			};
+
+			// Use the appropriate emitter to handle type and format
+			var emitter = SchemaEmitterRegistry.Emitters.FirstOrDefault(e => e.Handles(typeInfo));
+			if (emitter != null)
+			{
+				emitter.EmitSchema(sb, typeInfo, indent, context ?? new SchemaEmissionContext());
+			}
+			else
+			{
+				// Fallback
+				sb.AppendLine();
+				sb.Append($"{indent}.Type(SchemaValueType.Object)");
+			}
+		}
+		else
+		{
+			// For non-named types, emit type directly
+			sb.AppendLine();
+			sb.Append($"{indent}.Type(SchemaValueType.Object)");
+		}
+	}
+
+	private static TypeKind DetermineTypeKind(ITypeSymbol typeSymbol)
+	{
+		var unwrappedType = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
+		
+		// Check special types first (more reliable than string comparison)
+		switch (unwrappedType.SpecialType)
+		{
+			case SpecialType.System_Boolean:
+				return TypeKind.Boolean;
+			case SpecialType.System_Byte:
+			case SpecialType.System_SByte:
+			case SpecialType.System_Int16:
+			case SpecialType.System_UInt16:
+			case SpecialType.System_Int32:
+			case SpecialType.System_UInt32:
+			case SpecialType.System_Int64:
+			case SpecialType.System_UInt64:
+				return TypeKind.Integer;
+			case SpecialType.System_Single:
+			case SpecialType.System_Double:
+			case SpecialType.System_Decimal:
+				return TypeKind.Number;
+			case SpecialType.System_String:
+				return TypeKind.String;
+		}
+		
+		// Check for other known types by fully qualified name
+		var typeString = unwrappedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		
+		if (typeString is "global::System.DateTime" or "global::System.DateTimeOffset")
+			return TypeKind.DateTime;
+
+		if (typeString == "global::System.Guid")
+			return TypeKind.Guid;
+
+		if (typeString == "global::System.Uri")
+			return TypeKind.Uri;
+
+		if (unwrappedType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Enum)
+			return TypeKind.Enum;
+
+		if (unwrappedType is IArrayTypeSymbol || CodeEmitterHelpers.IsCollectionType(unwrappedType))
+			return TypeKind.Array;
+
+		return TypeKind.Object;
+	}
 
 	public static string EmitGeneratedClass(List<TypeInfo> types, string namespaceName)
 	{
@@ -105,13 +207,17 @@ internal static class SchemaCodeEmitter
 	private static void EmitSchemaBuilder(StringBuilder sb, TypeInfo type, int indent)
 	{
 		var indentStr = new string('\t', indent);
+		
+		// Analyze reused types for this schema
+		var context = AnalyzeReusedTypes(type);
+		
 		sb.Append($"new JsonSchemaBuilder()");
 
 		// Find and use appropriate emitter
-		var emitter = _emitters.FirstOrDefault(e => e.Handles(type));
+		var emitter = SchemaEmitterRegistry.Emitters.FirstOrDefault(e => e.Handles(type));
 		if (emitter != null)
 		{
-			emitter.EmitSchema(sb, type, indentStr);
+			emitter.EmitSchema(sb, type, indentStr, context);
 		}
 		else
 		{
@@ -120,11 +226,17 @@ internal static class SchemaCodeEmitter
 			sb.Append($"{indentStr}.Type(SchemaValueType.Object)");
 		}
 
+		// Emit $defs for reused types
+		if (context.TypeReferences.Count > 0)
+		{
+			EmitDefs(sb, context, indentStr);
+		}
+
 		// Emit type-level attributes
 		EmitAttributes(sb, type.TypeAttributes, indentStr);
 	}
 
-	private static void EmitAttributes(StringBuilder sb, List<AttributeInfo> attributes, string indent)
+	internal static void EmitAttributes(StringBuilder sb, List<AttributeInfo> attributes, string indent)
 	{
 		foreach (var attr in attributes)
 		{
@@ -280,6 +392,215 @@ internal static class SchemaCodeEmitter
 		}
 		
 		sb.Append(")");
+	}
+
+	private static SchemaEmissionContext AnalyzeReusedTypes(TypeInfo type)
+	{
+		var context = new SchemaEmissionContext();
+		
+		// Count type usage across all properties
+		var typeCounts = new Dictionary<string, (ITypeSymbol Symbol, int Count)>();
+		
+		foreach (var prop in type.Properties)
+		{
+			CollectPropertyTypes(prop.Type, typeCounts);
+		}
+		
+		// Add types used more than once to the context
+		foreach (var kvp in typeCounts)
+		{
+			if (kvp.Value.Count > 1)
+			{
+				var defName = SchemaEmissionContext.GetDefinitionName(kvp.Value.Symbol);
+				context.TypeReferences[kvp.Key] = (defName, kvp.Value.Symbol);
+			}
+		}
+		
+		return context;
+	}
+
+	private static void CollectPropertyTypes(ITypeSymbol typeSymbol, Dictionary<string, (ITypeSymbol Symbol, int Count)> typeCounts)
+	{
+		// Unwrap nullable types first
+		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
+		
+		// Skip primitive types
+		var typeKind = DetermineTypeKind(unwrapped);
+		if (typeKind is TypeKind.Boolean or TypeKind.Integer or TypeKind.Number or 
+		    TypeKind.String or TypeKind.DateTime or TypeKind.Guid or TypeKind.Uri or TypeKind.Enum)
+		{
+			return;
+		}
+		
+		// For arrays, collect the element type
+		if (typeKind == TypeKind.Array)
+		{
+			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
+			if (elementType != null)
+			{
+				CollectPropertyTypes(elementType, typeCounts);
+			}
+			return;
+		}
+		
+		// For objects, count this type
+		if (typeKind == TypeKind.Object)
+		{
+			var typeKey = SchemaEmissionContext.GetTypeKey(unwrapped);
+			if (typeCounts.TryGetValue(typeKey, out var existing))
+			{
+				typeCounts[typeKey] = (existing.Symbol, existing.Count + 1);
+			}
+			else
+			{
+				typeCounts[typeKey] = (unwrapped, 1);
+			}
+		}
+	}
+
+	private static void EmitDefs(StringBuilder sb, SchemaEmissionContext context, string indent)
+	{
+		sb.AppendLine();
+		sb.Append($"{indent}.Defs(");
+		sb.AppendLine();
+		
+		bool first = true;
+		foreach (var kvp in context.TypeReferences)
+		{
+			if (!first)
+			{
+				sb.Append(",");
+				sb.AppendLine();
+			}
+			first = false;
+			
+			var (defName, typeSymbol) = kvp.Value;
+			sb.Append($"{indent}\t(\"{defName}\", new JsonSchemaBuilder()");
+			
+			// Build a TypeInfo for this referenced type
+			if (typeSymbol is INamedTypeSymbol namedType)
+			{
+				var typeInfo = BuildTypeInfoForRef(namedType);
+				var emitter = SchemaEmitterRegistry.Emitters.FirstOrDefault(e => e.Handles(typeInfo));
+				if (emitter != null)
+				{
+					// Use an empty context to avoid recursive refs within defs
+					emitter.EmitSchema(sb, typeInfo, indent + "\t\t", new SchemaEmissionContext());
+				}
+				else
+				{
+					// Fallback
+					sb.AppendLine();
+					sb.Append($"{indent}\t\t.Type(SchemaValueType.Object)");
+				}
+			}
+			else
+			{
+				// Fallback for non-named types
+				sb.AppendLine();
+				sb.Append($"{indent}\t\t.Type(SchemaValueType.Object)");
+			}
+			
+			sb.Append(")");
+		}
+		
+		sb.AppendLine();
+		sb.Append($"{indent})");
+	}
+
+	/// <summary>
+	/// Builds a TypeInfo for a type referenced in $defs.
+	/// This analyzes the type's properties and structure.
+	/// </summary>
+	private static TypeInfo BuildTypeInfoForRef(INamedTypeSymbol typeSymbol)
+	{
+		var typeKind = DetermineTypeKind(typeSymbol);
+		var typeInfo = new TypeInfo
+		{
+			TypeSymbol = typeSymbol,
+			FullyQualifiedName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+			SchemaPropertyName = "",
+			PropertyNaming = NamingConvention.AsDeclared,
+			PropertyOrder = PropertyOrder.AsDeclared,
+			Kind = typeKind,
+			IsNullable = false // The type itself is non-nullable; nullability is handled at the property level
+		};
+
+		// Analyze properties for object types
+		if (typeKind == TypeKind.Object)
+		{
+			foreach (var member in typeSymbol.GetMembers())
+			{
+				ITypeSymbol? memberType = null;
+				bool isReadOnly = false;
+				bool isWriteOnly = false;
+
+				if (member is IPropertySymbol property)
+				{
+					// Skip if not accessible
+					if (property.DeclaredAccessibility != Accessibility.Public)
+						continue;
+
+					memberType = property.Type;
+					isReadOnly = property.SetMethod == null;
+					isWriteOnly = property.GetMethod == null;
+
+					// Skip write-only properties
+					if (isWriteOnly)
+						continue;
+				}
+				else if (member is IFieldSymbol field)
+				{
+					// Skip if not accessible
+					if (field.DeclaredAccessibility != Accessibility.Public)
+						continue;
+
+					memberType = field.Type;
+					isReadOnly = field.IsReadOnly;
+				}
+				else
+				{
+					continue;
+				}
+
+				// Get property name
+				var schemaName = member.Name;
+
+				// Check if required (C# required keyword)
+				bool isRequired = false;
+				if (member is IPropertySymbol prop)
+					isRequired = prop.IsRequired;
+
+				// Check if nullable
+				bool isNullable = memberType.NullableAnnotation == NullableAnnotation.Annotated;
+
+				var propertyInfo = new PropertyInfo
+				{
+					Name = member.Name,
+					SchemaName = schemaName,
+					Type = memberType,
+					IsRequired = isRequired,
+					IsNullable = isNullable,
+					IsReadOnly = isReadOnly,
+					IsWriteOnly = isWriteOnly
+				};
+
+				typeInfo.Properties.Add(propertyInfo);
+			}
+		}
+		else if (typeKind == TypeKind.Enum)
+		{
+			// Analyze enum values
+			foreach (var member in typeSymbol.GetMembers())
+			{
+				if (member is IFieldSymbol { IsConst: true } field && field.HasConstantValue)
+				{
+					typeInfo.EnumValues.Add(field.Name);
+				}
+			}
+		}
+
+		return typeInfo;
 	}
 }
 

@@ -217,9 +217,13 @@ internal static class TypeAnalyzer
 			// Determine schema name
 			var schemaName = GetPropertySchemaName(member, typeInfo.PropertyNaming);
 
-			// Check if required
+			// Check if required (C# required keyword or RequiredAttribute)
 			bool isRequired = HasAttribute(member, "RequiredAttribute") || 
 			                  HasAttribute(member, "System.ComponentModel.DataAnnotations.RequiredAttribute");
+			if (!isRequired && member is IPropertySymbol propertySymbol)
+			{
+				isRequired = propertySymbol.IsRequired;
+			}
 
 			// Check if nullable
 			bool isNullable = IsNullableType(memberType);

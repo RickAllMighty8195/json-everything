@@ -6,9 +6,12 @@ internal class StringSchemaEmitter : ISchemaEmitter
 {
 	public bool Handles(TypeInfo type) => type.Kind == TypeKind.String;
 
-	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent)
+	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent, SchemaEmissionContext context)
 	{
 		sb.AppendLine();
-		sb.Append($"{indent}.Type(SchemaValueType.String)");
+		if (type.IsNullable)
+			sb.Append($"{indent}.Type(SchemaValueType.String, SchemaValueType.Null)");
+		else
+			sb.Append($"{indent}.Type(SchemaValueType.String)");
 	}
 }

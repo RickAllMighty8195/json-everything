@@ -82,4 +82,22 @@ internal static class TestModels
 
 		public string? Description { get; set; }
 	}
+
+	// Test model for $defs/$ref generation
+	public class Address
+	{
+		public string Street { get; set; } = string.Empty;
+		public string City { get; set; } = string.Empty;
+		public string PostalCode { get; set; } = string.Empty;
+	}
+
+	[GenerateJsonSchema]
+	public class PersonWithAddresses
+	{
+		public string Name { get; set; } = string.Empty;
+		[Description("Home address")]
+		public Address? HomeAddress { get; set; }
+		[Description("Work address")]
+		public Address? WorkAddress { get; set; }
+	}
 }

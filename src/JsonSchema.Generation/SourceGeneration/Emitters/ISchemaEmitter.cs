@@ -24,5 +24,6 @@ internal interface ISchemaEmitter
 	/// <param name="sb">The string builder to append code to.</param>
 	/// <param name="type">The type information.</param>
 	/// <param name="indent">The indentation string.</param>
-	void EmitSchema(StringBuilder sb, TypeInfo type, string indent);
+	/// <param name="context">The schema emission context for tracking $ref usage.</param>
+	void EmitSchema(StringBuilder sb, TypeInfo type, string indent, SchemaEmissionContext context);
 }

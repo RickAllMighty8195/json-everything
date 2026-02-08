@@ -121,17 +121,49 @@ public class SourceGeneratorTests
 					.Type(SchemaValueType.Number)
 					.Minimum(0)
 					.ExclusiveMinimum(0)),
-				("Quantity", new JsonSchemaBuilder()
+				("DiscountPercentage", new JsonSchemaBuilder()
 					.Type(SchemaValueType.Integer)
-					.Minimum(1)
+					.Minimum(0)
 					.Maximum(100)),
-				("SKU", new JsonSchemaBuilder()
-					.Type(SchemaValueType.String)
-					.Format(new Format("custom-sku"))))
+				("Description", new JsonSchemaBuilder()
+					.Type(SchemaValueType.String, SchemaValueType.Null)))
 			.AdditionalProperties(false)
 			.Build();
 
 		var actual = GeneratedJsonSchemas.TestModels_ProductWithCustomAttributes;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void PersonWithAddresses_UsesDefsAndRefs()
+	{
+		var expected = new JsonSchemaBuilder()
+			.Type(SchemaValueType.Object)
+			.Defs(
+				("Address", new JsonSchemaBuilder()
+					.Type(SchemaValueType.Object)
+					.Properties(
+						("Street", new JsonSchemaBuilder().Type(SchemaValueType.String)),
+						("City", new JsonSchemaBuilder().Type(SchemaValueType.String)),
+						("PostalCode", new JsonSchemaBuilder().Type(SchemaValueType.String)))
+					.AdditionalProperties(false)))
+			.Properties(
+				("Name", new JsonSchemaBuilder().Type(SchemaValueType.String)),
+				("HomeAddress", new JsonSchemaBuilder()
+					.Description("Home address")
+					.AnyOf(
+						new JsonSchemaBuilder().Ref("#/$defs/Address"),
+						new JsonSchemaBuilder().Type(SchemaValueType.Null))),
+				("WorkAddress", new JsonSchemaBuilder()
+					.Description("Work address")
+					.AnyOf(
+						new JsonSchemaBuilder().Ref("#/$defs/Address"),
+						new JsonSchemaBuilder().Type(SchemaValueType.Null))))
+			.AdditionalProperties(false)
+			.Build();
+
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithAddresses;
 		
 		AssertEqual(expected, actual);
 	}

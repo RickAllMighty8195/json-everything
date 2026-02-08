@@ -62,4 +62,31 @@ internal static class CodeEmitterHelpers
 			"System.Collections.Generic.IReadOnlyList<T>" or
 			"System.Collections.Generic.IReadOnlyCollection<T>";
 	}
+
+	public static ITypeSymbol? GetElementType(ITypeSymbol typeSymbol)
+	{
+		// Handle arrays
+		if (typeSymbol is IArrayTypeSymbol arrayType)
+		{
+			return arrayType.ElementType;
+		}
+
+		// Handle generic collections
+		if (typeSymbol is INamedTypeSymbol namedType && namedType.IsGenericType)
+		{
+			var typeString = namedType.ConstructedFrom.ToDisplayString();
+			if (typeString is
+			    "System.Collections.Generic.List<T>" or
+			    "System.Collections.Generic.IList<T>" or
+			    "System.Collections.Generic.ICollection<T>" or
+			    "System.Collections.Generic.IEnumerable<T>" or
+			    "System.Collections.Generic.IReadOnlyList<T>" or
+			    "System.Collections.Generic.IReadOnlyCollection<T>")
+			{
+				return namedType.TypeArguments[0];
+			}
+		}
+
+		return null;
+	}
 }

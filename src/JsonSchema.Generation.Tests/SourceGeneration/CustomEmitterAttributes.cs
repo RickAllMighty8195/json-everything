@@ -42,11 +42,11 @@ public class CustomFormatAttribute : Attribute, IAttributeHandler<CustomFormatAt
 public class PositiveNumberAttribute : Attribute, IAttributeHandler<PositiveNumberAttribute>
 {
 	/// <summary>
-	/// Applies an exclusiveMinimum constraint of 0.
+	/// Applies minimum and exclusiveMinimum constraints of 0.
 	/// </summary>
 	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder)
 	{
-		return builder.ExclusiveMinimum(0);
+		return builder.Minimum(0).ExclusiveMinimum(0);
 	}
 
 	/// <summary>

@@ -7,7 +7,7 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 {
 	public bool Handles(TypeInfo type) => type.Kind == TypeKind.Object;
 
-	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent)
+	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent, SchemaEmissionContext context)
 	{
 		sb.AppendLine();
 		sb.Append($"{indent}.Type(SchemaValueType.Object)");
@@ -25,7 +25,7 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 				sb.Append($"{indent}\t(\"{CodeEmitterHelpers.EscapeString(prop.SchemaName)}\", ");
 				
 				// Emit inline schema for property
-				PropertySchemaEmitter.EmitPropertySchema(sb, prop, indent + "\t");
+				PropertySchemaEmitter.EmitPropertySchema(sb, prop, indent + "\t", context);
 				
 				sb.Append(")");
 				if (i < type.Properties.Count - 1)
