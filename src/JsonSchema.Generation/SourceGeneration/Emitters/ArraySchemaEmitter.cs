@@ -11,7 +11,6 @@ internal class ArraySchemaEmitter : ISchemaEmitter
 		sb.AppendLine();
 		sb.Append($"{indent}.Type(SchemaValueType.Array)");
 		
-		// Emit items schema for element type
 		var elementType = CodeEmitterHelpers.GetElementType(type.TypeSymbol);
 		if (elementType != null)
 		{
@@ -19,7 +18,6 @@ internal class ArraySchemaEmitter : ISchemaEmitter
 			sb.Append($"{indent}.Items(");
 			sb.Append("new JsonSchemaBuilder()");
 			
-			// Recursively emit schema for the element type
 			SchemaCodeEmitter.EmitSchemaForType(sb, elementType, type.IsNullable, indent + "\t", context);
 			
 			sb.Append(")");

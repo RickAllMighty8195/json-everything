@@ -13,35 +13,23 @@ internal class EnumSchemaEmitter : ISchemaEmitter
 		sb.AppendLine();
 		sb.Append($"{indent}.Type(SchemaValueType.String)");
 		
-		// Extract enum values from the type symbol
 		var enumValues = new List<string>();
-		if (type.TypeSymbol is INamedTypeSymbol namedType)
+		foreach (var member in type.TypeSymbol.GetMembers())
 		{
-			foreach (var member in namedType.GetMembers())
-			{
-				if (member is IFieldSymbol { IsConst: true } field && field.HasConstantValue)
-				{
-					enumValues.Add(field.Name);
-				}
-			}
+			if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field) 
+				enumValues.Add(field.Name);
 		}
-		else if (type.EnumValues.Count > 0)
+
+		if (enumValues.Count <= 0) return;
+
+		sb.AppendLine();
+		sb.Append($"{indent}.Enum(");
+		for (int i = 0; i < enumValues.Count; i++)
 		{
-			// Fallback to pre-populated values (for TypeAnalyzer path)
-			enumValues.AddRange(type.EnumValues);
+			if (i > 0)
+				sb.Append(", ");
+			sb.Append($"\"{CodeEmitterHelpers.EscapeString(enumValues[i])}\"");
 		}
-		
-		if (enumValues.Count > 0)
-		{
-			sb.AppendLine();
-			sb.Append($"{indent}.Enum(");
-			for (int i = 0; i < enumValues.Count; i++)
-			{
-				if (i > 0)
-					sb.Append(", ");
-				sb.Append($"\"{CodeEmitterHelpers.EscapeString(enumValues[i])}\"");
-			}
-			sb.Append(')');
-		}
+		sb.Append(')');
 	}
 }

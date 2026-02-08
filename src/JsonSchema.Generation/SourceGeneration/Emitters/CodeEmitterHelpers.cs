@@ -14,8 +14,8 @@ internal static class CodeEmitterHelpers
 			null => "null",
 			string s => $"\"{EscapeString(s)}\"",
 			decimal d => $"{d}m",
-			double d => $"{d}m",  // Cast doubles to decimal for schema validation
-			float f => $"{f}m",   // Cast floats to decimal for schema validation
+			double d => $"{d}m",
+			float f => $"{f}m",
 			_ => value.ToString() ?? "null"
 		};
 	}
@@ -50,8 +50,7 @@ internal static class CodeEmitterHelpers
 
 	public static bool IsCollectionType(ITypeSymbol typeSymbol)
 	{
-		if (typeSymbol is not INamedTypeSymbol namedType || !namedType.IsGenericType)
-			return false;
+		if (typeSymbol is not INamedTypeSymbol { IsGenericType: true } namedType) return false;
 
 		var typeString = namedType.ConstructedFrom.ToDisplayString();
 		return typeString is

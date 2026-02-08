@@ -12,7 +12,6 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 		sb.AppendLine();
 		sb.Append($"{indent}.Type(SchemaValueType.Object)");
 
-		// Emit properties
 		if (type.Properties.Count > 0)
 		{
 			sb.AppendLine();
@@ -24,7 +23,6 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 				var prop = type.Properties[i];
 				sb.Append($"{indent}\t(\"{CodeEmitterHelpers.EscapeString(prop.SchemaName)}\", ");
 				
-				// Emit inline schema for property
 				PropertySchemaEmitter.EmitPropertySchema(sb, prop, indent + "\t", context);
 				
 				sb.Append(")");
@@ -36,7 +34,6 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 			sb.Append($"{indent})");
 		}
 
-		// Emit required properties
 		var requiredProps = type.Properties.Where(p => p.IsRequired).ToList();
 		if (requiredProps.Count > 0)
 		{
@@ -51,7 +48,6 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 			sb.Append(")");
 		}
 
-		// Additional properties false by default
 		sb.AppendLine();
 		sb.Append($"{indent}.AdditionalProperties(false)");
 	}
