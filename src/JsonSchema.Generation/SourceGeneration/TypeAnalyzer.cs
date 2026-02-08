@@ -24,7 +24,9 @@ internal static class TypeAnalyzer
 		"TitleAttribute",
 		"DescriptionAttribute",
 		"RequiredAttribute",
-		"ObsoleteAttribute"
+		"ObsoleteAttribute",
+		"ReadOnlyAttribute",
+		"WriteOnlyAttribute"
 	];
 
 	public static TypeInfo? Analyze(INamedTypeSymbol typeSymbol, AttributeData attributeData, Action<Diagnostic> reportDiagnostic)
@@ -89,6 +91,9 @@ internal static class TypeAnalyzer
 		}
 
 		ExtractAttributes(typeSymbol.GetAttributes(), typeInfo.TypeAttributes, reportDiagnostic);
+
+		if (typeKind == TypeKind.Object) 
+			AnalyzeConditionals(typeInfo, reportDiagnostic);
 
 		return typeInfo;
 	}
@@ -179,8 +184,30 @@ internal static class TypeAnalyzer
 
 			var schemaName = GetPropertySchemaName(member, typeInfo.PropertyNaming);
 
-			var isRequired = HasAttribute(member, "RequiredAttribute") || 
-			                 HasAttribute(member, "System.ComponentModel.DataAnnotations.RequiredAttribute");
+			var isRequired = false;
+			var requiredAttrs = member.GetAttributes().Where(a => a.AttributeClass?.Name == "RequiredAttribute").ToList();
+			foreach (var reqAttr in requiredAttrs)
+			{
+				var hasConditionGroup = false;
+				foreach (var namedArg in reqAttr.NamedArguments)
+				{
+					if (namedArg is { Key: "ConditionGroup", Value.Value: not null })
+					{
+						hasConditionGroup = true;
+						break;
+					}
+				}
+				
+				if (!hasConditionGroup)
+				{
+					isRequired = true;
+					break;
+				}
+			}
+			
+			if (!isRequired)
+				isRequired = HasAttribute(member, "System.ComponentModel.DataAnnotations.RequiredAttribute");
+			
 			if (!isRequired && member is IPropertySymbol propertySymbol) 
 				isRequired = propertySymbol.IsRequired;
 
@@ -221,6 +248,250 @@ internal static class TypeAnalyzer
 				typeInfo.EnumValues.Add(enumName);
 			}
 		}
+	}
+
+	private static void AnalyzeConditionals(TypeInfo typeInfo, Action<Diagnostic> reportDiagnostic)
+	{
+		var conditionalsByGroup = new Dictionary<object, ConditionalInfo>();
+
+		var typeAttributes = typeInfo.TypeSymbol.GetAttributes();
+		
+		foreach (var attr in typeAttributes)
+		{
+			if (attr.AttributeClass == null) continue;
+			
+			var attrName = attr.AttributeClass.Name;
+			object? conditionGroup = null;
+			
+			foreach (var namedArg in attr.NamedArguments)
+			{
+				if (namedArg.Key == "ConditionGroup")
+				{
+					conditionGroup = namedArg.Value.Value;
+					break;
+				}
+			}
+			
+			if (conditionGroup == null && attr.ConstructorArguments.Length > 0)
+			{
+				var lastArg = attr.ConstructorArguments[^1];
+				if (lastArg.Value != null)
+					conditionGroup = lastArg.Value;
+			}
+			
+			if (conditionGroup == null) continue;
+
+			if (!conditionalsByGroup.TryGetValue(conditionGroup, out var conditionalInfo))
+			{
+				conditionalInfo = new ConditionalInfo { ConditionGroup = conditionGroup };
+				conditionalsByGroup[conditionGroup] = conditionalInfo;
+			}
+
+			switch (attrName)
+			{
+				case "IfAttribute":
+					ParseIfAttribute(attr, conditionalInfo, typeInfo);
+					break;
+				case "IfMinAttribute":
+					ParseIfMinAttribute(attr, conditionalInfo, typeInfo);
+					break;
+				case "IfMaxAttribute":
+					ParseIfMaxAttribute(attr, conditionalInfo, typeInfo);
+					break;
+				case "IfEnumAttribute":
+					ParseIfEnumAttribute(attr, typeInfo, conditionalsByGroup);
+					break;
+			}
+		}
+
+		foreach (var property in typeInfo.Properties)
+		{
+			foreach (var attr in property.Attributes)
+			{
+				if (!attr.Parameters.TryGetValue("ConditionGroup", out var conditionGroupValue) || conditionGroupValue == null)
+					continue;
+
+				var conditionGroup = conditionGroupValue;
+
+				if (!conditionalsByGroup.TryGetValue(conditionGroup, out var conditionalInfo))
+				{
+					conditionalInfo = new ConditionalInfo { ConditionGroup = conditionGroup };
+					conditionalsByGroup[conditionGroup] = conditionalInfo;
+				}
+
+				if (!property.ConditionGroups.Contains(conditionGroup))
+					property.ConditionGroups.Add(conditionGroup);
+
+				var existingConsequence = conditionalInfo.PropertyConsequences
+					.FirstOrDefault(c => c.PropertySchemaName == property.SchemaName);
+
+				var isRequired = existingConsequence?.IsConditionallyRequired ?? false;
+				var isReadOnly = existingConsequence?.IsConditionallyReadOnly ?? false;
+				var isWriteOnly = existingConsequence?.IsConditionallyWriteOnly ?? false;
+				var conditionalAttributes = existingConsequence?.ConditionalAttributes ?? new List<AttributeInfo>();
+
+				// Set boolean flags for special cases
+				switch (attr.AttributeName)
+				{
+					case "RequiredAttribute":
+						isRequired = true;
+						break;
+					case "ReadOnlyAttribute":
+						if (attr.Parameters.TryGetValue("arg0", out var readOnlyValue) && readOnlyValue is not false)
+							isReadOnly = true;
+						break;
+					case "WriteOnlyAttribute":
+						if (attr.Parameters.TryGetValue("arg0", out var writeOnlyValue) && writeOnlyValue is not false)
+							isWriteOnly = true;
+						break;
+				}
+
+				// Add all validation attributes to the list (except RequiredAttribute which is handled separately)
+				if (attr.AttributeName != "RequiredAttribute" && _supportedValidationAttributes.Contains(attr.AttributeName))
+				{
+					conditionalAttributes.Add(attr);
+				}
+
+				var newConsequence = new PropertyConditionalConsequence
+				{
+					PropertySchemaName = property.SchemaName,
+					IsConditionallyRequired = isRequired,
+					IsConditionallyReadOnly = isReadOnly,
+					IsConditionallyWriteOnly = isWriteOnly,
+					ConditionalAttributes = conditionalAttributes
+				};
+
+				if (existingConsequence != null)
+					conditionalInfo.PropertyConsequences.Remove(existingConsequence);
+				
+				conditionalInfo.PropertyConsequences.Add(newConsequence);
+			}
+		}
+
+		typeInfo.Conditionals.AddRange(conditionalsByGroup.Values);
+	}
+
+	private static void ParseIfAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo)
+	{
+		if (attr.ConstructorArguments.Length < 2) return;
+
+		var propertyName = attr.ConstructorArguments[0].Value?.ToString();
+		var value = attr.ConstructorArguments[1].Value;
+
+		if (string.IsNullOrEmpty(propertyName)) return;
+
+		var property = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
+		var schemaName = property?.SchemaName ?? ApplyNamingConvention(propertyName, typeInfo.PropertyNaming);
+
+		var trigger = new ConditionalTrigger
+		{
+			Type = ConditionalTriggerType.Equality,
+			PropertyName = propertyName,
+			PropertySchemaName = schemaName,
+			ExpectedValue = FormatValueForSchema(value)
+		};
+
+		conditionalInfo.Triggers.Add(trigger);
+	}
+
+	private static void ParseIfMinAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo) => 
+		ParseIfNumericBoundAttribute(attr, conditionalInfo, typeInfo, ConditionalTriggerType.Minimum);
+
+	private static void ParseIfMaxAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo) => 
+		ParseIfNumericBoundAttribute(attr, conditionalInfo, typeInfo, ConditionalTriggerType.Maximum);
+
+	private static void ParseIfNumericBoundAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo, ConditionalTriggerType triggerType)
+	{
+		if (attr.ConstructorArguments.Length < 2) return;
+
+		var propertyName = attr.ConstructorArguments[0].Value?.ToString();
+		var value = attr.ConstructorArguments[1].Value;
+
+		if (string.IsNullOrEmpty(propertyName)) return;
+
+		var property = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
+		var schemaName = property?.SchemaName ?? ApplyNamingConvention(propertyName, typeInfo.PropertyNaming);
+
+		var isExclusive = false;
+		foreach (var namedArg in attr.NamedArguments)
+		{
+			if (namedArg is { Key: "IsExclusive", Value.Value: bool exclusive })
+			{
+				isExclusive = exclusive;
+				break;
+			}
+		}
+
+		var trigger = new ConditionalTrigger
+		{
+			Type = triggerType,
+			PropertyName = propertyName,
+			PropertySchemaName = schemaName,
+			NumericValue = Convert.ToDouble(value),
+			IsExclusive = isExclusive
+		};
+
+		conditionalInfo.Triggers.Add(trigger);
+	}
+
+	private static void ParseIfEnumAttribute(AttributeData attr, TypeInfo typeInfo, Dictionary<object, ConditionalInfo> conditionalsByGroup)
+	{
+		if (attr.ConstructorArguments.Length < 1) return;
+
+		var propertyName = attr.ConstructorArguments[0].Value?.ToString();
+		if (string.IsNullOrEmpty(propertyName)) return;
+
+		var property = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
+		if (property == null) return;
+		
+		var schemaName = property.SchemaName;
+
+		var propertyType = UnwrapNullable(property.Type);
+		if (propertyType.TypeKind != Microsoft.CodeAnalysis.TypeKind.Enum) return;
+
+		var useNumbers = false;
+		if (attr.ConstructorArguments.Length > 1 && attr.ConstructorArguments[1].Value is bool un)
+			useNumbers = un;
+
+		var enumMembers = propertyType.GetMembers()
+			.OfType<IFieldSymbol>()
+			.Where(f => f is { IsConst: true, HasConstantValue: true })
+			.ToList();
+
+		foreach (var enumMember in enumMembers)
+		{
+			var enumValue = enumMember.ConstantValue;
+			if (enumValue == null) continue;
+
+			var conditionGroup = enumValue;
+
+			if (!conditionalsByGroup.TryGetValue(conditionGroup, out var conditionalInfo))
+			{
+				conditionalInfo = new ConditionalInfo { ConditionGroup = conditionGroup };
+				conditionalsByGroup[conditionGroup] = conditionalInfo;
+			}
+
+			var trigger = new ConditionalTrigger
+			{
+				Type = ConditionalTriggerType.Equality,
+				PropertyName = propertyName,
+				PropertySchemaName = schemaName,
+				ExpectedValue = useNumbers ? enumValue.ToString() : $"\"{enumMember.Name}\""
+			};
+
+			conditionalInfo.Triggers.Add(trigger);
+		}
+	}
+
+	private static string FormatValueForSchema(object? value)
+	{
+		return value switch
+		{
+			null => "null",
+			bool b => b ? "true" : "false",
+			string s => $"\"{s}\"",
+			_ => value.ToString() ?? "null"
+		};
 	}
 
 	private static void ExtractAttributes(IEnumerable<AttributeData> attributes, List<AttributeInfo> targetList, Action<Diagnostic> reportDiagnostic)

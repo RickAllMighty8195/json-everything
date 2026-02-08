@@ -208,6 +208,10 @@ internal static class SchemaCodeEmitter
 	{
 		foreach (var attr in attributes)
 		{
+			// Skip attributes that are part of conditional schemas (have ConditionGroup set)
+			if (attr.Parameters.TryGetValue("ConditionGroup", out var conditionGroup) && conditionGroup != null)
+				continue;
+
 			if (attr.IsCustomEmitter && attr.AttributeFullName != null)
 			{
 				sb.AppendLine();

@@ -34,19 +34,31 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 			sb.Append($"{indent})");
 		}
 
-		var requiredProps = type.Properties.Where(p => p.IsRequired).ToList();
-		if (requiredProps.Count > 0)
+		var propertiesWithConditionalRequirements = new System.Collections.Generic.HashSet<string>(
+			type.Conditionals
+				.SelectMany(c => c.PropertyConsequences)
+				.Where(c => c.IsConditionallyRequired)
+				.Select(c => c.PropertySchemaName)
+				.Distinct());
+
+		var unconditionallyRequiredProps = type.Properties
+			.Where(p => p.IsRequired && !propertiesWithConditionalRequirements.Contains(p.SchemaName))
+			.ToList();
+
+		if (unconditionallyRequiredProps.Count > 0)
 		{
 			sb.AppendLine();
 			sb.Append($"{indent}.Required(");
-			for (int i = 0; i < requiredProps.Count; i++)
+			for (int i = 0; i < unconditionallyRequiredProps.Count; i++)
 			{
 				if (i > 0)
 					sb.Append(", ");
-				sb.Append($"\"{CodeEmitterHelpers.EscapeString(requiredProps[i].SchemaName)}\"");
+				sb.Append($"\"{CodeEmitterHelpers.EscapeString(unconditionallyRequiredProps[i].SchemaName)}\"");
 			}
 			sb.Append(")");
 		}
+
+		ConditionalSchemaEmitter.EmitConditionals(sb, type, indent);
 
 		sb.AppendLine();
 		sb.Append($"{indent}.AdditionalProperties(false)");

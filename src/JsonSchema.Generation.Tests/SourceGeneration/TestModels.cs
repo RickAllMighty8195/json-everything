@@ -1,3 +1,4 @@
+using System;
 using Json.Schema.Generation.Serialization;
 
 namespace Json.Schema.Generation.Tests.SourceGeneration;
@@ -99,5 +100,113 @@ internal static class TestModels
 		public Address? HomeAddress { get; set; }
 		[Description("Work address")]
 		public Address? WorkAddress { get; set; }
+	}
+
+	// Conditional schema tests
+	[GenerateJsonSchema]
+	[If(nameof(Toggle), true, 0)]
+	public class SingleCondition
+	{
+		[Required]
+		public bool Toggle { get; set; }
+
+		[Required(ConditionGroup = 0)]
+		public string? Required { get; set; }
+	}
+
+	[GenerateJsonSchema(PropertyNaming = NamingConvention.CamelCase)]
+	[If(nameof(Toggle), true, 0)]
+	public class SingleConditionCamelCase
+	{
+		[Required]
+		public bool Toggle { get; set; }
+
+		[Required(ConditionGroup = 0)]
+		public string? Required { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[If(nameof(Toggle), true, "ifToggle")]
+	[If(nameof(OtherToggle), 42, "ifOtherToggle")]
+	public class MultipleConditionGroups
+	{
+		[Required]
+		public bool Toggle { get; set; }
+
+		[Required]
+		public int OtherToggle { get; set; }
+
+		[Required(ConditionGroup = "ifToggle")]
+		public string? RequiredIfToggle { get; set; }
+
+		[Required(ConditionGroup = "ifOtherToggle")]
+		public string? RequiredIfOtherToggle { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[If(nameof(Count), 1, 0)]
+	[If(nameof(Name), "special", 0)]
+	public class MultipleTriggersInSameGroup
+	{
+		[Required]
+		public int Count { get; set; }
+
+		[Required]
+		public string Name { get; set; } = string.Empty;
+
+		[Required(ConditionGroup = 0)]
+		public string? SpecialField { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[IfMin(nameof(Age), 18, 0)]
+	public class ConditionalWithMinimum
+	{
+		[Required]
+		public int Age { get; set; }
+
+		[Required(ConditionGroup = 0)]
+		public string? AdultField { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[IfMax(nameof(Score), 100, 0)]
+	public class ConditionalWithMaximum
+	{
+		[Required]
+		public int Score { get; set; }
+
+		[Required(ConditionGroup = 0)]
+		public string? BonusEligible { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[IfEnum(nameof(Day))]
+	public class EnumSwitch
+	{
+		[Required]
+		public DayOfWeek Day { get; set; }
+
+		[Required(ConditionGroup = DayOfWeek.Monday)]
+		public string? MondayField { get; set; }
+
+		[Required(ConditionGroup = DayOfWeek.Tuesday)]
+		public string? TuesdayField { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[If(nameof(IsActive), true, 0)]
+	public class ConditionalValidation
+	{
+		[Required]
+		public bool IsActive { get; set; }
+
+		[MinLength(5, ConditionGroup = 0)]
+		[MaxLength(100, ConditionGroup = 0)]
+		public string? Name { get; set; }
+
+		[Minimum(0, ConditionGroup = 0)]
+		[Maximum(150, ConditionGroup = 0)]
+		public int? Age { get; set; }
 	}
 }

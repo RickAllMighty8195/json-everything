@@ -10,9 +10,6 @@ internal class EnumSchemaEmitter : ISchemaEmitter
 
 	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent, SchemaEmissionContext context)
 	{
-		sb.AppendLine();
-		sb.Append($"{indent}.Type(SchemaValueType.String)");
-		
 		var enumValues = new List<string>();
 		foreach (var member in type.TypeSymbol.GetMembers())
 		{
