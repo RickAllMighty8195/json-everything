@@ -1,0 +1,65 @@
+using Microsoft.CodeAnalysis;
+
+namespace Json.Schema.Generation.SourceGeneration.Emitters;
+
+/// <summary>
+/// Helper methods for code emission.
+/// </summary>
+internal static class CodeEmitterHelpers
+{
+	public static string FormatValue(object? value)
+	{
+		return value switch
+		{
+			null => "null",
+			string s => $"\"{EscapeString(s)}\"",
+			decimal d => $"{d}m",
+			double d => $"{d}m",  // Cast doubles to decimal for schema validation
+			float f => $"{f}m",   // Cast floats to decimal for schema validation
+			_ => value.ToString() ?? "null"
+		};
+	}
+
+	public static string EscapeString(string str)
+	{
+		return str
+			.Replace("\\", "\\\\")
+			.Replace("\"", "\\\"")
+			.Replace("\n", "\\n")
+			.Replace("\r", "\\r")
+			.Replace("\t", "\\t");
+	}
+
+	public static string EscapeXmlDoc(string str)
+	{
+		return str
+			.Replace("&", "&amp;")
+			.Replace("<", "&lt;")
+			.Replace(">", "&gt;");
+	}
+
+	public static ITypeSymbol UnwrapNullable(ITypeSymbol typeSymbol)
+	{
+		if (typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T &&
+		    typeSymbol is INamedTypeSymbol namedType)
+		{
+			return namedType.TypeArguments[0];
+		}
+		return typeSymbol;
+	}
+
+	public static bool IsCollectionType(ITypeSymbol typeSymbol)
+	{
+		if (typeSymbol is not INamedTypeSymbol namedType || !namedType.IsGenericType)
+			return false;
+
+		var typeString = namedType.ConstructedFrom.ToDisplayString();
+		return typeString is
+			"System.Collections.Generic.List<T>" or
+			"System.Collections.Generic.IList<T>" or
+			"System.Collections.Generic.ICollection<T>" or
+			"System.Collections.Generic.IEnumerable<T>" or
+			"System.Collections.Generic.IReadOnlyList<T>" or
+			"System.Collections.Generic.IReadOnlyCollection<T>";
+	}
+}

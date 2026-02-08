@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Xml;
 using System.Xml.XPath;
 
+#pragma warning disable RS1035 // Do not use APIs banned for analyzers - This class is only used in reflection-based schema generation, not in source generators
+
 namespace Json.Schema.Generation.XmlComments;
 
 /// <summary>
