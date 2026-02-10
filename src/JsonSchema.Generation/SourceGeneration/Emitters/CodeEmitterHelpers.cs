@@ -13,9 +13,7 @@ internal static class CodeEmitterHelpers
 		{
 			null => "null",
 			string s => $"\"{EscapeString(s)}\"",
-			decimal d => $"{d}m",
-			double d => $"{d}m",
-			float f => $"{f}m",
+			bool b => b ? "true" : "false",
 			_ => value.ToString() ?? "null"
 		};
 	}

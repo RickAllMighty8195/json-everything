@@ -1,12 +1,10 @@
 using System;
 using Json.Schema.Generation.Serialization;
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace Json.Schema.Generation.Tests.SourceGeneration;
 
-/// <summary>
-/// Test models for source generator testing.
-/// </summary>
-internal static class TestModels
+public static class TestModels
 {
 	[GenerateJsonSchema]
 	public class SimplePerson
@@ -37,10 +35,6 @@ internal static class TestModels
 		public required string Name { get; set; }
 		public int Age { get; set; }
 	}
-
-	// Skip validation attributes test for now - will add later
-
-	// Skip validation attributes test for now - will add later
 
 	public enum Status
 	{
@@ -84,7 +78,6 @@ internal static class TestModels
 		public string? Description { get; set; }
 	}
 
-	// Test model for $defs/$ref generation
 	public class Address
 	{
 		public string Street { get; set; } = string.Empty;
@@ -102,7 +95,6 @@ internal static class TestModels
 		public Address? WorkAddress { get; set; }
 	}
 
-	// Conditional schema tests
 	[GenerateJsonSchema]
 	[If(nameof(Toggle), true, 0)]
 	public class SingleCondition

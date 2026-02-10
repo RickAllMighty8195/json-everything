@@ -14,16 +14,11 @@ namespace Json.Schema.Generation;
 /// </summary>
 public static class AttributeHandler
 {
-	private static readonly List<IAttributeHandler> _externalHandlers =
-		typeof(IAttributeHandler)
-			.Assembly
-			.DefinedTypes
-			.Where(t => typeof(IAttributeHandler).IsAssignableFrom(t) &&
-						!typeof(Attribute).IsAssignableFrom(t) &&
-						!t.IsAbstract && !t.IsInterface)
-			.Select(Activator.CreateInstance)
-			.Cast<IAttributeHandler>()
-			.ToList();
+	private static readonly List<IAttributeHandler> _externalHandlers = new()
+	{
+		// Explicitly instantiate all non-attribute handlers in the library for AOT compatibility
+		new JsonNumberHandlingAttributeHandler()
+	};
 
 	/// <summary>
 	/// Adds a handler for a custom attribute that cannot be made to implement <see cref="IAttributeHandler"/>.

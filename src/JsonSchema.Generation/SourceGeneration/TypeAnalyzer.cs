@@ -381,12 +381,12 @@ internal static class TypeAnalyzer
 		if (string.IsNullOrEmpty(propertyName)) return;
 
 		var property = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
-		var schemaName = property?.SchemaName ?? ApplyNamingConvention(propertyName, typeInfo.PropertyNaming);
+		var schemaName = property?.SchemaName ?? ApplyNamingConvention(propertyName!, typeInfo.PropertyNaming);
 
 		var trigger = new ConditionalTrigger
 		{
 			Type = ConditionalTriggerType.Equality,
-			PropertyName = propertyName,
+			PropertyName = propertyName!,
 			PropertySchemaName = schemaName,
 			ExpectedValue = FormatValueForSchema(value)
 		};
@@ -410,7 +410,7 @@ internal static class TypeAnalyzer
 		if (string.IsNullOrEmpty(propertyName)) return;
 
 		var property = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
-		var schemaName = property?.SchemaName ?? ApplyNamingConvention(propertyName, typeInfo.PropertyNaming);
+		var schemaName = property?.SchemaName ?? ApplyNamingConvention(propertyName!, typeInfo.PropertyNaming);
 
 		var isExclusive = false;
 		foreach (var namedArg in attr.NamedArguments)
@@ -425,7 +425,7 @@ internal static class TypeAnalyzer
 		var trigger = new ConditionalTrigger
 		{
 			Type = triggerType,
-			PropertyName = propertyName,
+			PropertyName = propertyName!,
 			PropertySchemaName = schemaName,
 			NumericValue = Convert.ToDouble(value),
 			IsExclusive = isExclusive
@@ -474,7 +474,7 @@ internal static class TypeAnalyzer
 			var trigger = new ConditionalTrigger
 			{
 				Type = ConditionalTriggerType.Equality,
-				PropertyName = propertyName,
+				PropertyName = propertyName!,
 				PropertySchemaName = schemaName,
 				ExpectedValue = useNumbers ? enumValue.ToString() : $"\"{enumMember.Name}\""
 			};
