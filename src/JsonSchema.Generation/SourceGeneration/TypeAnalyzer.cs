@@ -77,7 +77,7 @@ internal static class TypeAnalyzer
 
 		ExtractAttributes(compilation, typeSymbol.GetAttributes(), typeInfo.TypeAttributes, reportDiagnostic);
 
-		if (typeKind == TypeKind.Object) 
+		if (typeKind == TypeKind.Object)
 			AnalyzeConditionals(typeInfo, reportDiagnostic);
 
 		return typeInfo;
@@ -141,15 +141,15 @@ internal static class TypeAnalyzer
 		foreach (var member in members)
 		{
 			if (HasAttribute(member, "JsonExcludeAttribute")) continue;
-			
+
 			var jsonIgnoreAttr = member.GetAttributes()
 				.FirstOrDefault(a => a.AttributeClass?.Name == "JsonIgnoreAttribute");
-			
+
 			if (jsonIgnoreAttr != null)
 			{
 				var conditionArg = jsonIgnoreAttr.NamedArguments
 					.FirstOrDefault(arg => arg.Key == "Condition");
-				
+
 				if (conditionArg.Value.Value == null || (int)conditionArg.Value.Value == 1) continue;
 			}
 
@@ -193,18 +193,18 @@ internal static class TypeAnalyzer
 						break;
 					}
 				}
-				
+
 				if (!hasConditionGroup)
 				{
 					isRequired = true;
 					break;
 				}
 			}
-			
+
 			if (!isRequired)
 				isRequired = HasAttribute(member, "System.ComponentModel.DataAnnotations.RequiredAttribute");
-			
-			if (!isRequired && member is IPropertySymbol propertySymbol) 
+
+			if (!isRequired && member is IPropertySymbol propertySymbol)
 				isRequired = propertySymbol.IsRequired;
 
 			var isNullable = IsNullableType(memberType);
@@ -226,7 +226,7 @@ internal static class TypeAnalyzer
 			typeInfo.Properties.Add(propertyInfo);
 		}
 
-		if (typeInfo.PropertyOrder == PropertyOrder.ByName) 
+		if (typeInfo.PropertyOrder == PropertyOrder.ByName)
 			typeInfo.Properties.Sort((a, b) => string.Compare(a.SchemaName, b.SchemaName, StringComparison.OrdinalIgnoreCase));
 	}
 
@@ -249,14 +249,14 @@ internal static class TypeAnalyzer
 		var conditionalsByGroup = new Dictionary<object, ConditionalInfo>();
 
 		var typeAttributes = typeInfo.TypeSymbol.GetAttributes();
-		
+
 		foreach (var attr in typeAttributes)
 		{
 			if (attr.AttributeClass == null) continue;
-			
+
 			var attrName = attr.AttributeClass.Name;
 			object? conditionGroup = null;
-			
+
 			foreach (var namedArg in attr.NamedArguments)
 			{
 				if (namedArg.Key == "ConditionGroup")
@@ -265,14 +265,14 @@ internal static class TypeAnalyzer
 					break;
 				}
 			}
-			
+
 			if (conditionGroup == null && attr.ConstructorArguments.Length > 0)
 			{
 				var lastArg = attr.ConstructorArguments[^1];
 				if (lastArg.Value != null)
 					conditionGroup = lastArg.Value;
 			}
-			
+
 			if (conditionGroup == null) continue;
 
 			if (!conditionalsByGroup.TryGetValue(conditionGroup, out var conditionalInfo))
@@ -323,8 +323,8 @@ internal static class TypeAnalyzer
 				var isReadOnly = existingConsequence?.IsConditionallyReadOnly ?? false;
 				var isWriteOnly = existingConsequence?.IsConditionallyWriteOnly ?? false;
 				var conditionalAttributes = existingConsequence?.ConditionalAttributes ?? new List<AttributeInfo>();
-			// Set boolean flags for special cases
-			switch (attr.AttributeName)
+				// Set boolean flags for special cases
+				switch (attr.AttributeName)
 				{
 					case "RequiredAttribute":
 						isRequired = true;
@@ -339,9 +339,9 @@ internal static class TypeAnalyzer
 						break;
 				}
 
-			// Add all validation attributes to the list (except RequiredAttribute which is handled separately)
-			if (attr.AttributeName != "RequiredAttribute" && SchemaCodeEmitter.ShouldEmitBuiltInAttribute(attr))
-				conditionalAttributes.Add(attr);
+				// Add all validation attributes to the list (except RequiredAttribute which is handled separately)
+				if (attr.AttributeName != "RequiredAttribute" && SchemaCodeEmitter.ShouldEmitBuiltInAttribute(attr))
+					conditionalAttributes.Add(attr);
 
 				var newConsequence = new PropertyConditionalConsequence
 				{
@@ -352,10 +352,10 @@ internal static class TypeAnalyzer
 					ConditionalAttributes = conditionalAttributes
 				};
 
-			if (existingConsequence != null)
-				conditionalInfo.PropertyConsequences.Remove(existingConsequence);
-			
-			conditionalInfo.PropertyConsequences.Add(newConsequence);
+				if (existingConsequence != null)
+					conditionalInfo.PropertyConsequences.Remove(existingConsequence);
+
+				conditionalInfo.PropertyConsequences.Add(newConsequence);
 			}
 		}
 
@@ -385,10 +385,10 @@ internal static class TypeAnalyzer
 		conditionalInfo.Triggers.Add(trigger);
 	}
 
-	private static void ParseIfMinAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo) => 
+	private static void ParseIfMinAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo) =>
 		ParseIfNumericBoundAttribute(attr, conditionalInfo, typeInfo, ConditionalTriggerType.Minimum);
 
-	private static void ParseIfMaxAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo) => 
+	private static void ParseIfMaxAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo) =>
 		ParseIfNumericBoundAttribute(attr, conditionalInfo, typeInfo, ConditionalTriggerType.Maximum);
 
 	private static void ParseIfNumericBoundAttribute(AttributeData attr, ConditionalInfo conditionalInfo, TypeInfo typeInfo, ConditionalTriggerType triggerType)
@@ -434,7 +434,7 @@ internal static class TypeAnalyzer
 
 		var property = typeInfo.Properties.FirstOrDefault(p => p.Name == propertyName);
 		if (property == null) return;
-		
+
 		var schemaName = property.SchemaName;
 
 		var propertyType = UnwrapNullable(property.Type);
@@ -491,14 +491,12 @@ internal static class TypeAnalyzer
 		{
 			var attrClass = attr.AttributeClass;
 			if (attrClass == null) continue;
-			
+
 			var attrName = attrClass.Name;
 			var attrFullName = attrClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-			
-			// Check if attribute itself implements IAttributeHandler and has Apply method (built-in pattern)
+
 			var isCustomEmitter = ImplementsInterface(attrClass, "IAttributeHandler") && HasStaticApplyMethod(attrClass);
-			
-			// Also check for external handler by convention (XxxAttributeHandler for XxxAttribute)
+
 			INamedTypeSymbol? handlerClass = null;
 			if (!isCustomEmitter)
 			{
@@ -506,7 +504,7 @@ internal static class TypeAnalyzer
 				if (handlerClass != null)
 					isCustomEmitter = true;
 			}
-			
+
 			if (!isCustomEmitter && !SchemaCodeEmitter.IsBuiltInAttributeNamespace(attrFullName)) continue;
 
 			List<ApplyParameterInfo>? applyParams = null;
@@ -538,15 +536,15 @@ internal static class TypeAnalyzer
 			targetList.Add(attrInfo);
 		}
 	}
-	
+
 	private static List<ApplyParameterInfo>? ExtractApplyMethodParameters(INamedTypeSymbol attrClass)
 	{
 		var applyMethod = attrClass.GetMembers("Apply")
 			.OfType<IMethodSymbol>()
 			.FirstOrDefault(m => m is { IsStatic: true, Name: "Apply" });
-		
+
 		if (applyMethod == null) return null;
-		
+
 		var parameters = new List<ApplyParameterInfo>();
 		foreach (var param in applyMethod.Parameters.Skip(1))
 		{
@@ -556,18 +554,18 @@ internal static class TypeAnalyzer
 				TypeName = param.Type.ToDisplayString()
 			});
 		}
-		
+
 		return parameters;
 	}
-	
-	private static bool ImplementsInterface(INamedTypeSymbol typeSymbol, string interfaceName) => 
+
+	private static bool ImplementsInterface(INamedTypeSymbol typeSymbol, string interfaceName) =>
 		typeSymbol.AllInterfaces.Any(i => i.Name == interfaceName);
 
 	private static bool HasStaticApplyMethod(INamedTypeSymbol typeSymbol) =>
 		typeSymbol.GetMembers("Apply")
 			.OfType<IMethodSymbol>()
-			.Any(m => m.IsStatic && m.Name == "Apply" && 
-			          m.Parameters.Length > 0 && 
+			.Any(m => m.IsStatic && m.Name == "Apply" &&
+			          m.Parameters.Length > 0 &&
 			          m.Parameters[0].Type.Name == "JsonSchemaBuilder");
 
 	private static INamedTypeSymbol? FindAttributeHandler(Compilation compilation, INamedTypeSymbol attributeClass)
@@ -575,44 +573,44 @@ internal static class TypeAnalyzer
 		var handlerType = FindHandlerByInterface(compilation.Assembly.GlobalNamespace, attributeClass);
 		if (handlerType != null && HasStaticApplyMethod(handlerType))
 			return handlerType;
-		
+
 		foreach (var reference in compilation.References)
 		{
 			var assemblySymbol = compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
 			if (assemblySymbol == null) continue;
-			
+
 			handlerType = FindHandlerByInterface(assemblySymbol.GlobalNamespace, attributeClass);
 			if (handlerType != null && HasStaticApplyMethod(handlerType))
 				return handlerType;
 		}
-		
+
 		return null;
 	}
-	
+
 	private static INamedTypeSymbol? FindHandlerByInterface(INamespaceSymbol namespaceSymbol, INamedTypeSymbol attributeClass)
 	{
 		foreach (var type in namespaceSymbol.GetTypeMembers())
 		{
 			if (type.TypeKind != Microsoft.CodeAnalysis.TypeKind.Class) continue;
-			
+
 			foreach (var iface in type.AllInterfaces)
 			{
 				if (iface.Name != "IAttributeHandler") continue;
 				if (!iface.IsGenericType || iface.TypeArguments.Length != 1) continue;
-				
+
 				var typeArg = iface.TypeArguments[0];
 				if (SymbolEqualityComparer.Default.Equals(typeArg, attributeClass))
 					return type;
 			}
 		}
-		
+
 		foreach (var nestedNamespace in namespaceSymbol.GetNamespaceMembers())
 		{
 			var foundType = FindHandlerByInterface(nestedNamespace, attributeClass);
 			if (foundType != null)
 				return foundType;
 		}
-		
+
 		return null;
 	}
 
@@ -687,7 +685,7 @@ internal static class TypeAnalyzer
 			? namedType.TypeArguments[0]
 			: typeSymbol;
 
-	private static bool HasAttribute(ISymbol symbol, string attributeName) => 
+	private static bool HasAttribute(ISymbol symbol, string attributeName) =>
 		symbol.GetAttributes().Any(a => a.AttributeClass?.Name == attributeName);
 
 	private static string? GetXmlDocSummary(ISymbol symbol)
