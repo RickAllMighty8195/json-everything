@@ -7,6 +7,7 @@ namespace Json.Schema.Generation.SourceGeneration;
 internal class SchemaEmissionContext
 {
 	public Dictionary<string, (string DefName, ITypeSymbol Symbol)> TypeReferences { get; } = new();
+	public ITypeSymbol? RootType { get; set; }
 
 	public static string GetTypeKey(ITypeSymbol typeSymbol)
 	{
@@ -38,12 +39,28 @@ internal class SchemaEmissionContext
 
 	public bool ShouldUseRef(ITypeSymbol typeSymbol)
 	{
+		// Check for self-reference (recursion to root type)
+		if (RootType != null && SymbolEqualityComparer.Default.Equals(
+			CodeEmitterHelpers.UnwrapNullable(typeSymbol), 
+			CodeEmitterHelpers.UnwrapNullable(RootType)))
+		{
+			return true;
+		}
+		
 		var typeKey = GetTypeKey(typeSymbol);
 		return TypeReferences.ContainsKey(typeKey);
 	}
 
 	public string GetRefUri(ITypeSymbol typeSymbol)
 	{
+		// Check for self-reference (recursion to root type)
+		if (RootType != null && SymbolEqualityComparer.Default.Equals(
+			CodeEmitterHelpers.UnwrapNullable(typeSymbol), 
+			CodeEmitterHelpers.UnwrapNullable(RootType)))
+		{
+			return "#";
+		}
+		
 		var typeKey = GetTypeKey(typeSymbol);
 		return TypeReferences.TryGetValue(typeKey, out var info)
 			? $"#/$defs/{info.DefName}"

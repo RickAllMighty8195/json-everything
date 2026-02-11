@@ -19,7 +19,7 @@ public class GenerateJsonSchemaAttribute : Attribute
 	/// <remarks>
 	/// Defaults to <see cref="NamingConvention.AsDeclared"/> if not specified.
 	/// </remarks>
-	public NamingConvention PropertyNaming { get; set; } = NamingConvention.AsDeclared;
+	public NamingConvention PropertyNaming { get; set; } = NamingConvention.CamelCase;
 
 	/// <summary>
 	/// Gets or sets the order in which properties will be listed in the schema.
@@ -28,4 +28,14 @@ public class GenerateJsonSchemaAttribute : Attribute
 	/// Defaults to <see cref="PropertyOrder.AsDeclared"/> if not specified.
 	/// </remarks>
 	public PropertyOrder PropertyOrder { get; set; } = PropertyOrder.AsDeclared;
+
+	/// <summary>
+	/// Gets or sets whether properties affected by conditionals are defined globally
+	/// or only within their respective then subschemas.
+	/// </summary>
+	/// <remarks>
+	/// When true, restricts conditional property definitions to `then` subschemas and adds
+	/// a top-level `unevaluatedProperties: false`. When false (default), defines them globally.
+	/// </remarks>
+	public bool StrictConditionals { get; set; }
 }

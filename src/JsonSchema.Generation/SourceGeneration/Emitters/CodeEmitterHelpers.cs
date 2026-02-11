@@ -14,6 +14,9 @@ internal static class CodeEmitterHelpers
 			null => "null",
 			string s => $"\"{EscapeString(s)}\"",
 			bool b => b ? "true" : "false",
+			decimal d => d.ToString(System.Globalization.CultureInfo.InvariantCulture) + "m",
+			double d => d.ToString(System.Globalization.CultureInfo.InvariantCulture) + "m",
+			float f => f.ToString(System.Globalization.CultureInfo.InvariantCulture) + "m",
 			_ => value.ToString() ?? "null"
 		};
 	}

@@ -1,5 +1,7 @@
+using System.Linq;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
+using static Json.Schema.Generation.Tests.SourceGeneration.TestModels;
 
 namespace Json.Schema.Generation.Tests.SourceGeneration;
 
@@ -14,8 +16,7 @@ public class SourceGeneratorTests
 		  "properties": {
 		    "Name": { "type": "string" },
 		    "Age": { "type": "integer" }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -34,8 +35,7 @@ public class SourceGeneratorTests
 		    "firstName": { "type": "string" },
 		    "lastName": { "type": "string" },
 		    "age": { "type": "integer" }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -54,8 +54,7 @@ public class SourceGeneratorTests
 		    "Name": { "type": "string" },
 		    "Email": { "type": ["null", "string"] },
 		    "Age": { "type": ["null", "integer"] }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -74,8 +73,7 @@ public class SourceGeneratorTests
 		    "Name": { "type": "string" },
 		    "Age": { "type": "integer" }
 		  },
-		  "required": ["Name"],
-		  "additionalProperties": false
+		  "required": ["Name"]
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -95,8 +93,7 @@ public class SourceGeneratorTests
 		    "Status": {
 		      "enum": ["Active", "Inactive", "Pending"]
 		    }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -120,8 +117,7 @@ public class SourceGeneratorTests
 		      "type": "integer",
 		      "description": "The person's age in years"
 		    }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -149,8 +145,7 @@ public class SourceGeneratorTests
 		      "maximum": 100
 		    },
 		    "Description": { "type": ["null", "string"] }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -172,8 +167,7 @@ public class SourceGeneratorTests
 		        "Street": { "type": "string" },
 		        "City": { "type": "string" },
 		        "PostalCode": { "type": "string" }
-		      },
-		      "additionalProperties": false
+		      }
 		    }
 		  },
 		  "properties": {
@@ -192,8 +186,7 @@ public class SourceGeneratorTests
 		        { "type": "null" }
 		      ]
 		    }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -221,8 +214,7 @@ public class SourceGeneratorTests
 		  },
 		  "then": {
 		    "required": ["Required"]
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -250,8 +242,7 @@ public class SourceGeneratorTests
 		  },
 		  "then": {
 		    "required": ["required"]
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -296,8 +287,7 @@ public class SourceGeneratorTests
 		        "required": ["RequiredIfOtherToggle"]
 		      }
 		    }
-		  ],
-		  "additionalProperties": false
+		  ]
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -327,8 +317,7 @@ public class SourceGeneratorTests
 		  },
 		  "then": {
 		    "required": ["SpecialField"]
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -356,8 +345,7 @@ public class SourceGeneratorTests
 		  },
 		  "then": {
 		    "required": ["AdultField"]
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -385,8 +373,7 @@ public class SourceGeneratorTests
 		  },
 		  "then": {
 		    "required": ["BonusEligible"]
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -432,8 +419,7 @@ public class SourceGeneratorTests
 		        "required": ["TuesdayField"]
 		      }
 		    }
-		  ],
-		  "additionalProperties": false
+		  ]
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
@@ -471,12 +457,121 @@ public class SourceGeneratorTests
 		        "maximum": 150
 		      }
 		    }
-		  },
-		  "additionalProperties": false
+		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson);
 		var actual = GeneratedJsonSchemas.TestModels_ConditionalValidation;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void PersonWithSortedProperties_SortsPropertiesByName()
+	{
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithSortedProperties;
+		
+		// Use Root.Source to get the JSON element
+		var propertiesElement = actual.Root.Source.GetProperty("properties");
+		
+		var propertyNames = propertiesElement.EnumerateObject().Select(p => p.Name).ToList();
+		
+		// Properties should be sorted alphabetically: Age, City, Email, Name
+		Assert.That(propertyNames.Count, Is.EqualTo(4));
+		Assert.That(propertyNames[0], Is.EqualTo("Age"));
+		Assert.That(propertyNames[1], Is.EqualTo("City"));
+		Assert.That(propertyNames[2], Is.EqualTo("Email"));
+		Assert.That(propertyNames[3], Is.EqualTo("Name"));
+	}
+
+	[Test]
+	public void StrictConditionalValidation_ExcludesConditionalPropertiesFromGlobalScope()
+	{
+		var actual = GeneratedJsonSchemas.TestModels_StrictConditionalValidation;
+		
+		// In strict mode, properties with conditional constraints should NOT be in global properties
+		var propertiesElement = actual.Root.Source.GetProperty("properties");
+		var propertyNames = propertiesElement.EnumerateObject().Select(p => p.Name).ToList();
+		
+		// Only IsActive should be in global properties, not Name or Age
+		Assert.That(propertyNames.Count, Is.EqualTo(1));
+		Assert.That(propertyNames[0], Is.EqualTo("IsActive"));
+	}
+
+	[Test]
+	public void StrictConditionalValidation_UsesUnevaluatedProperties()
+	{
+		var actual = GeneratedJsonSchemas.TestModels_StrictConditionalValidation;
+		
+		// In strict mode, should use unevaluatedProperties instead of additionalProperties
+		Assert.That(actual.Root.Source.TryGetProperty("unevaluatedProperties", out var unevaluatedProps), Is.True);
+		Assert.That(unevaluatedProps.GetBoolean(), Is.False);
+		
+		// Should NOT have additionalProperties
+		Assert.That(actual.Root.Source.TryGetProperty("additionalProperties", out _), Is.False);
+	}
+
+	[Test]
+	public void StrictConditionalValidation_EmitsFullPropertySchemasInThenClause()
+	{
+		var actual = GeneratedJsonSchemas.TestModels_StrictConditionalValidation;
+		
+		// Get the if/then structure
+		var ifElement = actual.Root.Source.GetProperty("if");
+		var thenElement = actual.Root.Source.GetProperty("then");
+		
+		// Then clause should have properties with full schemas
+		var thenProperties = thenElement.GetProperty("properties");
+		
+		// Name and Age should be in then clause
+		Assert.That(thenProperties.TryGetProperty("Name", out var nameSchema), Is.True);
+		Assert.That(thenProperties.TryGetProperty("Age", out var ageSchema), Is.True);
+		
+		// Name should have type definition (full schema)
+		Assert.That(nameSchema.TryGetProperty("type", out var nameType), Is.True);
+		
+		// Age should have type definition (full schema)
+		Assert.That(ageSchema.TryGetProperty("type", out var ageType), Is.True);
+		
+		// Name should have conditional constraints
+		Assert.That(nameSchema.TryGetProperty("minLength", out var minLength), Is.True);
+		Assert.That(minLength.GetInt32(), Is.EqualTo(5));
+		Assert.That(nameSchema.TryGetProperty("maxLength", out var maxLength), Is.True);
+		Assert.That(maxLength.GetInt32(), Is.EqualTo(100));
+		
+		// Age should have conditional constraints
+		Assert.That(ageSchema.TryGetProperty("minimum", out var minimum), Is.True);
+		Assert.That(minimum.GetInt32(), Is.EqualTo(0));
+		Assert.That(ageSchema.TryGetProperty("maximum", out var maximum), Is.True);
+		Assert.That(maximum.GetInt32(), Is.EqualTo(150));
+	}
+
+	[Test]
+	public void ConditionalValidation_NonStrict_IncludesPropertiesGlobally()
+	{
+		var actual = GeneratedJsonSchemas.TestModels_ConditionalValidation;
+		
+		// In non-strict mode (default), all properties should be in global properties
+		var propertiesElement = actual.Root.Source.GetProperty("properties");
+		var propertyNames = propertiesElement.EnumerateObject().Select(p => p.Name).ToList();
+		
+		// All three properties should be present: IsActive, Name, Age
+		Assert.That(propertyNames.Count, Is.EqualTo(3));
+		Assert.That(propertyNames, Does.Contain("IsActive"));
+		Assert.That(propertyNames, Does.Contain("Name"));
+		Assert.That(propertyNames, Does.Contain("Age"));
+		
+		// In non-strict mode, should not have unevaluatedProperties or additionalProperties
+		Assert.That(actual.Root.Source.TryGetProperty("unevaluatedProperties", out _), Is.False);
+		Assert.That(actual.Root.Source.TryGetProperty("additionalProperties", out _), Is.False);
+	}
+
+	[Test]
+	public void SourceGenTarget_MatchesRuntimeGeneration()
+	{
+		// Compare source-generated schema with runtime generation
+		JsonSchema expected = new JsonSchemaBuilder().FromType<SourceGenTarget>();
+		JsonSchema actual = GeneratedJsonSchemas.TestModels_SourceGenTarget;
 		
 		AssertEqual(expected, actual);
 	}

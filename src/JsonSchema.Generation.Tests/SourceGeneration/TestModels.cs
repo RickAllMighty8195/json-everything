@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Json.Schema.Generation.Serialization;
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
@@ -200,5 +202,161 @@ public static class TestModels
 		[Minimum(0, ConditionGroup = 0)]
 		[Maximum(150, ConditionGroup = 0)]
 		public int? Age { get; set; }
+	}
+
+	[GenerateJsonSchema(PropertyOrder = PropertyOrder.ByName)]
+	public class PersonWithSortedProperties
+	{
+		public string Name { get; set; } = string.Empty;
+		public int Age { get; set; }
+		public string Email { get; set; } = string.Empty;
+		public string City { get; set; } = string.Empty;
+	}
+
+	[GenerateJsonSchema(StrictConditionals = true)]
+	[If(nameof(IsActive), true, 0)]
+	public class StrictConditionalValidation
+	{
+		[Required]
+		public bool IsActive { get; set; }
+
+		[MinLength(5, ConditionGroup = 0)]
+		[MaxLength(100, ConditionGroup = 0)]
+		public string? Name { get; set; }
+
+		[Minimum(0, ConditionGroup = 0)]
+		[Maximum(150, ConditionGroup = 0)]
+		public int? Age { get; set; }
+	}
+
+	public enum SourceGenTargetEnumeration
+	{
+		[JsonIgnore]
+		IgnoreThis,
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+		DontIgnoreThis,
+
+		[JsonExclude]
+		IgnoreThisWithJsonExclude,
+
+		[JsonIgnore]
+		[JsonExclude]
+		IgnoreAndExcludeThis,
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+		[JsonExclude]
+		ExcludeTrumpsIgnore,
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+		[JsonExclude]
+		ExcludeTrumpsIgnoreWhenWritingDefault,
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+		DontIgnoreThisWhenWritingDefault,
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+		DontIgnoreThisWhenWritingNull,
+	}
+
+	[GenerateJsonSchema]
+	public class SourceGenTarget
+	{
+		[JsonInclude]
+#pragma warning disable CS0169
+		private int _value;
+
+		private int _notIncluded;
+#pragma warning restore CS0169
+
+		public SourceGenTargetEnumeration EnumProp { get; set; }
+
+		[Required]
+		[Minimum(5)]
+		[ExclusiveMinimum(4)]
+		[Maximum(10)]
+		[ExclusiveMaximum(11)]
+		[MultipleOf(1.5)]
+		public int Integer { get; set; }
+
+		[MaxLength(10)]
+		[Pattern("^[a-z0-9_]$")]
+		public string String { get; set; } = string.Empty;
+
+		[Required]
+		public string RequiredString { get; set; } = string.Empty;
+
+		[JsonPropertyName("rename-this-required-string")]
+		[Required]
+		public string RenameThisRequiredString { get; set; } = string.Empty;
+
+		[MinItems(5)]
+		[MaxItems(10)]
+		public List<bool> ListOfBool { get; set; }
+
+		[MinLength(5, GenericParameter = 0)]
+		[UniqueItems(true)]
+		[Obsolete]
+		public List<string> ListOfString { get; set; }
+
+		[Maximum(100)]
+		public int Duplicated1 { get; set; }
+
+		[Maximum(100)]
+		public int Duplicated2 { get; set; }
+
+		public SourceGenTarget Target { get; set; }
+
+		[JsonIgnore]
+		public int IgnoreThis { get; set; }
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+		public string DontIgnoreThis { get; set; }
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+		public string DontIgnoreThisWhenWritingDefault { get; set; }
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+		public string DontIgnoreThisWhenWritingNull { get; set; }
+
+		[JsonExclude]
+		public string IgnoreThisWithJsonExclude { get; set; }
+
+		[JsonIgnore]
+		[JsonExclude]
+		public double IgnoreAndExcludeThis { get; set; }
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+		[JsonExclude]
+		public double ExcludeTrumpsIgnore { get; set; }
+
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+		[JsonExclude]
+		public double ExcludeTrumpsIgnoreWhenWritingDefault { get; set; }
+
+		[JsonPropertyName("rename-this")]
+		public string RenameThis { get; set; }
+
+		public float StrictNumber { get; set; }
+		public float OtherStrictNumber { get; set; }
+
+		[ReadOnly]
+		public float ReadOnlyNumber { get; set; }
+
+		[WriteOnly]
+		public float WriteOnlyNumber { get; set; }
+
+		[JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+		public float StringyNumber { get; set; }
+
+		[JsonNumberHandling(JsonNumberHandling.AllowNamedFloatingPointLiterals)]
+		public float NotANumber { get; set; }
+
+		[JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals)]
+		public float StringyNotANumber { get; set; }
+
+		[Title("title")]
+		[Description("description")]
+		public string Metadata { get; set; }
 	}
 }

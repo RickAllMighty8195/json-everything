@@ -5,7 +5,7 @@ namespace Json.Schema.Generation.SourceGeneration.Emitters;
 
 internal static class ConditionalSchemaEmitter
 {
-	public static void EmitConditionals(StringBuilder sb, TypeInfo type, string indent)
+	public static void EmitConditionals(StringBuilder sb, TypeInfo type, string indent, SchemaEmissionContext context)
 	{
 		var conditionalsWithConsequences = type.Conditionals
 			.Where(c => c.PropertyConsequences.Count > 0)
@@ -16,7 +16,7 @@ internal static class ConditionalSchemaEmitter
 		{
 			var conditional = conditionalsWithConsequences[0];
 			EmitIfClause(sb, conditional, indent);
-			EmitThenClause(sb, conditional, indent);
+			EmitThenClause(sb, conditional, type, indent, context);
 		}
 		else
 		{
@@ -30,7 +30,7 @@ internal static class ConditionalSchemaEmitter
 				sb.Append($"{indent}\tnew JsonSchemaBuilder()");
 				
 				EmitIfClause(sb, conditional, indent + "\t");
-				EmitThenClause(sb, conditional, indent + "\t");
+				EmitThenClause(sb, conditional, type, indent + "\t", context);
 				
 				if (i < conditionalsWithConsequences.Count - 1)
 					sb.Append(",");
@@ -102,7 +102,7 @@ internal static class ConditionalSchemaEmitter
 		}
 	}
 
-	private static void EmitThenClause(StringBuilder sb, ConditionalInfo conditional, string indent)
+	private static void EmitThenClause(StringBuilder sb, ConditionalInfo conditional, TypeInfo type, string indent, SchemaEmissionContext context)
 	{
 		if (conditional.PropertyConsequences.Count == 0) return;
 
@@ -123,26 +123,71 @@ internal static class ConditionalSchemaEmitter
 			for (int i = 0; i < propertiesWithAttributes.Count; i++)
 			{
 				var prop = propertiesWithAttributes[i];
-				sb.Append($"{indent}\t\t(\"{CodeEmitterHelpers.EscapeString(prop.PropertySchemaName)}\", new JsonSchemaBuilder()");
+				sb.Append($"{indent}\t\t(\"{CodeEmitterHelpers.EscapeString(prop.PropertySchemaName)}\", ");
 
-				// Emit conditional validation attributes
-				foreach (var attr in prop.ConditionalAttributes)
+				if (type.StrictConditionals)
 				{
-					sb.AppendLine();
-					sb.Append($"{indent}\t\t\t");
-					EmitAttributeConstraint(sb, attr);
+					// Emit full property schema
+					var fullProp = type.Properties.FirstOrDefault(p => p.SchemaName == prop.PropertySchemaName);
+					if (fullProp != null)
+					{
+						PropertySchemaEmitter.EmitPropertySchema(sb, fullProp, indent + "\t\t", context);
+						
+						// Apply conditional constraints on top of base schema
+						foreach (var attr in prop.ConditionalAttributes)
+						{
+							sb.AppendLine();
+							sb.Append($"{indent}\t\t\t");
+							EmitAttributeConstraint(sb, attr);
+						}
+						
+						if (prop.IsConditionallyReadOnly)
+						{
+							sb.AppendLine();
+							sb.Append($"{indent}\t\t\t.ReadOnly(true)");
+						}
+						if (prop.IsConditionallyWriteOnly)
+						{
+							sb.AppendLine();
+							sb.Append($"{indent}\t\t\t.WriteOnly(true)");
+						}
+					}
+					else
+					{
+						// Fallback if property not found
+						sb.Append("new JsonSchemaBuilder()");
+						foreach (var attr in prop.ConditionalAttributes)
+						{
+							sb.AppendLine();
+							sb.Append($"{indent}\t\t\t");
+							EmitAttributeConstraint(sb, attr);
+						}
+					}
 				}
+				else
+				{
+					// Non-strict mode: just emit constraints
+					sb.Append("new JsonSchemaBuilder()");
 
-				// Emit readOnly/writeOnly
-				if (prop.IsConditionallyReadOnly)
-				{
-					sb.AppendLine();
-					sb.Append($"{indent}\t\t\t.ReadOnly(true)");
-				}
-				if (prop.IsConditionallyWriteOnly)
-				{
-					sb.AppendLine();
-					sb.Append($"{indent}\t\t\t.WriteOnly(true)");
+					// Emit conditional validation attributes
+					foreach (var attr in prop.ConditionalAttributes)
+					{
+						sb.AppendLine();
+						sb.Append($"{indent}\t\t\t");
+						EmitAttributeConstraint(sb, attr);
+					}
+
+					// Emit readOnly/writeOnly
+					if (prop.IsConditionallyReadOnly)
+					{
+						sb.AppendLine();
+						sb.Append($"{indent}\t\t\t.ReadOnly(true)");
+					}
+					if (prop.IsConditionallyWriteOnly)
+					{
+						sb.AppendLine();
+						sb.Append($"{indent}\t\t\t.WriteOnly(true)");
+					}
 				}
 
 				sb.Append(")");
@@ -227,7 +272,7 @@ internal static class ConditionalSchemaEmitter
 				break;
 			case "MultipleOfAttribute":
 				if (attr.Parameters.TryGetValue("arg0", out var multipleOfValue))
-					sb.Append($".MultipleOf({multipleOfValue})");
+					sb.Append($".MultipleOf({CodeEmitterHelpers.FormatValue(multipleOfValue)})");
 				break;
 			case "TitleAttribute":
 				if (attr.Parameters.TryGetValue("arg0", out var titleValue))

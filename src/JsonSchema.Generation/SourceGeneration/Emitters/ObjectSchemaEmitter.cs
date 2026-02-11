@@ -12,21 +12,43 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 		sb.AppendLine();
 		sb.Append($"{indent}.Type(SchemaValueType.Object)");
 
-		if (type.Properties.Count > 0)
+		// When StrictConditionals is true, filter out properties that have conditional consequences
+		var strictConditionalPropertyNames = new System.Collections.Generic.HashSet<string>();
+		if (type.StrictConditionals)
+		{
+			foreach (var conditional in type.Conditionals)
+			{
+				foreach (var consequence in conditional.PropertyConsequences)
+				{
+					if (consequence.ConditionalAttributes.Count > 0 ||
+						consequence.IsConditionallyReadOnly ||
+						consequence.IsConditionallyWriteOnly)
+					{
+						strictConditionalPropertyNames.Add(consequence.PropertySchemaName);
+					}
+				}
+			}
+		}
+
+		var propertiesToEmit = type.StrictConditionals
+			? type.Properties.Where(p => !strictConditionalPropertyNames.Contains(p.SchemaName)).ToList()
+			: type.Properties;
+
+		if (propertiesToEmit.Count > 0)
 		{
 			sb.AppendLine();
 			sb.Append($"{indent}.Properties(");
 			sb.AppendLine();
 
-			for (int i = 0; i < type.Properties.Count; i++)
+			for (int i = 0; i < propertiesToEmit.Count; i++)
 			{
-				var prop = type.Properties[i];
+				var prop = propertiesToEmit[i];
 				sb.Append($"{indent}\t(\"{CodeEmitterHelpers.EscapeString(prop.SchemaName)}\", ");
 				
 				PropertySchemaEmitter.EmitPropertySchema(sb, prop, indent + "\t", context);
 				
 				sb.Append(")");
-				if (i < type.Properties.Count - 1)
+				if (i < propertiesToEmit.Count - 1)
 					sb.Append(",");
 				sb.AppendLine();
 			}
@@ -58,9 +80,12 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 			sb.Append(")");
 		}
 
-		ConditionalSchemaEmitter.EmitConditionals(sb, type, indent);
+		ConditionalSchemaEmitter.EmitConditionals(sb, type, indent, context);
 
-		sb.AppendLine();
-		sb.Append($"{indent}.AdditionalProperties(false)");
+		if (type.StrictConditionals && type.Conditionals.Any(c => c.PropertyConsequences.Count > 0))
+		{
+			sb.AppendLine();
+			sb.Append($"{indent}.UnevaluatedProperties(false)");
+		}
 	}
 }

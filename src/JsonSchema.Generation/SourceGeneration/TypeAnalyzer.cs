@@ -26,7 +26,8 @@ internal static class TypeAnalyzer
 		"RequiredAttribute",
 		"ObsoleteAttribute",
 		"ReadOnlyAttribute",
-		"WriteOnlyAttribute"
+		"WriteOnlyAttribute",
+		"JsonNumberHandlingAttribute"
 	];
 
 	public static TypeInfo? Analyze(INamedTypeSymbol typeSymbol, AttributeData attributeData, Action<Diagnostic> reportDiagnostic)
@@ -49,6 +50,7 @@ internal static class TypeAnalyzer
 
 		var propertyNaming = NamingConvention.AsDeclared;
 		var propertyOrder = PropertyOrder.AsDeclared;
+		var strictConditionals = false;
 
 		foreach (var namedArg in attributeData.NamedArguments)
 		{
@@ -59,6 +61,9 @@ internal static class TypeAnalyzer
 					break;
 				case "PropertyOrder" when namedArg.Value.Value is int orderValue:
 					propertyOrder = (PropertyOrder)orderValue;
+					break;
+				case "StrictConditionals" when namedArg.Value.Value is bool strictValue:
+					strictConditionals = strictValue;
 					break;
 			}
 		}
@@ -73,6 +78,7 @@ internal static class TypeAnalyzer
 			SchemaPropertyName = GetSchemaPropertyName(typeSymbol),
 			PropertyNaming = propertyNaming,
 			PropertyOrder = propertyOrder,
+			StrictConditionals = strictConditionals,
 			Kind = typeKind,
 			IsNullable = isNullable,
 			XmlDocSummary = GetXmlDocSummary(typeSymbol)
@@ -150,12 +156,23 @@ internal static class TypeAnalyzer
 		var typeSymbol = typeInfo.TypeSymbol;
 
 		var members = typeSymbol.GetMembers()
-			.Where(m => !m.IsStatic && (m.Kind == SymbolKind.Property || m.Kind == SymbolKind.Field))
+			.Where(m => m is { IsStatic: false, Kind: SymbolKind.Property or SymbolKind.Field })
 			.ToList();
 
 		foreach (var member in members)
 		{
-			if (HasAttribute(member, "JsonIgnoreAttribute")) continue;
+			if (HasAttribute(member, "JsonExcludeAttribute")) continue;
+			
+			var jsonIgnoreAttr = member.GetAttributes()
+				.FirstOrDefault(a => a.AttributeClass?.Name == "JsonIgnoreAttribute");
+			
+			if (jsonIgnoreAttr != null)
+			{
+				var conditionArg = jsonIgnoreAttr.NamedArguments
+					.FirstOrDefault(arg => arg.Key == "Condition");
+				
+				if (conditionArg.Value.Value == null || (int)conditionArg.Value.Value == 1) continue;
+			}
 
 			ITypeSymbol memberType;
 			var isReadOnly = false;
@@ -242,7 +259,24 @@ internal static class TypeAnalyzer
 		{
 			if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field)
 			{
-				if (HasAttribute(field, "JsonIgnoreAttribute")) continue;
+				// JsonExclude always excludes
+				if (HasAttribute(field, "JsonExcludeAttribute")) continue;
+				
+				// Check JsonIgnore with Condition parameter
+				var jsonIgnoreAttr = field.GetAttributes()
+					.FirstOrDefault(a => a.AttributeClass?.Name == "JsonIgnoreAttribute");
+				
+				if (jsonIgnoreAttr != null)
+				{
+					// Check if Condition is Never - if so, don't exclude
+					var conditionArg = jsonIgnoreAttr.NamedArguments
+						.FirstOrDefault(arg => arg.Key == "Condition");
+					
+					// If no Condition specified, it defaults to Always => exclude
+					// If Condition is anything other than Never (0), exclude
+					if (conditionArg.Value.Value == null || (int)conditionArg.Value.Value != 0)
+						continue;
+				}
 
 				var enumName = field.Name;
 				typeInfo.EnumValues.Add(enumName);

@@ -10,7 +10,7 @@ namespace Json.Schema.Generation.SourceGeneration;
 
 internal static class SchemaCodeEmitter
 {
-	public static void EmitSchemaForType(StringBuilder sb, ITypeSymbol typeSymbol, bool isNullable, string indent, SchemaEmissionContext? context = null)
+	public static void EmitSchemaForType(StringBuilder sb, ITypeSymbol typeSymbol, bool isNullable, string indent, SchemaEmissionContext? context = null, List<AttributeInfo>? itemAttributes = null, List<AttributeInfo>? propertyAttributes = null)
 	{
 		if (context != null && context.ShouldUseRef(typeSymbol))
 		{
@@ -44,9 +44,44 @@ internal static class SchemaCodeEmitter
 				SchemaPropertyName = "",
 				PropertyNaming = NamingConvention.AsDeclared,
 				PropertyOrder = PropertyOrder.AsDeclared,
+				StrictConditionals = false,
 				Kind = typeKind,
-				IsNullable = isNullable
+				IsNullable = isNullable,
+				ItemAttributes = itemAttributes,
+				PropertyAttributes = propertyAttributes
 			};
+
+			// Populate enum values if this is an enum type
+			if (typeKind == TypeKind.Enum)
+			{
+				foreach (var member in namedTypeSymbol.GetMembers())
+				{
+					if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field)
+					{
+						// JsonExclude always excludes
+						if (field.GetAttributes().Any(a => a.AttributeClass?.Name == "JsonExcludeAttribute")) continue;
+						
+						// Check JsonIgnore with Condition parameter
+						var jsonIgnoreAttr = field.GetAttributes()
+							.FirstOrDefault(a => a.AttributeClass?.Name == "JsonIgnoreAttribute");
+						
+						if (jsonIgnoreAttr != null)
+						{
+							// Check if Condition is Always (1) or unspecified (defaults to Always)
+							var conditionArg = jsonIgnoreAttr.NamedArguments
+								.FirstOrDefault(arg => arg.Key == "Condition");
+							
+							// If no Condition specified => Always (1) => exclude
+							// If Condition is Always (1) => exclude
+							// All other conditions (Never=0, WhenWritingDefault=2, WhenWritingNull=3) => include in schema
+							if (conditionArg.Value.Value == null || (int)conditionArg.Value.Value == 1)
+								continue;
+						}
+
+						typeInfo.EnumValues.Add(field.Name);
+					}
+				}
+			}
 
 			var emitter = SchemaEmitterRegistry.Emitters.FirstOrDefault(e => e.Handles(typeInfo));
 			if (emitter != null)
@@ -190,6 +225,7 @@ internal static class SchemaCodeEmitter
 		var indentStr = new string('\t', indent);
 		
 		var context = AnalyzeReusedTypes(type);
+		context.RootType = type.TypeSymbol;
 		
 		sb.Append("new JsonSchemaBuilder()");
 
@@ -283,6 +319,14 @@ internal static class SchemaCodeEmitter
 				case "ObsoleteAttribute":
 					sb.AppendLine();
 					sb.Append($"{indent}.Deprecated(true)");
+					break;
+				case "ReadOnlyAttribute":
+					sb.AppendLine();
+					sb.Append($"{indent}.ReadOnly(true)");
+					break;
+				case "WriteOnlyAttribute":
+					sb.AppendLine();
+					sb.Append($"{indent}.WriteOnly(true)");
 					break;
 			}
 		}
@@ -467,6 +511,7 @@ internal static class SchemaCodeEmitter
 			SchemaPropertyName = "",
 			PropertyNaming = NamingConvention.AsDeclared,
 			PropertyOrder = PropertyOrder.AsDeclared,
+			StrictConditionals = false,
 			Kind = typeKind,
 			IsNullable = false
 		};

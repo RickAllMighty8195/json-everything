@@ -11,6 +11,7 @@ internal sealed class TypeInfo
 	public required string SchemaPropertyName { get; init; }
 	public required NamingConvention PropertyNaming { get; init; }
 	public required PropertyOrder PropertyOrder { get; init; }
+	public required bool StrictConditionals { get; init; }
 	public required TypeKind Kind { get; init; }
 	public required bool IsNullable { get; init; }
 	public List<PropertyInfo> Properties { get; init; } = new();
@@ -18,6 +19,8 @@ internal sealed class TypeInfo
 	public string? XmlDocSummary { get; init; }
 	public List<AttributeInfo> TypeAttributes { get; init; } = new();
 	public List<ConditionalInfo> Conditionals { get; init; } = new();
+	public List<AttributeInfo>? ItemAttributes { get; init; }
+	public List<AttributeInfo>? PropertyAttributes { get; init; }
 }
 
 internal sealed class PropertyInfo
