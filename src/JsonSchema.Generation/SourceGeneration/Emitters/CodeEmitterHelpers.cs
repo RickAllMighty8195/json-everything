@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Json.Schema.Generation.SourceGeneration.Emitters;
@@ -65,28 +66,48 @@ internal static class CodeEmitterHelpers
 
 	public static ITypeSymbol? GetElementType(ITypeSymbol typeSymbol)
 	{
-		// Handle arrays
-		if (typeSymbol is IArrayTypeSymbol arrayType)
+		switch (typeSymbol)
 		{
-			return arrayType.ElementType;
-		}
-
-		// Handle generic collections
-		if (typeSymbol is INamedTypeSymbol namedType && namedType.IsGenericType)
-		{
-			var typeString = namedType.ConstructedFrom.ToDisplayString();
-			if (typeString is
-			    "System.Collections.Generic.List<T>" or
-			    "System.Collections.Generic.IList<T>" or
-			    "System.Collections.Generic.ICollection<T>" or
-			    "System.Collections.Generic.IEnumerable<T>" or
-			    "System.Collections.Generic.IReadOnlyList<T>" or
-			    "System.Collections.Generic.IReadOnlyCollection<T>")
+			case IArrayTypeSymbol arrayType:
+				return arrayType.ElementType;
+			case INamedTypeSymbol { IsGenericType: true } namedType:
 			{
-				return namedType.TypeArguments[0];
+				var typeString = namedType.ConstructedFrom.ToDisplayString();
+				if (typeString is
+				    "System.Collections.Generic.List<T>" or
+				    "System.Collections.Generic.IList<T>" or
+				    "System.Collections.Generic.ICollection<T>" or
+				    "System.Collections.Generic.IEnumerable<T>" or
+				    "System.Collections.Generic.IReadOnlyList<T>" or
+				    "System.Collections.Generic.IReadOnlyCollection<T>")
+				{
+					return namedType.TypeArguments[0];
+				}
+
+				break;
 			}
 		}
 
 		return null;
+	}
+
+	public static bool ShouldIncludeEnumMember(IFieldSymbol field)
+	{
+		if (field.GetAttributes().Any(a => a.AttributeClass?.Name == "JsonExcludeAttribute"))
+			return false;
+		
+		var jsonIgnoreAttr = field.GetAttributes()
+			.FirstOrDefault(a => a.AttributeClass?.Name == "JsonIgnoreAttribute");
+		
+		if (jsonIgnoreAttr != null)
+		{
+			var conditionArg = jsonIgnoreAttr.NamedArguments
+				.FirstOrDefault(arg => arg.Key == "Condition");
+			
+			if (conditionArg.Value.Value == null || (int)conditionArg.Value.Value == 1)
+				return false;
+		}
+
+		return true;
 	}
 }

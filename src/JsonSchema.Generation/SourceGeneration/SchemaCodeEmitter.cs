@@ -51,34 +51,14 @@ internal static class SchemaCodeEmitter
 				PropertyAttributes = propertyAttributes
 			};
 
-			// Populate enum values if this is an enum type
 			if (typeKind == TypeKind.Enum)
 			{
 				foreach (var member in namedTypeSymbol.GetMembers())
 				{
 					if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field)
 					{
-						// JsonExclude always excludes
-						if (field.GetAttributes().Any(a => a.AttributeClass?.Name == "JsonExcludeAttribute")) continue;
-						
-						// Check JsonIgnore with Condition parameter
-						var jsonIgnoreAttr = field.GetAttributes()
-							.FirstOrDefault(a => a.AttributeClass?.Name == "JsonIgnoreAttribute");
-						
-						if (jsonIgnoreAttr != null)
-						{
-							// Check if Condition is Always (1) or unspecified (defaults to Always)
-							var conditionArg = jsonIgnoreAttr.NamedArguments
-								.FirstOrDefault(arg => arg.Key == "Condition");
-							
-							// If no Condition specified => Always (1) => exclude
-							// If Condition is Always (1) => exclude
-							// All other conditions (Never=0, WhenWritingDefault=2, WhenWritingNull=3) => include in schema
-							if (conditionArg.Value.Value == null || (int)conditionArg.Value.Value == 1)
-								continue;
-						}
-
-						typeInfo.EnumValues.Add(field.Name);
+						if (CodeEmitterHelpers.ShouldIncludeEnumMember(field))
+							typeInfo.EnumValues.Add(field.Name);
 					}
 				}
 			}
@@ -250,9 +230,7 @@ internal static class SchemaCodeEmitter
 	{
 		foreach (var attr in attributes)
 		{
-			// Skip attributes that are part of conditional schemas (have ConditionGroup set)
-			if (attr.Parameters.TryGetValue("ConditionGroup", out var conditionGroup) && conditionGroup != null)
-				continue;
+			if (attr.Parameters.TryGetValue("ConditionGroup", out var conditionGroup) && conditionGroup != null) continue;
 
 			if (attr.IsCustomEmitter && attr.AttributeFullName != null)
 			{
@@ -262,79 +240,79 @@ internal static class SchemaCodeEmitter
 				continue;
 			}
 
-			// Only handle built-in Json.Schema.Generation and other explicitly supported attributes here
-			// External attributes from other namespaces should be custom emitters
-			var isJsonSchemaGenerationAttr = attr.AttributeFullName?.StartsWith("global::Json.Schema.Generation.") == true;
-			var isSpecialSystemAttr = attr.AttributeFullName == "global::System.ObsoleteAttribute";
-			if (!isJsonSchemaGenerationAttr && !isSpecialSystemAttr) continue;
+			if (!ShouldEmitBuiltInAttribute(attr)) continue;
 
-			switch (attr.AttributeName)
-			{
-				case "MinimumAttribute" when attr.Parameters.TryGetValue("arg0", out var minValue):
-					sb.AppendLine();
-					sb.Append($"{indent}.Minimum({CodeEmitterHelpers.FormatValue(minValue)})");
-					break;
-				case "MaximumAttribute" when attr.Parameters.TryGetValue("arg0", out var maxValue):
-					sb.AppendLine();
-					sb.Append($"{indent}.Maximum({CodeEmitterHelpers.FormatValue(maxValue)})");
-					break;
-				case "ExclusiveMinimumAttribute" when attr.Parameters.TryGetValue("arg0", out var exMinValue):
-					sb.AppendLine();
-					sb.Append($"{indent}.ExclusiveMinimum({CodeEmitterHelpers.FormatValue(exMinValue)})");
-					break;
-				case "ExclusiveMaximumAttribute" when attr.Parameters.TryGetValue("arg0", out var exMaxValue):
-					sb.AppendLine();
-					sb.Append($"{indent}.ExclusiveMaximum({CodeEmitterHelpers.FormatValue(exMaxValue)})");
-					break;
-				case "MinLengthAttribute" when attr.Parameters.TryGetValue("arg0", out var minLen):
-					sb.AppendLine();
-					sb.Append($"{indent}.MinLength({CodeEmitterHelpers.FormatValue(minLen)})");
-					break;
-				case "MaxLengthAttribute" when attr.Parameters.TryGetValue("arg0", out var maxLen):
-					sb.AppendLine();
-					sb.Append($"{indent}.MaxLength({CodeEmitterHelpers.FormatValue(maxLen)})");
-					break;
-				case "PatternAttribute" when attr.Parameters.TryGetValue("arg0", out var pattern):
-					sb.AppendLine();
-					sb.Append($"{indent}.Pattern(\"{CodeEmitterHelpers.EscapeString(pattern?.ToString() ?? "")}\")");
-					break;
-				case "MinItemsAttribute" when attr.Parameters.TryGetValue("arg0", out var minItems):
-					sb.AppendLine();
-					sb.Append($"{indent}.MinItems({CodeEmitterHelpers.FormatValue(minItems)})");
-					break;
-				case "MaxItemsAttribute" when attr.Parameters.TryGetValue("arg0", out var maxItems):
-					sb.AppendLine();
-					sb.Append($"{indent}.MaxItems({CodeEmitterHelpers.FormatValue(maxItems)})");
-					break;
-				case "UniqueItemsAttribute":
-					sb.AppendLine();
-					sb.Append($"{indent}.UniqueItems(true)");
-					break;
-				case "MultipleOfAttribute" when attr.Parameters.TryGetValue("arg0", out var multipleOf):
-					sb.AppendLine();
-					sb.Append($"{indent}.MultipleOf({CodeEmitterHelpers.FormatValue(multipleOf)})");
-					break;
-				case "TitleAttribute" when attr.Parameters.TryGetValue("arg0", out var title):
-					sb.AppendLine();
-					sb.Append($"{indent}.Title(\"{CodeEmitterHelpers.EscapeString(title?.ToString() ?? "")}\")");
-					break;
-				case "DescriptionAttribute" when attr.Parameters.TryGetValue("arg0", out var description):
-					sb.AppendLine();
-					sb.Append($"{indent}.Description(\"{CodeEmitterHelpers.EscapeString(description?.ToString() ?? "")}\")");
-					break;
-				case "ObsoleteAttribute":
-					sb.AppendLine();
-					sb.Append($"{indent}.Deprecated(true)");
-					break;
-				case "ReadOnlyAttribute":
-					sb.AppendLine();
-					sb.Append($"{indent}.ReadOnly(true)");
-					break;
-				case "WriteOnlyAttribute":
-					sb.AppendLine();
-					sb.Append($"{indent}.WriteOnly(true)");
-					break;
-			}
+			sb.AppendLine();
+			sb.Append($"{indent}");
+			EmitAttributeConstraint(sb, attr);
+		}
+	}
+
+	internal static bool IsBuiltInAttributeNamespace(string? attributeFullName)
+	{
+		var isJsonSchemaGenerationAttr = attributeFullName?.StartsWith("global::Json.Schema.Generation.") == true;
+		var isSpecialSystemAttr = attributeFullName == "global::System.ObsoleteAttribute" ||
+		                          attributeFullName == "global::System.Text.Json.Serialization.JsonNumberHandlingAttribute";
+		return isJsonSchemaGenerationAttr || isSpecialSystemAttr;
+	}
+
+	internal static bool ShouldEmitBuiltInAttribute(AttributeInfo attr)
+	{
+		return IsBuiltInAttributeNamespace(attr.AttributeFullName);
+	}
+
+	internal static void EmitAttributeConstraint(StringBuilder sb, AttributeInfo attr)
+	{
+		switch (attr.AttributeName)
+		{
+			case "MinimumAttribute" when attr.Parameters.TryGetValue("arg0", out var minValue):
+				sb.Append($".Minimum({CodeEmitterHelpers.FormatValue(minValue)})");
+				break;
+			case "MaximumAttribute" when attr.Parameters.TryGetValue("arg0", out var maxValue):
+				sb.Append($".Maximum({CodeEmitterHelpers.FormatValue(maxValue)})");
+				break;
+			case "ExclusiveMinimumAttribute" when attr.Parameters.TryGetValue("arg0", out var exMinValue):
+				sb.Append($".ExclusiveMinimum({CodeEmitterHelpers.FormatValue(exMinValue)})");
+				break;
+			case "ExclusiveMaximumAttribute" when attr.Parameters.TryGetValue("arg0", out var exMaxValue):
+				sb.Append($".ExclusiveMaximum({CodeEmitterHelpers.FormatValue(exMaxValue)})");
+				break;
+			case "MinLengthAttribute" when attr.Parameters.TryGetValue("arg0", out var minLen):
+				sb.Append($".MinLength({CodeEmitterHelpers.FormatValue(minLen)})");
+				break;
+			case "MaxLengthAttribute" when attr.Parameters.TryGetValue("arg0", out var maxLen):
+				sb.Append($".MaxLength({CodeEmitterHelpers.FormatValue(maxLen)})");
+				break;
+			case "PatternAttribute" when attr.Parameters.TryGetValue("arg0", out var pattern):
+				sb.Append($".Pattern(\"{CodeEmitterHelpers.EscapeString(pattern?.ToString() ?? "")}\")");
+				break;
+			case "MinItemsAttribute" when attr.Parameters.TryGetValue("arg0", out var minItems):
+				sb.Append($".MinItems({CodeEmitterHelpers.FormatValue(minItems)})");
+				break;
+			case "MaxItemsAttribute" when attr.Parameters.TryGetValue("arg0", out var maxItems):
+				sb.Append($".MaxItems({CodeEmitterHelpers.FormatValue(maxItems)})");
+				break;
+			case "UniqueItemsAttribute":
+				sb.Append($".UniqueItems(true)");
+				break;
+			case "MultipleOfAttribute" when attr.Parameters.TryGetValue("arg0", out var multipleOf):
+				sb.Append($".MultipleOf({CodeEmitterHelpers.FormatValue(multipleOf)})");
+				break;
+			case "TitleAttribute" when attr.Parameters.TryGetValue("arg0", out var title):
+				sb.Append($".Title(\"{CodeEmitterHelpers.EscapeString(title?.ToString() ?? "")}\")");
+				break;
+			case "DescriptionAttribute" when attr.Parameters.TryGetValue("arg0", out var description):
+				sb.Append($".Description(\"{CodeEmitterHelpers.EscapeString(description?.ToString() ?? "")}\")");
+				break;
+			case "ObsoleteAttribute":
+				sb.Append($".Deprecated(true)");
+				break;
+			case "ReadOnlyAttribute":
+				sb.Append($".ReadOnly(true)");
+				break;
+			case "WriteOnlyAttribute":
+				sb.Append($".WriteOnly(true)");
+				break;
 		}
 	}
 
@@ -396,9 +374,8 @@ internal static class SchemaCodeEmitter
 
 		sb.Append($".{attrName}(");
 		
-		bool first = true;
+		var first = true;
 		
-		// If we have ApplyMethodParameters, match them up with the attribute's parameters
 		if (attr.ApplyMethodParameters != null && attr.ApplyMethodParameters.Count > 0)
 		{
 			foreach (var param in attr.ApplyMethodParameters)
@@ -406,17 +383,13 @@ internal static class SchemaCodeEmitter
 				if (!first)
 					sb.Append(", ");
 				
-				// Try to find matching value in Parameters
-				// First check constructor args (arg0, arg1, etc.)
 				object? value = null;
-				bool found = false;
+				var found = false;
 				
 				for (int i = 0; i < attr.Parameters.Count; i++)
 				{
 					if (attr.Parameters.TryGetValue($"arg{i}", out value))
 					{
-						// We'll match by position - first Apply param gets arg0, etc.
-						// This is a simplification but works for most cases
 						if (i == attr.ApplyMethodParameters.IndexOf(param))
 						{
 							found = true;
@@ -425,7 +398,6 @@ internal static class SchemaCodeEmitter
 					}
 				}
 				
-				// If not found in constructor args, check named parameters (case-insensitive match)
 				if (!found)
 				{
 					foreach (var kvp in attr.Parameters)
@@ -439,19 +411,16 @@ internal static class SchemaCodeEmitter
 						}
 					}
 				}
-				
-				// Emit the value (or default if not found)
-				if (found)
-					sb.Append(CodeEmitterHelpers.FormatValue(value));
-				else
-					sb.Append("0"); // Default value for missing parameters
-				
+
+				sb.Append(found
+					? CodeEmitterHelpers.FormatValue(value)
+					: "0");
+
 				first = false;
 			}
 		}
 		else
 		{
-			// Fallback: emit all constructor arguments in order
 			for (int i = 0; i < attr.Parameters.Count; i++)
 			{
 				if (attr.Parameters.TryGetValue($"arg{i}", out var value))
@@ -630,8 +599,11 @@ internal static class SchemaCodeEmitter
 		{
 			foreach (var member in typeSymbol.GetMembers())
 			{
-				if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field) 
-					typeInfo.EnumValues.Add(field.Name);
+				if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field)
+				{
+					if (CodeEmitterHelpers.ShouldIncludeEnumMember(field))
+						typeInfo.EnumValues.Add(field.Name);
+				}
 			}
 		}
 

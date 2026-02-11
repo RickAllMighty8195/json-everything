@@ -20,8 +20,7 @@ internal class ArraySchemaEmitter : ISchemaEmitter
 			
 			SchemaCodeEmitter.EmitSchemaForType(sb, elementType, type.IsNullable, indent + "\t", context);
 			
-			// Apply item-level attributes if provided
-			if (type.ItemAttributes != null && type.ItemAttributes.Count > 0)
+			if (type.ItemAttributes is { Count: > 0 })
 				SchemaCodeEmitter.EmitAttributes(sb, type.ItemAttributes, indent + "\t");
 			
 			sb.Append(")");

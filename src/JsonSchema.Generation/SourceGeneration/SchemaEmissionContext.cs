@@ -39,7 +39,6 @@ internal class SchemaEmissionContext
 
 	public bool ShouldUseRef(ITypeSymbol typeSymbol)
 	{
-		// Check for self-reference (recursion to root type)
 		if (RootType != null && SymbolEqualityComparer.Default.Equals(
 			CodeEmitterHelpers.UnwrapNullable(typeSymbol), 
 			CodeEmitterHelpers.UnwrapNullable(RootType)))
@@ -53,7 +52,6 @@ internal class SchemaEmissionContext
 
 	public string GetRefUri(ITypeSymbol typeSymbol)
 	{
-		// Check for self-reference (recursion to root type)
 		if (RootType != null && SymbolEqualityComparer.Default.Equals(
 			CodeEmitterHelpers.UnwrapNullable(typeSymbol), 
 			CodeEmitterHelpers.UnwrapNullable(RootType)))

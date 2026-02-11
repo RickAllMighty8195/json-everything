@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.Text;
-using Microsoft.CodeAnalysis;
 
 namespace Json.Schema.Generation.SourceGeneration.Emitters;
 
@@ -10,7 +8,6 @@ internal class EnumSchemaEmitter : ISchemaEmitter
 
 	public void EmitSchema(StringBuilder sb, TypeInfo type, string indent, SchemaEmissionContext context)
 	{
-		// Use pre-filtered enum values from TypeInfo (already excludes JsonIgnore/JsonExclude members)
 		if (type.EnumValues.Count <= 0) return;
 
 		sb.AppendLine();

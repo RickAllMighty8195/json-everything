@@ -109,7 +109,6 @@ internal static class ConditionalSchemaEmitter
 		sb.AppendLine();
 		sb.Append($"{indent}.Then(new JsonSchemaBuilder()");
 
-		// Emit properties with conditional validation attributes
 		var propertiesWithAttributes = conditional.PropertyConsequences
 			.Where(c => c.ConditionalAttributes.Count > 0 || c.IsConditionallyReadOnly || c.IsConditionallyWriteOnly)
 			.ToList();
@@ -127,18 +126,19 @@ internal static class ConditionalSchemaEmitter
 
 				if (type.StrictConditionals)
 				{
-					// Emit full property schema
 					var fullProp = type.Properties.FirstOrDefault(p => p.SchemaName == prop.PropertySchemaName);
 					if (fullProp != null)
 					{
 						PropertySchemaEmitter.EmitPropertySchema(sb, fullProp, indent + "\t\t", context);
 						
-						// Apply conditional constraints on top of base schema
 						foreach (var attr in prop.ConditionalAttributes)
 						{
-							sb.AppendLine();
-							sb.Append($"{indent}\t\t\t");
-							EmitAttributeConstraint(sb, attr);
+							if (SchemaCodeEmitter.ShouldEmitBuiltInAttribute(attr))
+							{
+								sb.AppendLine();
+								sb.Append($"{indent}\t\t\t");
+								SchemaCodeEmitter.EmitAttributeConstraint(sb, attr);
+							}
 						}
 						
 						if (prop.IsConditionallyReadOnly)
@@ -154,30 +154,32 @@ internal static class ConditionalSchemaEmitter
 					}
 					else
 					{
-						// Fallback if property not found
 						sb.Append("new JsonSchemaBuilder()");
 						foreach (var attr in prop.ConditionalAttributes)
 						{
-							sb.AppendLine();
-							sb.Append($"{indent}\t\t\t");
-							EmitAttributeConstraint(sb, attr);
+							if (SchemaCodeEmitter.ShouldEmitBuiltInAttribute(attr))
+							{
+								sb.AppendLine();
+								sb.Append($"{indent}\t\t\t");
+								SchemaCodeEmitter.EmitAttributeConstraint(sb, attr);
+							}
 						}
 					}
 				}
 				else
 				{
-					// Non-strict mode: just emit constraints
 					sb.Append("new JsonSchemaBuilder()");
 
-					// Emit conditional validation attributes
 					foreach (var attr in prop.ConditionalAttributes)
 					{
-						sb.AppendLine();
-						sb.Append($"{indent}\t\t\t");
-						EmitAttributeConstraint(sb, attr);
+						if (SchemaCodeEmitter.ShouldEmitBuiltInAttribute(attr))
+						{
+							sb.AppendLine();
+							sb.Append($"{indent}\t\t\t");
+							SchemaCodeEmitter.EmitAttributeConstraint(sb, attr);
+						}
 					}
 
-					// Emit readOnly/writeOnly
 					if (prop.IsConditionallyReadOnly)
 					{
 						sb.AppendLine();
@@ -200,7 +202,6 @@ internal static class ConditionalSchemaEmitter
 			sb.Append($"{indent}\t)");
 		}
 
-		// Emit required
 		var requiredProps = conditional.PropertyConsequences
 			.Where(c => c.IsConditionallyRequired)
 			.ToList();
@@ -222,66 +223,5 @@ internal static class ConditionalSchemaEmitter
 
 		sb.AppendLine();
 		sb.Append($"{indent})");
-	}
-
-	private static void EmitAttributeConstraint(StringBuilder sb, AttributeInfo attr)
-	{
-		switch (attr.AttributeName)
-		{
-			case "MinimumAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var minValue))
-					sb.Append($".Minimum({minValue})");
-				break;
-			case "MaximumAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var maxValue))
-					sb.Append($".Maximum({maxValue})");
-				break;
-			case "ExclusiveMinimumAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var exMinValue))
-					sb.Append($".ExclusiveMinimum({exMinValue})");
-				break;
-			case "ExclusiveMaximumAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var exMaxValue))
-					sb.Append($".ExclusiveMaximum({exMaxValue})");
-				break;
-			case "MinLengthAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var minLengthValue))
-					sb.Append($".MinLength({minLengthValue})");
-				break;
-			case "MaxLengthAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var maxLengthValue))
-					sb.Append($".MaxLength({maxLengthValue})");
-				break;
-			case "PatternAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var patternValue))
-					sb.Append($".Pattern(\"{CodeEmitterHelpers.EscapeString(patternValue?.ToString() ?? "")}\")");
-				break;
-			case "MinItemsAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var minItemsValue))
-					sb.Append($".MinItems({minItemsValue})");
-				break;
-			case "MaxItemsAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var maxItemsValue))
-					sb.Append($".MaxItems({maxItemsValue})");
-				break;
-			case "UniqueItemsAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var uniqueValue))
-					sb.Append($".UniqueItems({(uniqueValue is bool b ? b.ToString().ToLower() : "true")})");
-				else
-					sb.Append($".UniqueItems(true)");
-				break;
-			case "MultipleOfAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var multipleOfValue))
-					sb.Append($".MultipleOf({CodeEmitterHelpers.FormatValue(multipleOfValue)})");
-				break;
-			case "TitleAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var titleValue))
-					sb.Append($".Title(\"{CodeEmitterHelpers.EscapeString(titleValue?.ToString() ?? "")}\")");
-				break;
-			case "DescriptionAttribute":
-				if (attr.Parameters.TryGetValue("arg0", out var descriptionValue))
-					sb.Append($".Description(\"{CodeEmitterHelpers.EscapeString(descriptionValue?.ToString() ?? "")}\")");
-				break;
-		}
 	}
 }

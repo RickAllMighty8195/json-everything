@@ -2,34 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Json.Schema.Generation.Serialization;
+using Json.Schema.Generation.SourceGeneration.Emitters;
 using Microsoft.CodeAnalysis;
 
 namespace Json.Schema.Generation.SourceGeneration;
 
 internal static class TypeAnalyzer
 {
-	private static readonly HashSet<string> _supportedValidationAttributes =
-	[
-		"MinimumAttribute",
-		"MaximumAttribute",
-		"ExclusiveMinimumAttribute",
-		"ExclusiveMaximumAttribute",
-		"MinLengthAttribute",
-		"MaxLengthAttribute",
-		"PatternAttribute",
-		"MinItemsAttribute",
-		"MaxItemsAttribute",
-		"UniqueItemsAttribute",
-		"MultipleOfAttribute",
-		"TitleAttribute",
-		"DescriptionAttribute",
-		"RequiredAttribute",
-		"ObsoleteAttribute",
-		"ReadOnlyAttribute",
-		"WriteOnlyAttribute",
-		"JsonNumberHandlingAttribute"
-	];
-
 	public static TypeInfo? Analyze(Compilation compilation, INamedTypeSymbol typeSymbol, AttributeData attributeData, Action<Diagnostic> reportDiagnostic)
 	{
 		if (typeSymbol is { IsGenericType: true, IsUnboundGenericType: false })
@@ -259,27 +238,8 @@ internal static class TypeAnalyzer
 		{
 			if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field)
 			{
-				// JsonExclude always excludes
-				if (HasAttribute(field, "JsonExcludeAttribute")) continue;
-				
-				// Check JsonIgnore with Condition parameter
-				var jsonIgnoreAttr = field.GetAttributes()
-					.FirstOrDefault(a => a.AttributeClass?.Name == "JsonIgnoreAttribute");
-				
-				if (jsonIgnoreAttr != null)
-				{
-					// Check if Condition is Never - if so, don't exclude
-					var conditionArg = jsonIgnoreAttr.NamedArguments
-						.FirstOrDefault(arg => arg.Key == "Condition");
-					
-					// If no Condition specified, it defaults to Always => exclude
-					// If Condition is anything other than Never (0), exclude
-					if (conditionArg.Value.Value == null || (int)conditionArg.Value.Value != 0)
-						continue;
-				}
-
-				var enumName = field.Name;
-				typeInfo.EnumValues.Add(enumName);
+				if (CodeEmitterHelpers.ShouldIncludeEnumMember(field))
+					typeInfo.EnumValues.Add(field.Name);
 			}
 		}
 	}
@@ -363,9 +323,8 @@ internal static class TypeAnalyzer
 				var isReadOnly = existingConsequence?.IsConditionallyReadOnly ?? false;
 				var isWriteOnly = existingConsequence?.IsConditionallyWriteOnly ?? false;
 				var conditionalAttributes = existingConsequence?.ConditionalAttributes ?? new List<AttributeInfo>();
-
-				// Set boolean flags for special cases
-				switch (attr.AttributeName)
+			// Set boolean flags for special cases
+			switch (attr.AttributeName)
 				{
 					case "RequiredAttribute":
 						isRequired = true;
@@ -380,11 +339,9 @@ internal static class TypeAnalyzer
 						break;
 				}
 
-				// Add all validation attributes to the list (except RequiredAttribute which is handled separately)
-				if (attr.AttributeName != "RequiredAttribute" && _supportedValidationAttributes.Contains(attr.AttributeName))
-				{
-					conditionalAttributes.Add(attr);
-				}
+			// Add all validation attributes to the list (except RequiredAttribute which is handled separately)
+			if (attr.AttributeName != "RequiredAttribute" && SchemaCodeEmitter.ShouldEmitBuiltInAttribute(attr))
+				conditionalAttributes.Add(attr);
 
 				var newConsequence = new PropertyConditionalConsequence
 				{
@@ -395,10 +352,10 @@ internal static class TypeAnalyzer
 					ConditionalAttributes = conditionalAttributes
 				};
 
-				if (existingConsequence != null)
-					conditionalInfo.PropertyConsequences.Remove(existingConsequence);
-				
-				conditionalInfo.PropertyConsequences.Add(newConsequence);
+			if (existingConsequence != null)
+				conditionalInfo.PropertyConsequences.Remove(existingConsequence);
+			
+			conditionalInfo.PropertyConsequences.Add(newConsequence);
 			}
 		}
 
@@ -550,7 +507,7 @@ internal static class TypeAnalyzer
 					isCustomEmitter = true;
 			}
 			
-			if (!isCustomEmitter && !_supportedValidationAttributes.Contains(attrName)) continue;
+			if (!isCustomEmitter && !SchemaCodeEmitter.IsBuiltInAttributeNamespace(attrFullName)) continue;
 
 			List<ApplyParameterInfo>? applyParams = null;
 			if (isCustomEmitter)
@@ -615,15 +572,10 @@ internal static class TypeAnalyzer
 
 	private static INamedTypeSymbol? FindAttributeHandler(Compilation compilation, INamedTypeSymbol attributeClass)
 	{
-		// Look for a type that implements IAttributeHandler<TAttribute> where TAttribute is our attribute
-		// This is more reliable than naming conventions
-		
-		// Search in the compilation's assembly (the code being generated)
 		var handlerType = FindHandlerByInterface(compilation.Assembly.GlobalNamespace, attributeClass);
 		if (handlerType != null && HasStaticApplyMethod(handlerType))
 			return handlerType;
 		
-		// Search in all referenced assemblies
 		foreach (var reference in compilation.References)
 		{
 			var assemblySymbol = compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
@@ -639,25 +591,21 @@ internal static class TypeAnalyzer
 	
 	private static INamedTypeSymbol? FindHandlerByInterface(INamespaceSymbol namespaceSymbol, INamedTypeSymbol attributeClass)
 	{
-		// Check types directly in this namespace
 		foreach (var type in namespaceSymbol.GetTypeMembers())
 		{
 			if (type.TypeKind != Microsoft.CodeAnalysis.TypeKind.Class) continue;
 			
-			// Check if this type implements IAttributeHandler<TAttribute>
 			foreach (var iface in type.AllInterfaces)
 			{
 				if (iface.Name != "IAttributeHandler") continue;
 				if (!iface.IsGenericType || iface.TypeArguments.Length != 1) continue;
 				
-				// Check if the type argument matches our attribute
 				var typeArg = iface.TypeArguments[0];
 				if (SymbolEqualityComparer.Default.Equals(typeArg, attributeClass))
 					return type;
 			}
 		}
 		
-		// Recursively check nested namespaces
 		foreach (var nestedNamespace in namespaceSymbol.GetNamespaceMembers())
 		{
 			var foundType = FindHandlerByInterface(nestedNamespace, attributeClass);

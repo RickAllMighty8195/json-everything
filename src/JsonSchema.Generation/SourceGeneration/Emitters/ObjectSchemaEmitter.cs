@@ -12,7 +12,6 @@ internal class ObjectSchemaEmitter : ISchemaEmitter
 		sb.AppendLine();
 		sb.Append($"{indent}.Type(SchemaValueType.Object)");
 
-		// When StrictConditionals is true, filter out properties that have conditional consequences
 		var strictConditionalPropertyNames = new System.Collections.Generic.HashSet<string>();
 		if (type.StrictConditionals)
 		{
