@@ -261,12 +261,13 @@ internal static class SchemaCodeEmitter
 				EmitCustomAttributeCall(sb, attr);
 				continue;
 			}
-			
-			// Only handle built-in Json.Schema.Generation attributes here
+
+			// Only handle built-in Json.Schema.Generation and other explicitly supported attributes here
 			// External attributes from other namespaces should be custom emitters
-			if (attr.AttributeFullName?.StartsWith("global::Json.Schema.Generation.") != true)
-				continue;
-			
+			var isJsonSchemaGenerationAttr = attr.AttributeFullName?.StartsWith("global::Json.Schema.Generation.") == true;
+			var isSpecialSystemAttr = attr.AttributeFullName == "global::System.ObsoleteAttribute";
+			if (!isJsonSchemaGenerationAttr && !isSpecialSystemAttr) continue;
+
 			switch (attr.AttributeName)
 			{
 				case "MinimumAttribute" when attr.Parameters.TryGetValue("arg0", out var minValue):
@@ -336,7 +337,7 @@ internal static class SchemaCodeEmitter
 			}
 		}
 	}
-	
+
 	private static void CollectCustomAttributes(List<AttributeInfo> attributes, Dictionary<string, AttributeInfo> customAttributes)
 	{
 		foreach (var attr in attributes)
