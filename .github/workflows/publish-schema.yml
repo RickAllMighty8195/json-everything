@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        lang: [ base, de, es, it, ko, nb-NO, pl-PL, ru, sv-SE, tr-TR ]
+        lang: [ base, de, es, it, ko, nb-NO, pl-PL, pt, ru, sv-SE, tr-TR ]
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET Core
