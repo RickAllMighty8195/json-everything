@@ -53,7 +53,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		var analyzedTypes = new List<TypeInfo>();
 		foreach (var type in validTypes)
 		{
-			var typeInfo = TypeAnalyzer.Analyze(type.TypeSymbol, type.AttributeData, context.ReportDiagnostic);
+			var typeInfo = TypeAnalyzer.Analyze(compilation, type.TypeSymbol, type.AttributeData, context.ReportDiagnostic);
 			if (typeInfo != null) 
 				analyzedTypes.Add(typeInfo);
 		}

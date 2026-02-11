@@ -16,4 +16,14 @@ public class UrlAttributeHandler : FormatAttributeHandler<UrlAttribute>
 	public UrlAttributeHandler() : base(Formats.Uri)
 	{
 	}
+
+	/// <summary>
+	/// Applies constraints for source generation.
+	/// </summary>
+	/// <param name="builder">The schema builder.</param>
+	/// <returns>The builder for chaining.</returns>
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder)
+	{
+		return builder.Format(Formats.Uri);
+	}
 }

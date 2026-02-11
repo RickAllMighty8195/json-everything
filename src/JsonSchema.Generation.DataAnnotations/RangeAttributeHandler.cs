@@ -32,4 +32,18 @@ public class RangeAttributeHandler : IAttributeHandler<RangeAttribute>
 		context.Intents.Add(new MinimumIntent(Convert.ToDecimal(range.Minimum)));
 		context.Intents.Add(new MaximumIntent(Convert.ToDecimal(range.Maximum)));
 	}
+
+	/// <summary>
+	/// Applies constraints for source generation.
+	/// </summary>
+	/// <param name="builder">The schema builder.</param>
+	/// <param name="minimum">The minimum value.</param>
+	/// <param name="maximum">The maximum value.</param>
+	/// <returns>The builder for chaining.</returns>
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder, object minimum, object maximum)
+	{
+		return builder
+			.Minimum(Convert.ToDecimal(minimum))
+			.Maximum(Convert.ToDecimal(maximum));
+	}
 }

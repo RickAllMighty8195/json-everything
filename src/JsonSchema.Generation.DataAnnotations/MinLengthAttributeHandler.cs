@@ -29,4 +29,17 @@ public class MinLengthAttributeHandler : IAttributeHandler<System.ComponentModel
 		if (minLength.Length > 0)
 			context.Intents.Add(new MinLengthIntent((uint)minLength.Length));
 	}
+
+	/// <summary>
+	/// Applies constraints for source generation.
+	/// </summary>
+	/// <param name="builder">The schema builder.</param>
+	/// <param name="length">The minimum length.</param>
+	/// <returns>The builder for chaining.</returns>
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder, int length)
+	{
+		if (length > 0)
+			return builder.MinLength((uint)length);
+		return builder;
+	}
 }

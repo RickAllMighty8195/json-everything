@@ -30,7 +30,7 @@ internal static class TypeAnalyzer
 		"JsonNumberHandlingAttribute"
 	];
 
-	public static TypeInfo? Analyze(INamedTypeSymbol typeSymbol, AttributeData attributeData, Action<Diagnostic> reportDiagnostic)
+	public static TypeInfo? Analyze(Compilation compilation, INamedTypeSymbol typeSymbol, AttributeData attributeData, Action<Diagnostic> reportDiagnostic)
 	{
 		if (typeSymbol is { IsGenericType: true, IsUnboundGenericType: false })
 		{
@@ -87,7 +87,7 @@ internal static class TypeAnalyzer
 		switch (typeKind)
 		{
 			case TypeKind.Object:
-				AnalyzeObjectType(typeInfo, reportDiagnostic);
+				AnalyzeObjectType(compilation, typeInfo, reportDiagnostic);
 				break;
 			case TypeKind.Enum:
 				AnalyzeEnumType(typeInfo);
@@ -96,7 +96,7 @@ internal static class TypeAnalyzer
 				break;
 		}
 
-		ExtractAttributes(typeSymbol.GetAttributes(), typeInfo.TypeAttributes, reportDiagnostic);
+		ExtractAttributes(compilation, typeSymbol.GetAttributes(), typeInfo.TypeAttributes, reportDiagnostic);
 
 		if (typeKind == TypeKind.Object) 
 			AnalyzeConditionals(typeInfo, reportDiagnostic);
@@ -151,7 +151,7 @@ internal static class TypeAnalyzer
 			"System.Collections.Generic.IReadOnlyCollection<T>";
 	}
 
-	private static void AnalyzeObjectType(TypeInfo typeInfo, Action<Diagnostic> reportDiagnostic)
+	private static void AnalyzeObjectType(Compilation compilation, TypeInfo typeInfo, Action<Diagnostic> reportDiagnostic)
 	{
 		var typeSymbol = typeInfo.TypeSymbol;
 
@@ -242,7 +242,7 @@ internal static class TypeAnalyzer
 				XmlDocSummary = GetXmlDocSummary(member)
 			};
 
-			ExtractAttributes(member.GetAttributes(), propertyInfo.Attributes, reportDiagnostic);
+			ExtractAttributes(compilation, member.GetAttributes(), propertyInfo.Attributes, reportDiagnostic);
 
 			typeInfo.Properties.Add(propertyInfo);
 		}
@@ -528,7 +528,7 @@ internal static class TypeAnalyzer
 		};
 	}
 
-	private static void ExtractAttributes(IEnumerable<AttributeData> attributes, List<AttributeInfo> targetList, Action<Diagnostic> reportDiagnostic)
+	private static void ExtractAttributes(Compilation compilation, IEnumerable<AttributeData> attributes, List<AttributeInfo> targetList, Action<Diagnostic> reportDiagnostic)
 	{
 		foreach (var attr in attributes)
 		{
@@ -536,18 +536,34 @@ internal static class TypeAnalyzer
 			if (attrClass == null) continue;
 			
 			var attrName = attrClass.Name;
+			var attrFullName = attrClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+			
+			// Check if attribute itself implements IAttributeHandler and has Apply method (built-in pattern)
 			var isCustomEmitter = ImplementsInterface(attrClass, "IAttributeHandler") && HasStaticApplyMethod(attrClass);
+			
+			// Also check for external handler by convention (XxxAttributeHandler for XxxAttribute)
+			INamedTypeSymbol? handlerClass = null;
+			if (!isCustomEmitter)
+			{
+				handlerClass = FindAttributeHandler(compilation, attrClass);
+				if (handlerClass != null)
+					isCustomEmitter = true;
+			}
+			
 			if (!isCustomEmitter && !_supportedValidationAttributes.Contains(attrName)) continue;
 
 			List<ApplyParameterInfo>? applyParams = null;
-			if (isCustomEmitter) 
-				applyParams = ExtractApplyMethodParameters(attrClass);
+			if (isCustomEmitter)
+			{
+				var emitterClass = handlerClass ?? attrClass;
+				applyParams = ExtractApplyMethodParameters(emitterClass);
+			}
 
 			var attrInfo = new AttributeInfo
 			{
 				AttributeName = attrName,
 				IsCustomEmitter = isCustomEmitter,
-				AttributeFullName = isCustomEmitter ? attrClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) : null,
+				AttributeFullName = isCustomEmitter ? (handlerClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? attrFullName) : attrFullName,
 				ApplyMethodParameters = applyParams
 			};
 
@@ -596,6 +612,61 @@ internal static class TypeAnalyzer
 			.Any(m => m.IsStatic && m.Name == "Apply" && 
 			          m.Parameters.Length > 0 && 
 			          m.Parameters[0].Type.Name == "JsonSchemaBuilder");
+
+	private static INamedTypeSymbol? FindAttributeHandler(Compilation compilation, INamedTypeSymbol attributeClass)
+	{
+		// Look for a type that implements IAttributeHandler<TAttribute> where TAttribute is our attribute
+		// This is more reliable than naming conventions
+		
+		// Search in the compilation's assembly (the code being generated)
+		var handlerType = FindHandlerByInterface(compilation.Assembly.GlobalNamespace, attributeClass);
+		if (handlerType != null && HasStaticApplyMethod(handlerType))
+			return handlerType;
+		
+		// Search in all referenced assemblies
+		foreach (var reference in compilation.References)
+		{
+			var assemblySymbol = compilation.GetAssemblyOrModuleSymbol(reference) as IAssemblySymbol;
+			if (assemblySymbol == null) continue;
+			
+			handlerType = FindHandlerByInterface(assemblySymbol.GlobalNamespace, attributeClass);
+			if (handlerType != null && HasStaticApplyMethod(handlerType))
+				return handlerType;
+		}
+		
+		return null;
+	}
+	
+	private static INamedTypeSymbol? FindHandlerByInterface(INamespaceSymbol namespaceSymbol, INamedTypeSymbol attributeClass)
+	{
+		// Check types directly in this namespace
+		foreach (var type in namespaceSymbol.GetTypeMembers())
+		{
+			if (type.TypeKind != Microsoft.CodeAnalysis.TypeKind.Class) continue;
+			
+			// Check if this type implements IAttributeHandler<TAttribute>
+			foreach (var iface in type.AllInterfaces)
+			{
+				if (iface.Name != "IAttributeHandler") continue;
+				if (!iface.IsGenericType || iface.TypeArguments.Length != 1) continue;
+				
+				// Check if the type argument matches our attribute
+				var typeArg = iface.TypeArguments[0];
+				if (SymbolEqualityComparer.Default.Equals(typeArg, attributeClass))
+					return type;
+			}
+		}
+		
+		// Recursively check nested namespaces
+		foreach (var nestedNamespace in namespaceSymbol.GetNamespaceMembers())
+		{
+			var foundType = FindHandlerByInterface(nestedNamespace, attributeClass);
+			if (foundType != null)
+				return foundType;
+		}
+		
+		return null;
+	}
 
 	private static string GetPropertySchemaName(ISymbol member, NamingConvention naming)
 	{

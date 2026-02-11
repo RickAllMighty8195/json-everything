@@ -25,4 +25,15 @@ public class MaxLengthAttributeHandler : IAttributeHandler<System.ComponentModel
 
 		context.Intents.Add(new MaxLengthIntent((uint)maxLength.Length));
 	}
+
+	/// <summary>
+	/// Applies constraints for source generation.
+	/// </summary>
+	/// <param name="builder">The schema builder.</param>
+	/// <param name="length">The maximum length.</param>
+	/// <returns>The builder for chaining.</returns>
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder, int length)
+	{
+		return builder.MaxLength((uint)length);
+	}
 }

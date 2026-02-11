@@ -180,7 +180,7 @@ internal static class SchemaCodeEmitter
 		sb.AppendLine("/// <summary>");
 		sb.AppendLine("/// Contains generated JSON schemas for types decorated with [GenerateJsonSchema].");
 		sb.AppendLine("/// </summary>");
-		sb.AppendLine("public static class GeneratedJsonSchemas");
+		sb.AppendLine("public static partial class GeneratedJsonSchemas");
 		sb.AppendLine("{");
 
 		foreach (var type in types)
@@ -261,6 +261,11 @@ internal static class SchemaCodeEmitter
 				EmitCustomAttributeCall(sb, attr);
 				continue;
 			}
+			
+			// Only handle built-in Json.Schema.Generation attributes here
+			// External attributes from other namespaces should be custom emitters
+			if (attr.AttributeFullName?.StartsWith("global::Json.Schema.Generation.") != true)
+				continue;
 			
 			switch (attr.AttributeName)
 			{
@@ -391,15 +396,71 @@ internal static class SchemaCodeEmitter
 		sb.Append($".{attrName}(");
 		
 		bool first = true;
-		for (int i = 0; i < attr.Parameters.Count; i++)
+		
+		// If we have ApplyMethodParameters, match them up with the attribute's parameters
+		if (attr.ApplyMethodParameters != null && attr.ApplyMethodParameters.Count > 0)
 		{
-			if (attr.Parameters.TryGetValue($"arg{i}", out var value))
+			foreach (var param in attr.ApplyMethodParameters)
 			{
 				if (!first)
 					sb.Append(", ");
-
-				sb.Append(CodeEmitterHelpers.FormatValue(value));
+				
+				// Try to find matching value in Parameters
+				// First check constructor args (arg0, arg1, etc.)
+				object? value = null;
+				bool found = false;
+				
+				for (int i = 0; i < attr.Parameters.Count; i++)
+				{
+					if (attr.Parameters.TryGetValue($"arg{i}", out value))
+					{
+						// We'll match by position - first Apply param gets arg0, etc.
+						// This is a simplification but works for most cases
+						if (i == attr.ApplyMethodParameters.IndexOf(param))
+						{
+							found = true;
+							break;
+						}
+					}
+				}
+				
+				// If not found in constructor args, check named parameters (case-insensitive match)
+				if (!found)
+				{
+					foreach (var kvp in attr.Parameters)
+					{
+						if (!kvp.Key.StartsWith("arg") && 
+						    string.Equals(kvp.Key, param.Name, StringComparison.OrdinalIgnoreCase))
+						{
+							value = kvp.Value;
+							found = true;
+							break;
+						}
+					}
+				}
+				
+				// Emit the value (or default if not found)
+				if (found)
+					sb.Append(CodeEmitterHelpers.FormatValue(value));
+				else
+					sb.Append("0"); // Default value for missing parameters
+				
 				first = false;
+			}
+		}
+		else
+		{
+			// Fallback: emit all constructor arguments in order
+			for (int i = 0; i < attr.Parameters.Count; i++)
+			{
+				if (attr.Parameters.TryGetValue($"arg{i}", out var value))
+				{
+					if (!first)
+						sb.Append(", ");
+
+					sb.Append(CodeEmitterHelpers.FormatValue(value));
+					first = false;
+				}
 			}
 		}
 		
