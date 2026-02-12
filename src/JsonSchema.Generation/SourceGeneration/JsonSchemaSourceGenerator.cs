@@ -23,6 +23,14 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 	/// </summary>
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
+		// Check if source generation is disabled via MSBuild property
+		var isDisabled = context.AnalyzerConfigOptionsProvider
+			.Select(static (provider, _) =>
+			{
+				provider.GlobalOptions.TryGetValue("build_property.DisableJsonSchemaSourceGeneration", out var value);
+				return value?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+			});
+
 		var typesWithAttribute = context.SyntaxProvider
 			.ForAttributeWithMetadataName(
 				fullyQualifiedMetadataName: _generateJsonSchemaAttributeName,
@@ -30,9 +38,17 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 				transform: static (ctx, _) => GetTypeToGenerate(ctx))
 			.Where(static type => type is not null);
 
-		var compilationAndTypes = context.CompilationProvider.Combine(typesWithAttribute.Collect());
+		var compilationAndTypesAndDisabled = context.CompilationProvider
+			.Combine(typesWithAttribute.Collect())
+			.Combine(isDisabled);
 
-		context.RegisterSourceOutput(compilationAndTypes, static (spc, source) => Execute(source.Left, source.Right!, spc));
+		context.RegisterSourceOutput(compilationAndTypesAndDisabled, static (spc, source) =>
+		{
+			var isDisabled = source.Right;
+			if (isDisabled) return;
+
+			Execute(source.Left.Left, source.Left.Right!, spc);
+		});
 	}
 
 	private static TypeToGenerate? GetTypeToGenerate(GeneratorAttributeSyntaxContext context)
