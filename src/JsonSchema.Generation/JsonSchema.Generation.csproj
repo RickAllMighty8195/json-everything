@@ -15,7 +15,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>7.1.0-beta</Version>
+    <Version>7.1.0-beta2</Version>
     <FileVersion>7.1.0</FileVersion>
     <AssemblyVersion>7.0.0.0</AssemblyVersion>
     <Authors>Greg Dennis</Authors>
@@ -47,8 +47,10 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <!-- Pack the netstandard2.0 version as the analyzer/source generator -->
     <None Include="$(OutputPath)netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)netstandard2.0\JsonSchema.Net.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)netstandard2.0\JsonPointer.Net.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="$(OutputPath)netstandard2.0\Json.More.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
