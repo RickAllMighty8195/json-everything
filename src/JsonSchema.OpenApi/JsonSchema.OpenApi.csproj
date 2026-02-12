@@ -46,7 +46,6 @@
   <ItemGroup>
     <None Include="..\..\tools\ApiDocsGenerator\release-notes\rn-json-schema-openapi.md" Link="release-notes.md" />
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
     <None Include="..\..\Resources\openapi.png" Pack="true" PackagePath="\" />
     <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="OSMFEULA.txt"/>
   </ItemGroup>

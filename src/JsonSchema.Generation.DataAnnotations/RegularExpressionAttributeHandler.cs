@@ -26,4 +26,15 @@ public class RegularExpressionAttributeHandler : IAttributeHandler<RegularExpres
 
 		context.Intents.Add(new PatternIntent(regex.Pattern));
 	}
+
+	/// <summary>
+	/// Applies constraints for source generation.
+	/// </summary>
+	/// <param name="builder">The schema builder.</param>
+	/// <param name="pattern">The regular expression pattern.</param>
+	/// <returns>The builder for chaining.</returns>
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder, string pattern)
+	{
+		return builder.Pattern(pattern);
+	}
 }

@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Json.Schema.Generation.Tests.Serialization;
+using Json.Schema.Generation.Tests.SourceGeneration;
 
 namespace Json.Schema.Generation.Tests;
 
@@ -23,6 +24,24 @@ internal static class TestEnvironment
 [JsonSerializable(typeof(DeserializationTests.Foo))]
 [JsonSerializable(typeof(DeserializationTests.FooWithSchema))]
 [JsonSerializable(typeof(ArrayGenerationTests.EnumTest))]
+[JsonSerializable(typeof(TestModels.SimplePerson))]
+[JsonSerializable(typeof(TestModels.CamelCasePerson))]
+[JsonSerializable(typeof(TestModels.PersonWithNullable))]
+[JsonSerializable(typeof(TestModels.PersonWithRequired))]
+[JsonSerializable(typeof(TestModels.Status))]
+[JsonSerializable(typeof(TestModels.PersonWithEnum))]
+[JsonSerializable(typeof(TestModels.PersonWithDescription))]
+[JsonSerializable(typeof(TestModels.ProductWithCustomAttributes))]
+[JsonSerializable(typeof(TestModels.Address))]
+[JsonSerializable(typeof(TestModels.PersonWithAddresses))]
+[JsonSerializable(typeof(TestModels.SingleCondition))]
+[JsonSerializable(typeof(TestModels.SingleConditionCamelCase))]
+[JsonSerializable(typeof(TestModels.MultipleConditionGroups))]
+[JsonSerializable(typeof(TestModels.MultipleTriggersInSameGroup))]
+[JsonSerializable(typeof(TestModels.ConditionalWithMinimum))]
+[JsonSerializable(typeof(TestModels.ConditionalWithMaximum))]
+[JsonSerializable(typeof(TestModels.EnumSwitch))]
+[JsonSerializable(typeof(TestModels.ConditionalValidation))]
 #if NET9_0_OR_GREATER
 [JsonSerializable(typeof(ClientTests.Issue890_Status))]
 #endif

@@ -31,4 +31,18 @@ public class StringLengthAttributeHandler : IAttributeHandler<StringLengthAttrib
 			context.Intents.Add(new MinLengthIntent((uint)length.MinimumLength));
 		context.Intents.Add(new MaxLengthIntent((uint)length.MaximumLength));
 	}
+
+	/// <summary>
+	/// Applies constraints for source generation.
+	/// </summary>
+	/// <param name="builder">The schema builder.</param>
+	/// <param name="maximumLength">The maximum length.</param>
+	/// <param name="minimumLength">The minimum length.</param>
+	/// <returns>The builder for chaining.</returns>
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder, int maximumLength, int minimumLength)
+	{
+		if (minimumLength > 0)
+			builder = builder.MinLength((uint)minimumLength);
+		return builder.MaxLength((uint)maximumLength);
+	}
 }

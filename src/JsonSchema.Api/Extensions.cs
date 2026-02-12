@@ -29,6 +29,14 @@ public static class Extensions
 	/// <param name="configure">An optional delegate to configure the generative JSON schema validation converter. If null, default settings are
 	/// used.</param>
 	/// <returns>The same <see cref="IMvcBuilder"/> instance so that additional configuration calls can be chained.</returns>
+	/// <remarks>
+	/// By default, source generation is used to create schemas at compile time from types decorated with <c>[GenerateJsonSchema]</c>.
+	/// When using source generation, settings like property naming, property order, and strict conditionals must be configured on the
+	/// <c>[GenerateJsonSchema]</c> attribute itself. The <see cref="GenerativeValidatingJsonConverter.GeneratorConfiguration"/> settings
+	/// only affect runtime schema generation, which occurs when source generation is disabled or when using <c>[JsonSchema]</c> attributes.
+	/// To disable source generation, add <c>&lt;DisableJsonSchemaSourceGeneration&gt;true&lt;/DisableJsonSchemaSourceGeneration&gt;</c>
+	/// to your project file.
+	/// </remarks>
 	[RequiresUnreferencedCode("Calls System.Text.Json.JsonSerializer.Serialize(Utf8JsonWriter, Object, Type, JsonSerializerOptions)")]
 	[RequiresDynamicCode("Calls System.Text.Json.JsonSerializer.Serialize(Utf8JsonWriter, Object, Type, JsonSerializerOptions)")]
 	public static IMvcBuilder AddJsonSchemaValidation(this IMvcBuilder builder, Action<GenerativeValidatingJsonConverter>? configure = null)

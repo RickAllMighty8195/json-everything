@@ -26,7 +26,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\JsonSchema.Generation\JsonSchema.Generation.csproj" />
+		<ProjectReference Include="..\JsonSchema.Generation\JsonSchema.Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
 		<ProjectReference Include="..\TestHelpers\TestHelpers.csproj" />
 	</ItemGroup>
 

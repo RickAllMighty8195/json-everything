@@ -15,8 +15,8 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>7.0.1</Version>
-    <FileVersion>7.0.1</FileVersion>
+    <Version>7.1.0-beta</Version>
+    <FileVersion>7.1.0</FileVersion>
     <AssemblyVersion>7.0.0.0</AssemblyVersion>
     <Authors>Greg Dennis</Authors>
     <Description>Extends JsonSchema.Net to provide schema generation functionality</Description>
@@ -38,12 +38,22 @@
     <PackageReference Include="Humanizer.Core" Version="3.0.1" />
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" PrivateAssets="all" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- Pack the netstandard2.0 version as the analyzer/source generator -->
+    <None Include="$(OutputPath)netstandard2.0\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\tools\ApiDocsGenerator\release-notes\rn-json-schema-generation.md" Link="release-notes.md" />
     <None Include="README.md" Pack="true" PackagePath="\" />
-    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
     <None Include="..\..\Resources\json-logo-256.png" Pack="true" PackagePath="\" />
     <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="OSMFEULA.txt"/>
   </ItemGroup>

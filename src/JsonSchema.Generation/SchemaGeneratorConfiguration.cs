@@ -81,7 +81,7 @@ public class SchemaGeneratorConfiguration
 	/// </summary>
 	public SchemaGeneratorConfiguration()
 	{
-		XmlReader = new DocXmlReader(assembly => _xmlCommentsFiles.TryGetValue(assembly.FullName!, out var path) ? path : null);
+		XmlReader = new DocXmlReader(assembly => _xmlCommentsFiles.GetValueOrDefault(assembly.FullName!));
 	}
 
 	/// <summary>

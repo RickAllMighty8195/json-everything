@@ -20,6 +20,16 @@ public class Base64StringAttributeAttributeHandler : FormatAttributeHandler<Base
 	public Base64StringAttributeAttributeHandler() : base("base64")
 	{
 	}
+
+	/// <summary>
+	/// Applies constraints for source generation.
+	/// </summary>
+	/// <param name="builder">The schema builder.</param>
+	/// <returns>The builder for chaining.</returns>
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder)
+	{
+		return builder.Format(new Format("base64"));
+	}
 }
 
 #endif
