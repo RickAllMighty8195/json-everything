@@ -18,10 +18,6 @@ public enum NamingConvention
 	/// </summary>
 	PascalCase,
 	/// <summary>
-	/// Property names are converted to snake_case (e.g. `snake_case`).
-	/// </summary>
-	SnakeCase,
-	/// <summary>
 	/// Property names are converted to lower_snake_case (e.g. `lower_snake_case`).
 	/// </summary>
 	LowerSnakeCase,

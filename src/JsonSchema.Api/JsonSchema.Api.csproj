@@ -41,13 +41,12 @@
   <ItemGroup>
 		<None Include="..\..\tools\ApiDocsGenerator\release-notes\rn-json-schema-api.md" Link="release-notes.md" />
 		<None Include="README.md" Pack="true" PackagePath="\" />
-		<None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
 		<None Include="..\..\Resources\json-logo-256.png" Pack="true" PackagePath="\" />
 		<None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="OSMFEULA.txt" />
 	</ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JsonSchema.Generation\JsonSchema.Generation.csproj" />
+    <ProjectReference Include="..\JsonSchema.Generation\JsonSchema.Generation.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
   </ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

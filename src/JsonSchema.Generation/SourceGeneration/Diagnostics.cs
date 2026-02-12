@@ -13,4 +13,12 @@ internal static class Diagnostics
 		category: _category,
 		defaultSeverity: DiagnosticSeverity.Error,
 		isEnabledByDefault: true);
+
+	public static readonly DiagnosticDescriptor GeneratedJsonSchemasClassMustBePartial = new(
+		id: "JSGEN002",
+		title: "GeneratedJsonSchemas class must be partial",
+		messageFormat: "The class 'GeneratedJsonSchemas' in {0} must be declared as partial to allow source generation",
+		category: _category,
+		defaultSeverity: DiagnosticSeverity.Error,
+		isEnabledByDefault: true);
 }

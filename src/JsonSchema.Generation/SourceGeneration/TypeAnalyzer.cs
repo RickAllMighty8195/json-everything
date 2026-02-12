@@ -629,7 +629,6 @@ internal static class TypeAnalyzer
 		{
 			NamingConvention.CamelCase => ToCamelCase(name),
 			NamingConvention.PascalCase => ToPascalCase(name),
-			NamingConvention.SnakeCase => ToSnakeCase(name),
 			NamingConvention.LowerSnakeCase => ToSnakeCase(name).ToLowerInvariant(),
 			NamingConvention.UpperSnakeCase => ToSnakeCase(name).ToUpperInvariant(),
 			NamingConvention.KebabCase => ToKebabCase(name),

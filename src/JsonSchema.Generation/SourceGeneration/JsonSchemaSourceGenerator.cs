@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
@@ -67,7 +69,10 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			var namespaceName = group.Key;
 			var typesInNamespace = group.ToList();
 
-			var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(typesInNamespace, namespaceName);
+			// Detect user-defined GeneratedJsonSchemas class
+			var classDeclaration = DetectGeneratedJsonSchemasClass(compilation, namespaceName, context.ReportDiagnostic);
+
+			var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(typesInNamespace, namespaceName, classDeclaration);
 
 			var safeName = string.IsNullOrEmpty(namespaceName) 
 				? "GeneratedJsonSchemas" 
@@ -94,6 +99,75 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 		namespaces.Reverse();
 		return string.Join(".", namespaces);
+	}
+
+	private static ClassDeclarationInfo DetectGeneratedJsonSchemasClass(
+		Compilation compilation, 
+		string namespaceName,
+		Action<Diagnostic> reportDiagnostic)
+	{
+		// Search for GeneratedJsonSchemas class in this namespace
+		var namespaceSymbol = string.IsNullOrEmpty(namespaceName) 
+			? compilation.GlobalNamespace 
+			: GetNamespaceSymbol(compilation.GlobalNamespace, namespaceName);
+
+		if (namespaceSymbol == null)
+			return ClassDeclarationInfo.Default;
+
+		var classSymbol = namespaceSymbol.GetTypeMembers("GeneratedJsonSchemas").FirstOrDefault();
+		
+		if (classSymbol == null)
+			return ClassDeclarationInfo.Default;
+
+		// Check if the class is partial
+		var isPartial = classSymbol.DeclaringSyntaxReferences
+			.Select(r => r.GetSyntax())
+			.OfType<ClassDeclarationSyntax>()
+			.Any(c => c.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword)));
+
+		if (!isPartial)
+		{
+			var namespacePart = string.IsNullOrEmpty(namespaceName) 
+				? "the global namespace" 
+				: $"namespace '{namespaceName}'";
+			var diagnostic = Diagnostic.Create(
+				Diagnostics.GeneratedJsonSchemasClassMustBePartial,
+				classSymbol.Locations.FirstOrDefault(),
+				namespacePart);
+			reportDiagnostic(diagnostic);
+			
+			// Still return info but it will cause compilation error
+			return ClassDeclarationInfo.Default;
+		}
+
+		// Extract modifiers
+		var isPublic = classSymbol.DeclaredAccessibility == Accessibility.Public;
+		var isInternal = classSymbol.DeclaredAccessibility == Accessibility.Internal;
+		var isStatic = classSymbol.IsStatic;
+
+		return new ClassDeclarationInfo
+		{
+			IsPublic = isPublic,
+			IsInternal = isInternal,
+			IsStatic = isStatic,
+			IsPartial = true
+		};
+	}
+
+	private static INamespaceSymbol? GetNamespaceSymbol(INamespaceSymbol rootNamespace, string qualifiedName)
+	{
+		var parts = qualifiedName.Split('.');
+		var current = rootNamespace;
+
+		foreach (var part in parts)
+		{
+			var next = current.GetNamespaceMembers().FirstOrDefault(ns => ns.Name == part);
+			if (next == null)
+				return null;
+			current = next;
+		}
+
+		return current;
 	}
 
 	private sealed class TypeToGenerate

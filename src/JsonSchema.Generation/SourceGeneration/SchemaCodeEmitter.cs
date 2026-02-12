@@ -122,7 +122,7 @@ internal static class SchemaCodeEmitter
 		return TypeKind.Object;
 	}
 
-	public static string EmitGeneratedClass(List<TypeInfo> types, string namespaceName)
+	public static string EmitGeneratedClass(List<TypeInfo> types, string namespaceName, ClassDeclarationInfo classDeclaration)
 	{
 		var sb = new StringBuilder();
 
@@ -160,7 +160,7 @@ internal static class SchemaCodeEmitter
 		sb.AppendLine("/// <summary>");
 		sb.AppendLine("/// Contains generated JSON schemas for types decorated with [GenerateJsonSchema].");
 		sb.AppendLine("/// </summary>");
-		sb.AppendLine("public static partial class GeneratedJsonSchemas");
+		sb.AppendLine(classDeclaration.GetDeclarationString());
 		sb.AppendLine("{");
 
 		foreach (var type in types)
