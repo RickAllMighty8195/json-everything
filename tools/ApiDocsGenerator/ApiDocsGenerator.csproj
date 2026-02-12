@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="JsonSchema.Net.CodeGeneration" Version="0.2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.11.0" />
   </ItemGroup>
 
 
@@ -42,6 +43,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Properties\launchSettings.json">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
     <None Update="release-notes\rn-json-schema-codegeneration.md">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
