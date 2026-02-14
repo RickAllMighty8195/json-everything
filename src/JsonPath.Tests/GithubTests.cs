@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Linq;
+using System.Text.Json.Nodes;
 using NUnit.Framework;
 using TestHelpers;
 
@@ -60,4 +61,51 @@ public class GithubTests
 
 		Assert.That(JsonPath.TryParse(pathText, out _), Is.False);
 	}
+
+	[Test]
+	public void Issue980_PathOnRightOfExpressionOperator()
+	{
+		var jsonDocument = new JsonObject
+		{
+			["data"] = new JsonArray
+			{
+				new JsonObject
+				{
+					["elements"] = new JsonArray
+					{
+						new JsonObject
+						{
+							["name"] = "ID",
+							["value"] = "TestValue"
+						}
+					}
+				}
+			},
+			["name"] = new JsonObject
+			{
+				["id"] = "ID"
+			}
+		};
+
+		var expectedResult = new JsonArray
+		{
+			new JsonObject
+			{
+				["elements"] = new JsonArray
+				{
+					new JsonObject
+					{
+						["name"] = "ID",
+						["value"] = "TestValue"
+					}
+				}
+			}
+		};
+
+		var path = JsonPath.Parse("$.data[?@.elements[?@.name == $.name.id]]");
+		var result = path.Evaluate(jsonDocument);
+		var matches = new JsonArray([.. from match in result.Matches select match.Value?.DeepClone()]);
+		Assert.That(expectedResult.ToJsonString(), Is.EqualTo(matches.ToJsonString()));
+	}
+
 }
