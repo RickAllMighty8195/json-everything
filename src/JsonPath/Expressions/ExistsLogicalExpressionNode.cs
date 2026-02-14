@@ -25,7 +25,7 @@ internal class ExistsLogicalExpressionNode : LeafLogicalExpressionNode
 			? globalParameter
 			: localParameter;
 
-		var result = Path.Evaluate(parameter);
+		var result = Path.Evaluate(globalParameter, parameter);
 
 		return result.Matches.Count != 0;
 	}
