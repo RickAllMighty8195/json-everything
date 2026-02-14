@@ -139,15 +139,25 @@ public class JsonPath
 		return new PathResult(new NodeList(currentMatches));
 	}
 
-	internal JsonPath Append(string name)
-	{
-		return new JsonPath(Scope, Segments.Append(new PathSegment(new NameSelector(name).Yield())));
-	}
+	/// <summary>
+	/// Appends a new segment with the specified name to the current JSON path and returns the resulting path.
+	/// </summary>
+	/// <remarks>This method can be used to build more complex JSON paths by successively appending named segments.
+	/// The original JsonPath instance remains unchanged; this method returns a new instance with the additional
+	/// segment.</remarks>
+	/// <param name="name">The name of the segment to append to the JSON path. This value cannot be null or empty.</param>
+	/// <returns>A new instance of the JsonPath class that includes the appended segment.</returns>
+	public JsonPath Append(string name) => new(Scope, Segments.Append(new PathSegment(new NameSelector(name).Yield())));
 
-	internal JsonPath Append(int index)
-	{
-		return new JsonPath(Scope, Segments.Append(new PathSegment(new IndexSelector(index).Yield())));
-	}
+	/// <summary>
+	/// Appends an array index selector to the current JSON path, enabling access to a specific element within a JSON
+	/// array.
+	/// </summary>
+	/// <remarks>Use this method to navigate to a particular element in a JSON array by its index. Supplying an
+	/// out-of-range index may result in errors when the path is evaluated against a JSON document.</remarks>
+	/// <param name="index">The zero-based index of the element to select from the array. Must be within the bounds of the target array.</param>
+	/// <returns>A new JsonPath instance that includes the appended index selector.</returns>
+	public JsonPath Append(int index) => new(Scope, Segments.Append(new PathSegment(new IndexSelector(index).Yield())));
 
 	/// <summary>Returns a string that represents the current object.</summary>
 	/// <returns>A string that represents the current object.</returns>

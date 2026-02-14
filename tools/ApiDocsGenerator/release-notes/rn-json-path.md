@@ -4,9 +4,11 @@ title: JsonPath.Net
 icon: fas fa-tag
 order: "09.08"
 ---
-# [3.0.1](https://github.com/gregsdennis/json-everything/pull/995) {#release-path-3.0.1}
+# [3.1.0](https://github.com/gregsdennis/json-everything/pull/995) {#release-path-3.1.0}
 
-[#980](https://github.com/json-everything/json-everything/issues/980) - Global path expressions inside nested filter expressions were not evaluating properly.
+[#939](https://github.com/json-everything/json-everything/issues/939) - Make `JsonPath.Append()` methods public.  Thanks to [@aradalvand](https://github.com/aradalvand) for suggesting.
+
+[#980](https://github.com/json-everything/json-everything/issues/980) - Global path expressions inside nested filter expressions were not evaluating properly.  Thanks to [@ErdoesiT](https://github.com/ErdoesiT) for reporting.
 
 # [3.0.0](https://github.com/gregsdennis/json-everything/pull/982) {#release-path-3.0.0}
 
