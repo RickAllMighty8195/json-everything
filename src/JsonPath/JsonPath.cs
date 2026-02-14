@@ -127,6 +127,18 @@ public class JsonPath
 		return new PathResult(new NodeList(currentMatches));
 	}
 
+	internal PathResult Evaluate(JsonNode? globalRoot, JsonNode? localRoot)
+	{
+		IEnumerable<Node> currentMatches = [new(localRoot, Root)];
+
+		foreach (var segment in Segments)
+		{
+			currentMatches = currentMatches.SelectMany(x => segment.Evaluate(x, globalRoot));
+		}
+
+		return new PathResult(new NodeList(currentMatches));
+	}
+
 	internal JsonPath Append(string name)
 	{
 		return new JsonPath(Scope, Segments.Append(new PathSegment(new NameSelector(name).Yield())));

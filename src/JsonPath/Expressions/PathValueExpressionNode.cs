@@ -20,7 +20,7 @@ internal class PathValueExpressionNode : LeafValueExpressionNode
 			? globalParameter
 			: localParameter;
 
-		var result = Path.Evaluate(parameter);
+		var result = Path.Evaluate(globalParameter, parameter);
 
 		return result.Matches;
 	}
