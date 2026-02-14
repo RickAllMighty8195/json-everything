@@ -4,6 +4,10 @@ title: JsonPath.Net
 icon: fas fa-tag
 order: "09.08"
 ---
+# [3.0.1](https://github.com/gregsdennis/json-everything/pull/995) {#release-path-3.0.1}
+
+[#980](https://github.com/json-everything/json-everything/issues/980) - Global path expressions inside nested filter expressions were not evaluating properly.
+
 # [3.0.0](https://github.com/gregsdennis/json-everything/pull/982) {#release-path-3.0.0}
 
 Enacted Open Source Maintenance Fee.
