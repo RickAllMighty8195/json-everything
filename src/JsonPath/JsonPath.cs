@@ -63,7 +63,7 @@ public class JsonPath
 	/// <param name="options">(optional) The parsing options.</param>
 	/// <returns>The parsed path.</returns>
 	/// <exception cref="PathParseException">Thrown if a syntax error occurred.</exception>
-	public static JsonPath Parse(string source, PathParsingOptions? options = null)
+	public static JsonPath Parse([StringSyntax("jsonpath")] string source, PathParsingOptions? options = null)
 	{
 		options ??= new PathParsingOptions();
 
@@ -81,7 +81,7 @@ public class JsonPath
 	/// <param name="options">(optional) The parsing options.</param>
 	/// <param name="path">The parsed path, if successful; otherwise null.</param>
 	/// <returns>True if successful; otherwise false.</returns>
-	public static bool TryParse(string source, [NotNullWhen(true)] out JsonPath? path, PathParsingOptions? options = null)
+	public static bool TryParse([StringSyntax("jsonpath")] string source, [NotNullWhen(true)] out JsonPath? path, PathParsingOptions? options = null)
 	{
 		if (source.Length == 0)
 		{
