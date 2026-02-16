@@ -10,6 +10,7 @@
 @using Microsoft.CodeAnalysis
 @using Microsoft.CodeAnalysis.CSharp
 @using System.Reflection
+@using System.Globalization
 @using BlazorMonaco.Editor
 @using Json.Schema.ArrayExt.Keywords
 @using Json.Schema.Data.Keywords
@@ -120,6 +121,22 @@
 							</span>
 						</span>
 					</label>
+					<label class="my-2">
+						Error message language
+						<span class="tooltip-icon">
+							ⓘ
+							<span class="tooltip-text">
+								Select the language for validation error messages.
+							</span>
+						</span>
+						<br />
+						<InputSelect @bind-Value="_options.CultureCode" DisplayName="Language" class="form-control">
+							@foreach (var culture in _cultures)
+							{
+								<option value="@culture.Key">@culture.Value</option>
+							}
+						</InputSelect>
+					</label>
 				</div>
 				<button class="btn btn-primary mt-2" @onclick="Run">Run</button>
 			</EditForm>
@@ -190,8 +207,26 @@
 	    Json.Schema.OpenApi.Dialect.OpenApi_31,
     ];
 
+	private readonly Dictionary<string, string> _cultures = new()
+	{
+		{ "", "English (default)" },
+		{ "de", "Deutsch (German)" },
+		{ "es", "Español (Spanish)" },
+		{ "it", "Italiano (Italian)" },
+		{ "ko", "한국어 (Korean)" },
+		{ "nb-NO", "Norsk (Norwegian)" },
+		{ "pl-PL", "Polski (Polish)" },
+		{ "pt", "Português (Portuguese)" },
+		{ "ru", "Русский (Russian)" },
+		{ "sv-SE", "Svenska (Swedish)" },
+		{ "tr-TR", "Türkçe (Turkish)" }
+	};
+
 	private IEnumerable<MetadataReference> _references;
 	private SchemaOperations _operation = SchemaOperations.Evaluate;
+
+	private static readonly HashSet<string> _loadedCultures = new();
+	private static readonly SemaphoreSlim _cultureLock = new(1, 1);
 
 #pragma warning restore CS8618
 
@@ -230,6 +265,7 @@
 		public bool ValidateFormat { get; set; }
 		public bool IncludeDroppedAnnotations { get; set; }
 		public bool AddAnnotationForUnknownKeywords { get; set; }
+		public string? CultureCode { get; set; }
 
 		public BuildOptions ToBuildOptions() => new()
 		{
@@ -242,7 +278,8 @@
 			OutputFormat = OutputFormat,
 			RequireFormatValidation = ValidateFormat,
 			PreserveDroppedAnnotations = IncludeDroppedAnnotations,
-			AddAnnotationForUnknownKeywords = AddAnnotationForUnknownKeywords
+			AddAnnotationForUnknownKeywords = AddAnnotationForUnknownKeywords,
+			Culture = string.IsNullOrEmpty(CultureCode) ? null : CultureInfo.GetCultureInfo(CultureCode)
 		};
 	}
 
@@ -684,6 +721,8 @@ namespace JsonEverythingTemp;
 		}
 
 		_references = references;
+
+		await PreloadAllCultureAssemblies();
 	}
 
 	private void HandleThemeChanged()
@@ -697,6 +736,40 @@ namespace JsonEverythingTemp;
 
 	private string GetImageUrl() =>
 		ThemeService.IsDarkMode ? "img/json-schema.png" : "img/json-schema-light.png";
+
+	private async Task PreloadAllCultureAssemblies()
+	{
+		var client = new HttpClient
+		{
+			BaseAddress = new Uri(NavigationManager.BaseUri)
+		};
+
+		var cultureKeys = _cultures.Keys.Where(k => !string.IsNullOrEmpty(k)).ToList();
+		
+		foreach (var cultureCode in cultureKeys)
+		{
+			if (_loadedCultures.Contains(cultureCode))
+				continue;
+
+			try
+			{
+				var dllPath = $"_framework/{cultureCode}/JsonSchema.Net.resources.dll";
+				var httpStream = await client.GetStreamAsync(dllPath);
+
+				var memoryStream = new MemoryStream();
+				await httpStream.CopyToAsync(memoryStream);
+				memoryStream.Position = 0;
+
+				Assembly.Load(memoryStream.ToArray());
+				_loadedCultures.Add(cultureCode);
+				Console.WriteLine($"Preloaded culture assembly: {cultureCode}");
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine($"Could not preload culture assembly for {cultureCode}: {e.Message}");
+			}
+		}
+	}
 
 	public void Dispose()
 	{

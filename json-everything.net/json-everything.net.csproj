@@ -47,4 +47,38 @@
     </Content>
   </ItemGroup>
 
+  <Target Name="BuildLanguagePacks" AfterTargets="Build;Publish">
+    <PropertyGroup>
+      <JsonSchemaProjectPath>..\src\JsonSchema\JsonSchema.csproj</JsonSchemaProjectPath>
+      <LanguagePackOutputPath Condition="'$(PublishDir)' != ''">$(PublishDir)wwwroot\_framework</LanguagePackOutputPath>
+      <LanguagePackOutputPath Condition="'$(PublishDir)' == ''">$(OutputPath)wwwroot\_framework</LanguagePackOutputPath>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <LanguagePacks Include="de;es;it;ko;nb-NO;pl-PL;pt;ru;sv-SE;tr-TR" />
+    </ItemGroup>
+    
+    <Message Text="Building language packs..." Importance="high" />
+    
+    <MSBuild 
+      Projects="$(JsonSchemaProjectPath)"
+      Properties="Configuration=$(Configuration);ResourceLanguage=%(LanguagePacks.Identity);TargetFramework=net10.0"
+      Targets="Build" />
+    
+    <ItemGroup>
+      <SatelliteDlls Include="..\src\JsonSchema\bin\$(Configuration)\net10.0\%(LanguagePacks.Identity)\JsonSchema.Net.resources.dll">
+        <Culture>%(LanguagePacks.Identity)</Culture>
+      </SatelliteDlls>
+    </ItemGroup>
+    
+    <MakeDir Directories="$(LanguagePackOutputPath)\%(SatelliteDlls.Culture)" />
+    
+    <Copy 
+      SourceFiles="@(SatelliteDlls)"
+      DestinationFolder="$(LanguagePackOutputPath)\%(SatelliteDlls.Culture)\"
+      SkipUnchangedFiles="true" />
+    
+    <Message Text="Language packs copied to: $(LanguagePackOutputPath)" Importance="high" />
+  </Target>
+
 </Project>
