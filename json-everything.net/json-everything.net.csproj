@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,5 +47,14 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
   </ItemGroup>
+
+  <Target Name="CopyResxToWwwroot" AfterTargets="Build">
+    <ItemGroup>
+      <ResxFiles Include="..\src\JsonSchema\Localization\*.resx" />
+    </ItemGroup>
+    <Copy SourceFiles="@(ResxFiles)"
+          DestinationFiles="@(ResxFiles->'$(ProjectDir)wwwroot\resources\%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

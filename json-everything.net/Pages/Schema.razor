@@ -10,6 +10,7 @@
 @using Microsoft.CodeAnalysis
 @using Microsoft.CodeAnalysis.CSharp
 @using System.Reflection
+@using System.Globalization
 @using BlazorMonaco.Editor
 @using Json.Schema.ArrayExt.Keywords
 @using Json.Schema.Data.Keywords
@@ -17,11 +18,13 @@
 @using Json.Schema.OpenApi.Keywords
 @using Yaml2JsonNode
 
+
 @inject DataManager DataManager;
 @inject NavigationManager NavigationManager;
 @inject IJSRuntime JsRuntime;
 @inject EditorOptions EditorOptions;
 @inject ThemeService ThemeService;
+@inject SchemaLocalizationService SchemaLocalizationService;
 
 <PageTitle>JSON Schema - json-everything.net</PageTitle>
 
@@ -90,7 +93,23 @@
 							}
 						</InputSelect>
 					</label>
-					<label class="my-2">
+                    <label class="my-2">
+                        Error message language
+                        <span class="tooltip-icon">
+                            ⓘ
+                            <span class="tooltip-text">
+                                Select the language for validation error messages.
+                            </span>
+                        </span>
+                        <br />
+                        <InputSelect @bind-Value="_options.CultureCode" DisplayName="Language" class="form-control">
+                            @foreach (var culture in _cultures)
+                            {
+                                <option value="@culture.Key">@culture.Value</option>
+                            }
+                        </InputSelect>
+                    </label>
+                    <label class="my-2">
 						<InputCheckbox @bind-Value="_options.IncludeDroppedAnnotations" DisplayName="Preserve dropped annotations" />
 						Preserve dropped annotations
 						<span class="tooltip-icon">
@@ -165,6 +184,7 @@
     private StandaloneCodeEditor _instanceEditor;
     private string _instanceEditorLanguage;
     private StandaloneCodeEditor _outputEditor;
+    private static bool _dialectsRegistered;
 
     private readonly SchemaOptionsModel _options = new();
 
@@ -180,7 +200,7 @@
 
     private readonly List<Dialect> _dialects =
     [
-	    Dialect.Draft06,
+        Dialect.Draft06,
 	    Dialect.Draft07,
 	    Dialect.Draft201909,
 	    Dialect.Draft202012,
@@ -190,54 +210,70 @@
 	    Json.Schema.OpenApi.Dialect.OpenApi_31,
     ];
 
-	private IEnumerable<MetadataReference> _references;
-	private SchemaOperations _operation = SchemaOperations.Evaluate;
+    private readonly Dictionary<string, string> _cultures = new()
+	{
+		{ "en-US", "English (default)" },
+		{ "de", "Deutsch (German)" },
+		{ "es", "Español (Spanish)" },
+		{ "it", "Italiano (Italian)" },
+		{ "ko", "한국어 (Korean)" },
+		{ "nb-NO", "Norsk (Norwegian)" },
+		{ "pl-PL", "Polski (Polish)" },
+		{ "pt", "Português (Portuguese)" },
+		{ "ru", "Русский (Russian)" },
+		{ "sv-SE", "Svenska (Swedish)" },
+		{ "tr-TR", "Türkçe (Turkish)" }
+	};
+
+    private IEnumerable<MetadataReference> _references;
+    private SchemaOperations _operation = SchemaOperations.Evaluate;
 
 #pragma warning restore CS8618
 
-	public enum SchemaOperations
-	{
-		Evaluate,
-		GenerateSchema,
-		// GenerateData
-	}
+    public enum SchemaOperations
+    {
+        Evaluate,
+        GenerateSchema,
+        // GenerateData
+    }
 
-	private class SchemaOptionsModel
-	{
-		public OutputFormat OutputFormat { get; set; } = OutputFormat.Hierarchical;
+    private class SchemaOptionsModel
+    {
+        public OutputFormat OutputFormat { get; set; } = OutputFormat.Hierarchical;
         public Dialect Dialect { get; set; } = Dialect.Draft202012;
-		
-		public string DialectId
-		{
-			get => Dialect.Id!.OriginalString;
-			set
-			{
-				Dialect = value switch
-				{
-					"http://json-schema.org/draft-06/schema#" => Dialect.Draft06,
-					"http://json-schema.org/draft-07/schema#" => Dialect.Draft07,
-					"https://json-schema.org/draft/2019-09/schema" => Dialect.Draft201909,
-					"https://json-schema.org/draft/2020-12/schema" => Dialect.Draft202012,
-					"https://json-schema.org/v1/2026" => Dialect.V1_2026,
-					"https://json-everything.net/meta/array-ext" => Json.Schema.ArrayExt.Dialect.ArrayExt_202012,
-					"https://json-everything.net/meta/data-2023" => Json.Schema.Data.Dialect.Data_202012,
-					"https://spec.openapis.org/oas/3.1/dialect/base" => Json.Schema.OpenApi.Dialect.OpenApi_31,
-					_ => Dialect.Draft202012
-				};
-			}
-		}
-		
-		public bool ValidateFormat { get; set; }
-		public bool IncludeDroppedAnnotations { get; set; }
-		public bool AddAnnotationForUnknownKeywords { get; set; }
+
+        public string DialectId
+        {
+            get => Dialect.Id!.OriginalString;
+            set
+            {
+                Dialect = value switch
+                {
+                    "http://json-schema.org/draft-06/schema#" => Dialect.Draft06,
+                    "http://json-schema.org/draft-07/schema#" => Dialect.Draft07,
+                    "https://json-schema.org/draft/2019-09/schema" => Dialect.Draft201909,
+                    "https://json-schema.org/draft/2020-12/schema" => Dialect.Draft202012,
+                    "https://json-schema.org/v1/2026" => Dialect.V1_2026,
+                    "https://json-everything.net/meta/array-ext" => Json.Schema.ArrayExt.Dialect.ArrayExt_202012,
+                    "https://json-everything.net/meta/data-2023" => Json.Schema.Data.Dialect.Data_202012,
+                    "https://spec.openapis.org/oas/3.1/dialect/base" => Json.Schema.OpenApi.Dialect.OpenApi_31,
+                    _ => Dialect.Draft202012
+                };
+            }
+        }
+
+        public bool ValidateFormat { get; set; }
+        public bool IncludeDroppedAnnotations { get; set; }
+        public bool AddAnnotationForUnknownKeywords { get; set; }
+        public string CultureCode { get; set; } = "en-US";
 
 		public BuildOptions ToBuildOptions() => new()
 		{
 			SchemaRegistry = new(),
-			Dialect = Dialect,
+			Dialect = Dialect
 		};
 
-		public EvaluationOptions ToValidationOptions() => new()
+		public EvaluationOptions ToEvaluationOptions() => new()
 		{
 			OutputFormat = OutputFormat,
 			RequireFormatValidation = ValidateFormat,
@@ -372,7 +408,9 @@
 
 	private async Task Validate()
 	{
-		await _outputEditor.SetLanguageAsync("json", JsRuntime);
+		await SchemaLocalizationService.SetCultureAsync(_options.CultureCode);
+        await DataManager.Set("error-culture", _options.CultureCode);
+        await _outputEditor.SetLanguageAsync("json", JsRuntime);
 		await _outputEditor.SetValue(string.Empty);
 
 		JsonSchema schema;
@@ -380,7 +418,7 @@
 		{
 			var text = await _schemaEditor.GetValue();
 			var schemaJson = YamlSerializer.Parse(text).Single().ToJsonElement();
-            schema = JsonSchema.Build(schemaJson, _options.ToBuildOptions());
+			schema = JsonSchema.Build(schemaJson, _options.ToBuildOptions());
 		}
 		catch (Exception e)
 		{
@@ -391,7 +429,7 @@
 		JsonElement instance;
 		try
 		{
-            instance = YamlSerializer.Parse(await _instanceEditor.GetValue()).Single().ToJsonElement();
+			instance = YamlSerializer.Parse(await _instanceEditor.GetValue()).Single().ToJsonElement();
 		}
 		catch (Exception e)
 		{
@@ -402,8 +440,7 @@
 
 		try
 		{
-
-			var results = schema.Evaluate(instance, _options.ToValidationOptions());
+			var results = schema.Evaluate(instance, _options.ToEvaluationOptions());
 
 			var serializerOptions = new JsonSerializerOptions
 			{
@@ -576,9 +613,8 @@ namespace JsonEverythingTemp;
 		Operation = language == "json" ? SchemaOperations.Evaluate : SchemaOperations.GenerateSchema;
 		SchemaEditorLabel = language == "json" ? "Classes" : "Schema";
 		HelpSummary = language == "json" ? HelpContent.SchemaEvaluate : HelpContent.SchemaGenerateSchema;
-	}
-
-	private static bool _dialectsRegistered = false;
+        _options.CultureCode = await DataManager.Get("error-culture") ?? "en-US";
+    }
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
@@ -684,6 +720,8 @@ namespace JsonEverythingTemp;
 		}
 
 		_references = references;
+
+		// Removed: PreloadAllCultureAssemblies is no longer needed
 	}
 
 	private void HandleThemeChanged()
@@ -697,6 +735,8 @@ namespace JsonEverythingTemp;
 
 	private string GetImageUrl() =>
 		ThemeService.IsDarkMode ? "img/json-schema.png" : "img/json-schema-light.png";
+
+
 
 	public void Dispose()
 	{
