@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,38 +48,13 @@
     </Content>
   </ItemGroup>
 
-  <Target Name="BuildLanguagePacks" AfterTargets="Build;Publish">
-    <PropertyGroup>
-      <JsonSchemaProjectPath>..\src\JsonSchema\JsonSchema.csproj</JsonSchemaProjectPath>
-      <LanguagePackOutputPath Condition="'$(PublishDir)' != ''">$(PublishDir)wwwroot\_framework</LanguagePackOutputPath>
-      <LanguagePackOutputPath Condition="'$(PublishDir)' == ''">$(OutputPath)wwwroot\_framework</LanguagePackOutputPath>
-    </PropertyGroup>
-    
+  <Target Name="CopyResxToWwwroot" AfterTargets="Build">
     <ItemGroup>
-      <LanguagePacks Include="de;es;it;ko;nb-NO;pl-PL;pt;ru;sv-SE;tr-TR" />
+      <ResxFiles Include="..\src\JsonSchema\Localization\*.resx" />
     </ItemGroup>
-    
-    <Message Text="Building language packs..." Importance="high" />
-    
-    <MSBuild 
-      Projects="$(JsonSchemaProjectPath)"
-      Properties="Configuration=$(Configuration);ResourceLanguage=%(LanguagePacks.Identity);TargetFramework=net10.0"
-      Targets="Build" />
-    
-    <ItemGroup>
-      <SatelliteDlls Include="..\src\JsonSchema\bin\$(Configuration)\net10.0\%(LanguagePacks.Identity)\JsonSchema.Net.resources.dll">
-        <Culture>%(LanguagePacks.Identity)</Culture>
-      </SatelliteDlls>
-    </ItemGroup>
-    
-    <MakeDir Directories="$(LanguagePackOutputPath)\%(SatelliteDlls.Culture)" />
-    
-    <Copy 
-      SourceFiles="@(SatelliteDlls)"
-      DestinationFolder="$(LanguagePackOutputPath)\%(SatelliteDlls.Culture)\"
-      SkipUnchangedFiles="true" />
-    
-    <Message Text="Language packs copied to: $(LanguagePackOutputPath)" Importance="high" />
+    <Copy SourceFiles="@(ResxFiles)"
+          DestinationFiles="@(ResxFiles->'$(ProjectDir)wwwroot\resources\%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

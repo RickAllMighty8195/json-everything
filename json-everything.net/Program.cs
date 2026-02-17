@@ -9,14 +9,16 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+builder.Services.AddHttpClient("self", c => c.BaseAddress = new Uri(builder.HostEnvironment.BaseAddress));
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddBlazoredLocalStorageAsSingleton();
 builder.Services.AddSingleton<DataManager>();
 builder.Services.AddSingleton<ThemeService>();
 builder.Services.AddScoped<EditorOptions>();
 
+builder.Services.AddSingleton<SchemaLocalizationService>();
+
 var host = builder.Build();
-var client = host.Services.GetService<HttpClient>();
 
 // Initialize theme before the UI renders so editors get the correct initial theme
 var localStorage = host.Services.GetRequiredService<ILocalStorageService>();
