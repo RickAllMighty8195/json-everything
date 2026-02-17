@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -23,7 +24,7 @@ public class SchemaRegistry
 
 	private static readonly Uri _empty = new("https://json-everything.lib/");
 
-	private readonly Dictionary<Uri, Registration> _registered = [];
+	private readonly ConcurrentDictionary<Uri, Registration> _registered = [];
 	private Func<Uri, SchemaRegistry, IBaseDocument?>? _fetch;
 
 	/// <summary>
