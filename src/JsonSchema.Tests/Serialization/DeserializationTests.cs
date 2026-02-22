@@ -1,8 +1,10 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Json.Schema.Serialization;
 using NUnit.Framework;
 using TestHelpers;
@@ -372,6 +374,40 @@ public class DeserializationTests
 				}
 			}
 		);
+	}
+
+	[Test]
+	public static async Task ConcurrentSchemaDeserialization()
+	{
+		var options = new JsonSerializerOptions
+		{
+			TypeInfoResolverChain = { TestSerializerContext.Default },
+			WriteIndented = true,
+			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+			Converters = { new ValidatingJsonConverter {EvaluationOptions = { OutputFormat = OutputFormat.List } } }
+		};
+
+		// Build distinct schemas so each deserialization registers a different schema in the registry
+		var serializedSchemas = Enumerable.Range(0, 1000).Select(i =>
+		{
+			var schema = new JsonSchemaBuilder()
+				.Type(SchemaValueType.Object)
+				.Properties(
+					($"prop{i}", new JsonSchemaBuilder().Type(SchemaValueType.String)))
+				.Build();
+
+			return JsonSerializer.Serialize(schema, options);
+		});
+
+		// Deserialize all schemas concurrently to stress the SchemaRegistry
+		var tasks = serializedSchemas.Select(json => Task.Run(() => JsonSerializer.Deserialize<JsonSchema>(json, options)));
+
+		var results = await Task.WhenAll(tasks);
+
+		foreach (var result in results)
+		{
+			Assert.That(result, Is.Not.Null, "Each concurrent deserialization should produce a non-null schema.");
+		}
 	}
 
 	/// <summary>
