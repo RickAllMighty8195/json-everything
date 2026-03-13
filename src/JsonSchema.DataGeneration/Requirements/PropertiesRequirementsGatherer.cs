@@ -9,13 +9,13 @@ internal class PropertiesRequirementsGatherer : IRequirementsGatherer
 		var supportsObjects = false;
 
 		var range = NumberRangeSet.Full;
-		var minimum = (long?)schema.GetKeyword<MinPropertiesKeyword>()?.Value;
+		var minimum = schema.GetKeyword<MinPropertiesKeyword>()?.RawValue.GetInt64();
 		if (minimum != null)
 		{
 			range = range.Floor(minimum.Value);
 			supportsObjects = true;
 		}
-		var maximum = (long?)schema.GetKeyword<MaxPropertiesKeyword>()?.Value;
+		var maximum = schema.GetKeyword<MaxPropertiesKeyword>()?.RawValue.GetInt64();
 		if (maximum != null)
 		{
 			range = range.Ceiling(maximum.Value);

@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using Json.Schema.Keywords;
+﻿using Json.Schema.Keywords;
 
 namespace Json.Schema.DataGeneration.Requirements;
 

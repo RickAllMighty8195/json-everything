@@ -155,7 +155,7 @@ internal class StringGenerator : IDataGenerator
 
 	private static JsonNode? GenerateTime(NumberRange arg)
 	{
-		return _faker.Date.Recent().ToString("HH':'mm':'ss");
+		return _faker.Date.Recent().ToString("HH':'mm':'ssZ");
 	}
 
 	private static JsonNode? GenerateUri(NumberRange arg)

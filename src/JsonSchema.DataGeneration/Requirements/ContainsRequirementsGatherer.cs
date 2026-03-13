@@ -17,10 +17,10 @@ internal class ContainsRequirementsGatherer : IRequirementsGatherer
 		}
 
 		var range = NumberRangeSet.Full;
-		var minimum = (long?)schema.GetKeyword<MinContainsKeyword>()?.Value;
+		var minimum = schema.GetKeyword<MinContainsKeyword>()?.RawValue.GetInt64();
 		if (minimum != null)
 			range = range.Floor(minimum.Value);
-		var maximum = (long?)schema.GetKeyword<MaxContainsKeyword>()?.Value;
+		var maximum = schema.GetKeyword<MaxContainsKeyword>()?.RawValue.GetInt64();
 		if (maximum != null)
 			range = range.Ceiling(maximum.Value);
 		if (range != NumberRangeSet.Full)
