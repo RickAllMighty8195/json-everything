@@ -13,13 +13,13 @@ internal class ItemsRequirementsGatherer : IRequirementsGatherer
 		var supportsArrays = false;
 
 		var range = NumberRangeSet.Full;
-		var minimum = (long?)schema.GetKeyword<MinItemsKeyword>()?.Value;
+		var minimum = schema.GetKeyword<MinItemsKeyword>()?.RawValue.GetInt64();
 		if (minimum != null)
 		{
 			range = range.Floor(minimum.Value);
 			supportsArrays = true;
 		}
-		var maximum = (long?)schema.GetKeyword<MaxItemsKeyword>()?.Value;
+		var maximum = schema.GetKeyword<MaxItemsKeyword>()?.RawValue.GetInt64();
 		if (maximum != null)
 		{
 			range = range.Ceiling(maximum.Value);
