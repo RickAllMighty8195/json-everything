@@ -9,6 +9,7 @@ using Json.Schema.Api;
 using Json.Schema.ArrayExt.Keywords;
 using Json.Schema.CodeGeneration;
 using Json.Schema.Data.Keywords;
+using Json.Schema.DataGeneration;
 using Json.Schema.Generation.DataAnnotations;
 using Json.Schema.Generation.Generators;
 using Json.Schema.OpenApi.Keywords;
@@ -31,7 +32,7 @@ namespace ApiDocsGenerator
 			await GenerateAndSaveDocs<ValidatingJsonModelBinder>("10.05", outputDir, "api");
 			await GenerateAndSaveDocs<ISchemaGenerator>("10.055", outputDir, "api");
 			await GenerateAndSaveDocs<StringLengthAttributeHandler>("10.06", outputDir, "api");
-			//await GenerateAndSaveDocs<NumberRange>("10.07", outputDir, "api");
+			await GenerateAndSaveDocs<NumberRange>("10.07", outputDir, "api");
 			await GenerateAndSaveDocs<JsonPath>("10.08", outputDir, "api");
 			await GenerateAndSaveDocs<JsonPatch>("10.09", outputDir, "api");
 			await GenerateAndSaveDocs<JsonPointer>("10.10", outputDir, "api");
