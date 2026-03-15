@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="JsonSchema.Net.CodeGeneration" Version="0.2.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="4.11.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="5.3.0" />
   </ItemGroup>
 
 
@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\JsonPointer\JsonPointer.csproj" />
     <ProjectReference Include="..\..\src\JsonSchema.Api\JsonSchema.Api.csproj" />
     <ProjectReference Include="..\..\src\JsonSchema.Data\JsonSchema.Data.csproj" />
+    <ProjectReference Include="..\..\src\JsonSchema.DataGeneration\JsonSchema.DataGeneration.csproj" />
     <ProjectReference Include="..\..\src\JsonSchema.Generation.DataAnnotations\JsonSchema.Generation.DataAnnotations.csproj" />
     <ProjectReference Include="..\..\src\JsonSchema.Generation\JsonSchema.Generation.csproj" />
     <ProjectReference Include="..\..\src\JsonSchema.OpenApi\JsonSchema.OpenApi.csproj" />

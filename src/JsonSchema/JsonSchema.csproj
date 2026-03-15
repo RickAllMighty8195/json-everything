@@ -17,7 +17,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
 
     <PackageId>JsonSchema.Net</PackageId>
-    <JsonSchemaNetVersion>9.1.2</JsonSchemaNetVersion>
+    <JsonSchemaNetVersion>9.1.3</JsonSchemaNetVersion>
     <AssemblyVersion>9.0.0.0</AssemblyVersion>
     <FileVersion>$(JsonSchemaNetVersion)</FileVersion>
     <Version>$(JsonSchemaNetVersion)</Version>
@@ -47,7 +47,7 @@
 
   <ItemGroup>
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(ResourceLanguage)' == 'base'">
@@ -62,7 +62,7 @@
   <ItemGroup Condition="'$(ResourceLanguage)' == 'base'">
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\Resources\json-logo-256.png" Pack="true" PackagePath="\" />
-    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="\"/>
+    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="\" />
     <None Include="bin\$(Configuration)\netstandard2.0\JsonSchema.Net.dll" Pack="true" PackagePath="lib\netstandard2.0" />
     <None Include="bin\$(Configuration)\netstandard2.0\JsonSchema.Net.xml" Pack="true" PackagePath="lib\netstandard2.0" />
     <None Include="bin\$(Configuration)\netstandard2.0\JsonSchema.Net.pdb" Pack="true" PackagePath="lib\netstandard2.0" />
@@ -82,7 +82,7 @@
   <ItemGroup Condition="'$(ResourceLanguage)' != '' And '$(ResourceLanguage)' != 'base'">
     <None Include="Localization\README.$(ResourceLanguage).md" Pack="true" PackagePath="\README.md" />
     <None Include="..\..\Resources\json-logo-256.png" Pack="true" PackagePath="\" />
-    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="\"/>
+    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="\" />
     <None Include="bin\$(Configuration)\netstandard2.0\$(ResourceLanguage)\JsonSchema.Net.resources.dll" Pack="true" PackagePath="lib\netstandard2.0\$(ResourceLanguage)" />
     <None Include="bin\$(Configuration)\net8.0\$(ResourceLanguage)\JsonSchema.Net.resources.dll" Pack="true" PackagePath="lib\net8.0\$(ResourceLanguage)" />
     <None Include="bin\$(Configuration)\net9.0\$(ResourceLanguage)\JsonSchema.Net.resources.dll" Pack="true" PackagePath="lib\net9.0\$(ResourceLanguage)" />

@@ -14,8 +14,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>Json.More.Net</PackageId>
-    <Version>3.0.0</Version>
-    <FileVersion>3.0.0</FileVersion>
+    <Version>3.0.1</Version>
+    <FileVersion>3.0.1</FileVersion>
     <AssemblyVersion>3.0.0.0</AssemblyVersion>
     <Authors>Greg Dennis</Authors>
     <Description>Provides extended functionality for the System.Text.Json namespace.</Description>
@@ -34,20 +34,20 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
-    <PackageReference Include="System.Collections.Immutable" Version="10.0.0" />
-    <PackageReference Include="System.Text.Json" Version="10.0.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="10.0.5" />
+    <PackageReference Include="System.Text.Json" Version="10.0.5" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
-  	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+  	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\tools\ApiDocsGenerator\release-notes\rn-json-more.md" Link="release-notes.md" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\Resources\json-logo-256.png" Pack="true" PackagePath="\" />
-    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="OSMFEULA.txt"/>
+    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="OSMFEULA.txt" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

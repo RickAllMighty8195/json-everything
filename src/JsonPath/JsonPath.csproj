@@ -15,8 +15,8 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>JsonPath.Net</PackageId>
-    <Version>3.0.1</Version>
-    <FileVersion>3.0.1</FileVersion>
+    <Version>3.0.2</Version>
+    <FileVersion>3.0.2</FileVersion>
     <AssemblyVersion>3.0.0.0</AssemblyVersion>
     <Authors>Greg Dennis</Authors>
     <Description>JSON Path (RFC 9535) built on the System.Text.Json namespace</Description>
@@ -36,14 +36,14 @@
 
 	<ItemGroup>
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.201" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="..\..\tools\ApiDocsGenerator\release-notes\rn-json-path.md" Link="release-notes.md" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="..\..\Resources\json-logo-256.png" Pack="true" PackagePath="\" />
-    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="OSMFEULA.txt"/>
+    <None Include="..\..\OSMFEULA.txt" Pack="true" PackagePath="OSMFEULA.txt" />
   </ItemGroup>
 
 	<ItemGroup>

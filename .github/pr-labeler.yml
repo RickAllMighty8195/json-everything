@@ -6,6 +6,10 @@
 - changed-files:
   - any-glob-to-any-file: src/JsonSchema/**/*
 
+"pkg:schema-api":
+- changed-files:
+  - any-glob-to-any-file: src/JsonSchema.Api/**/*
+
 "pkg:schema-generation":
 - changed-files:
   - any-glob-to-any-file: src/JsonSchema.Generation/**/*

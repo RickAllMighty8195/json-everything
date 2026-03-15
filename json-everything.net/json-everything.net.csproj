@@ -16,10 +16,10 @@
     <PackageReference Include="BlazorMonaco" Version="3.4.0" />
     <PackageReference Include="Markdig" Version="0.44.0" />
     <PackageReference Include="Markdig.SyntaxHighlighting" Version="1.1.7" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.12.0" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.5" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="5.3.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -52,9 +52,7 @@
     <ItemGroup>
       <ResxFiles Include="..\src\JsonSchema\Localization\*.resx" />
     </ItemGroup>
-    <Copy SourceFiles="@(ResxFiles)"
-          DestinationFiles="@(ResxFiles->'$(ProjectDir)wwwroot\resources\%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(ResxFiles)" DestinationFiles="@(ResxFiles->'$(ProjectDir)wwwroot\resources\%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

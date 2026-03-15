@@ -20,6 +20,7 @@ body:
         - JsonPointer.Net
         - JsonSchema.Net
         - JsonSchema.Net (language pack)
+        - JsonSchema.Net.Api
         - JsonSchema.Net.Data
         - JsonSchema.Net.DataGeneration
         - JsonSchema.Net.CodeGeneration
