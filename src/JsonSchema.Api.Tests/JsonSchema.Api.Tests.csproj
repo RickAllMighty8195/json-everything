@@ -9,6 +9,7 @@
 		<RootNamespace>Json.Schema.Api.Tests</RootNamespace>
 		<NoWarn>IDE0290</NoWarn>
 		<Nullable>enable</Nullable>
+		<GenerateProgramFile>false</GenerateProgramFile>
 	</PropertyGroup>
 
 	<ItemGroup>
