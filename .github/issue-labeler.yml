@@ -4,6 +4,9 @@
 "pkg:schema":
   - '### Nuget Package\s*JsonSchema\.Net\s'
 
+"pkg:schema-api":
+  - '### Nuget Package\s*JsonSchema\.Net\.Api'
+
 "pkg:schema-generation":
   - '### Nuget Package\s*JsonSchema\.Net\.Generation'
 
