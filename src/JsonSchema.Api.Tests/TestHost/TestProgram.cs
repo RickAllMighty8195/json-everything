@@ -1,6 +1,8 @@
 using System;
 using Json.Schema.Api;
+using Json.Schema.Api.Tests.TestHost;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -9,12 +11,18 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 	ContentRootPath = AppContext.BaseDirectory
 });
 
-builder.Services
-	.AddControllers()
-	.AddJsonSchemaValidation();
+builder.Services.AddControllers();
+
+builder.Services.AddJsonSchemaValidation();
 
 var app = builder.Build();
 
 app.MapControllers();
+
+var minimal = app.MapGroup("/minimal/test");
+minimal.MapPost("/simple", (SimpleModel model) => Results.Ok(model));
+minimal.MapPost("/strict", (StrictModel model) => Results.Ok(model));
+minimal.MapPost("/multiword", (MultiWordModel model) => Results.Ok(model));
+minimal.MapPost("/unvalidated", (UnvalidatedModel model) => Results.Ok(model));
 
 app.Run();

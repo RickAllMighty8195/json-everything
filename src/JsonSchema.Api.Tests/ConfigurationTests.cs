@@ -35,8 +35,8 @@ public class ConfigurationTests
 			{
 				builder.ConfigureServices(services =>
 				{
-					services.AddControllers()
-						.AddJsonSchemaValidation(converter =>
+					services.AddControllers();
+					services.AddJsonSchemaValidation(converter =>
 						{
 							converter.GeneratorConfiguration.PropertyNameResolver = PropertyNameResolvers.SnakeCase;
 							converter.EvaluationOptions.OutputFormat = OutputFormat.List;
@@ -62,8 +62,8 @@ public class ConfigurationTests
 			{
 				builder.ConfigureServices(services =>
 				{
-					services.AddControllers()
-						.AddJsonSchemaValidation(converter => { converter.GeneratorConfiguration.PropertyNameResolver = PropertyNameResolvers.SnakeCase; });
+					services.AddControllers();
+					services.AddJsonSchemaValidation(converter => { converter.GeneratorConfiguration.PropertyNameResolver = PropertyNameResolvers.SnakeCase; });
 				});
 			});
 		using var client = factory.CreateClient();
@@ -84,8 +84,8 @@ public class ConfigurationTests
 			{
 				builder.ConfigureServices(services =>
 				{
-					services.AddControllers()
-						.AddJsonSchemaValidation(converter =>
+					services.AddControllers();
+					services.AddJsonSchemaValidation(converter =>
 						{
 							converter.EvaluationOptions.OutputFormat = OutputFormat.Flag;
 							converter.EvaluationOptions.RequireFormatValidation = false;
@@ -114,8 +114,8 @@ public class ConfigurationTests
 			{
 				builder.ConfigureServices(services =>
 				{
-					services.AddControllers()
-						.AddJsonSchemaValidation(converter =>
+					services.AddControllers();
+					services.AddJsonSchemaValidation(converter =>
 						{
 							converter.GeneratorConfiguration.PropertyNameResolver = PropertyNameResolvers.CamelCase;
 							converter.GeneratorConfiguration.PropertyOrder = PropertyOrder.ByName;
