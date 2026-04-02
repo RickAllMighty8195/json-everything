@@ -1,0 +1,37 @@
+---
+applyTo: "src/**/*.Tests/**/*.cs,src/**/*Tests.cs,src/**/*.Tests/**/*.json,src/**/*.Tests/**/*.yaml,src/**/*.Tests/**/*.txt"
+---
+
+# Testing Instructions
+
+This repository uses NUnit-based test projects for package validation.
+
+## Framework And Style
+
+- Use NUnit attributes (`[Test]`, `[TestCase]`, `[TestCaseSource]`, etc.).
+- Prefer `Assert.That(...)` style assertions for consistency.
+- Prefer NUnit assertions over other assertion frameworks.
+- Some projects still reference FluentAssertions, but it is being phased out. Do not introduce FluentAssertions in new tests, and prefer NUnit when updating existing tests.
+- Reuse helpers from `src/TestHelpers/` where available.
+
+## Test Placement
+
+- Place tests in the corresponding `src/<PackageName>.Tests/` project.
+- Keep test file and class names clear and behavior-oriented.
+- For regression fixes, add or update a test that fails before the fix and passes after.
+
+## Data-Driven And Spec Tests
+
+- Many tests validate against JSON/spec fixture files. Keep fixtures close to related tests.
+- Prefer extending existing fixture-driven tests over creating ad-hoc one-off harnesses.
+- Preserve fixture readability and stable ordering to keep diffs understandable.
+
+## Runtime And Environment Notes
+
+- CI runs tests across modern .NET versions.
+- Some test projects include Windows-only targets (such as `net481`), with conditional behavior on non-Windows systems.
+
+## Local Execution
+
+- Run focused tests first for touched projects, then broader suites as needed.
+- If additional test logging is needed, set `JSON_EVERYTHING_TEST_OUTPUT=True`.
