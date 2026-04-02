@@ -295,6 +295,34 @@ internal class RequirementsContext
 
 	public void And(RequirementsContext other)
 	{
+		static List<RequirementsContext> MergeSequentialItems(RequirementsContext leftContext, RequirementsContext rightContext)
+		{
+			var leftSequentialItems = leftContext.SequentialItems!;
+			var rightSequentialItems = rightContext.SequentialItems!;
+			var maxLength = Math.Max(leftSequentialItems.Count, rightSequentialItems.Count);
+			var merged = new List<RequirementsContext>(maxLength);
+
+			RequirementsContext GetRequirementForIndex(RequirementsContext context, int index)
+			{
+				if (context.SequentialItems != null && index < context.SequentialItems.Count)
+					return new RequirementsContext(context.SequentialItems[index]);
+
+				if (context.RemainingItems != null)
+					return new RequirementsContext(context.RemainingItems);
+
+				return new RequirementsContext();
+			}
+
+			for (var i = 0; i < maxLength; i++)
+			{
+				var left = GetRequirementForIndex(leftContext, i);
+				left.And(GetRequirementForIndex(rightContext, i));
+				merged.Add(left);
+			}
+
+			return merged;
+		}
+
 		IsFalse |= other.IsFalse;
 
 		if (Type == null)
@@ -327,7 +355,7 @@ internal class RequirementsContext
 		if (Format == null)
 			Format = other.Format;
 		else if (other.Format != null)
-			HasConflict = Format != other.Format;
+			HasConflict |= Format != other.Format;
 
 		if (!ConstIsSet)
 		{
@@ -335,7 +363,7 @@ internal class RequirementsContext
 			ConstIsSet = other.ConstIsSet;
 		}
 		else if (other.ConstIsSet)
-			HasConflict = Const?.IsEquivalentTo(other.Const!.Value) ?? false;
+			HasConflict |= !(Const?.IsEquivalentTo(other.Const!.Value) ?? false);
 
 		//if (Patterns == null)
 		//	Patterns = other.Patterns;
@@ -357,7 +385,10 @@ internal class RequirementsContext
 		else if (other.ItemCounts != null)
 			ItemCounts *= other.ItemCounts;
 
-		// sequentialItems?
+		if (SequentialItems == null)
+			SequentialItems = other.SequentialItems?.Select(x => new RequirementsContext(x)).ToList();
+		else if (other.SequentialItems != null)
+			SequentialItems = MergeSequentialItems(this, other);
 
 		if (RemainingItems == null)
 			RemainingItems = other.RemainingItems;

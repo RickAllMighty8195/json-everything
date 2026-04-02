@@ -45,12 +45,11 @@ internal class ItemsRequirementsGatherer : IRequirementsGatherer
 			}
 			else
 			{
+				var incomingSequentialItems = items.Subschemas.Select(x => x.GetRequirements(options)).ToList();
 				if (context.SequentialItems != null)
-				{
-					// need to AND the schemas together sequentially
-				}
+					context.And(new RequirementsContext { SequentialItems = incomingSequentialItems });
 				else
-					context.SequentialItems = items.Subschemas.Select(x => x.GetRequirements(options)).ToList();
+					context.SequentialItems = incomingSequentialItems;
 			}
 			supportsArrays = true;
 		}
@@ -58,12 +57,11 @@ internal class ItemsRequirementsGatherer : IRequirementsGatherer
 		var prefixItems = schema.GetKeyword<PrefixItemsKeyword>();
 		if (prefixItems != null)
 		{
+			var incomingSequentialItems = prefixItems.Subschemas.Select(x => x.GetRequirements(options)).ToList();
 			if (context.SequentialItems != null)
-			{
-				// need to AND the schemas together sequentially
-			}
+				context.And(new RequirementsContext { SequentialItems = incomingSequentialItems });
 			else
-				context.SequentialItems = prefixItems.Subschemas.Select(x => x.GetRequirements(options)).ToList();
+				context.SequentialItems = incomingSequentialItems;
 			supportsArrays = true;
 		}
 
