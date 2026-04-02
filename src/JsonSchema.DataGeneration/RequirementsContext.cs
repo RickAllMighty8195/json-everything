@@ -29,10 +29,8 @@ internal class RequirementsContext
 	public List<decimal>? AntiMultiples { get; set; }
 
 	public NumberRangeSet? StringLengths { get; set; }
-	// https://www.ocpsoft.org/tutorials/regular-expressions/and-in-regex/
-	//public List<Regex>? Patterns { get; set; }
-	//public List<Regex>? AntiPatterns { get; set; }
-	public string? Pattern { get; set; }
+	public List<string>? Patterns { get; set; }
+	public List<string>? AntiPatterns { get; set; }
 	public string? Format { get; set; }
 
 	public List<RequirementsContext>? SequentialItems { get; set; }
@@ -75,12 +73,10 @@ internal class RequirementsContext
 
 		if (other.StringLengths != null)
 			StringLengths = new NumberRangeSet(other.StringLengths);
-		//if (other.Patterns != null)
-		//	Patterns = other.Patterns.ToList();
-		//if (other.AntiPatterns != null)
-		//	AntiPatterns = other.AntiPatterns.ToList();
-		if (other.Pattern != null)
-			Pattern = other.Pattern;
+		if (other.Patterns != null)
+			Patterns = [.. other.Patterns];
+		if (other.AntiPatterns != null)
+			AntiPatterns = [.. other.AntiPatterns];
 
 		if (other.ItemCounts != null)
 			ItemCounts = new NumberRangeSet(other.ItemCounts);
@@ -187,14 +183,13 @@ internal class RequirementsContext
 
 		bool BreakPatterns(RequirementsContext context)
 		{
-			//if (Patterns == null && AntiPatterns == null) return false;
-			//context.Patterns = AntiPatterns;
-			//context.AntiPatterns = Patterns;
-			//return true;
-			if (Pattern != null)
-				throw new NotSupportedException("Cannot generate string against negative pattern");
+			if ((Patterns == null || Patterns.Count == 0) && (AntiPatterns == null || AntiPatterns.Count == 0))
+				return false;
 
-			return false;
+			context.Patterns = AntiPatterns != null ? [.. AntiPatterns] : null;
+			context.AntiPatterns = Patterns != null ? [.. Patterns] : null;
+
+			return true;
 		}
 
 		bool BreakItems(RequirementsContext context)
@@ -365,20 +360,15 @@ internal class RequirementsContext
 		else if (other.ConstIsSet)
 			HasConflict |= !(Const?.IsEquivalentTo(other.Const!.Value) ?? false);
 
-		//if (Patterns == null)
-		//	Patterns = other.Patterns;
-		//else if (other.Patterns != null)
-		//	Patterns.AddRange(other.Patterns);
+		if (Patterns == null)
+			Patterns = other.Patterns != null ? [.. other.Patterns] : null;
+		else if (other.Patterns != null)
+			Patterns.AddRange(other.Patterns);
 
-		//if (AntiPatterns == null)
-		//	AntiPatterns = other.AntiPatterns;
-		//else if (other.AntiPatterns != null)
-		//	AntiPatterns.AddRange(other.AntiPatterns);
-
-		if (Pattern == null)
-			Pattern = other.Pattern;
-		else if (other.Pattern != null)
-			throw new NotSupportedException("Generator only supports `pattern` on a single branch.");
+		if (AntiPatterns == null)
+			AntiPatterns = other.AntiPatterns != null ? [.. other.AntiPatterns] : null;
+		else if (other.AntiPatterns != null)
+			AntiPatterns.AddRange(other.AntiPatterns);
 
 		if (ItemCounts == null || !ItemCounts.Ranges.Any())
 			ItemCounts = other.ItemCounts;
@@ -452,9 +442,8 @@ internal class RequirementsContext
 		       Multiples == null &&
 		       AntiMultiples == null &&
 		       StringLengths == null &&
-		       //Patterns == null &&
-		       //AntiPatterns == null &&
-		       Pattern == null &&
+		       Patterns == null &&
+		       AntiPatterns == null &&
 		       Format == null &&
 		       SequentialItems == null &&
 		       RemainingItems == null &&

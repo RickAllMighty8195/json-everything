@@ -37,14 +37,12 @@ internal class StringRequirementsGatherer : IRequirementsGatherer
 		var pattern = (Regex?)schema.GetKeyword<PatternKeyword>()?.Value;
 		if (pattern != null)
 		{
-			//context.Patterns ??= new List<Regex>();
-			//context.Patterns.Add(pattern);
-			context.Pattern = pattern.ToString();
+			context.Patterns ??= [];
+			context.Patterns.Add(pattern.ToString());
+			supportsStrings = true;
 		}
 
-		if (context.Format != null)
-			context.HasConflict = true;
-		else
+		if (context.Format == null)
 		{
 			context.Format = schema.GetKeyword<FormatKeyword>()?.RawValue.GetString() ??
 			                 schema.GetKeyword<Keywords.Draft06.FormatKeyword>()?.RawValue.GetString();

@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json.Nodes;
 using Bogus;
 using Bogus.Extensions;
-using Fare;
 
 namespace Json.Schema.DataGeneration.Generators;
 
@@ -49,31 +48,6 @@ internal class StringGenerator : IDataGenerator
 
 	public GenerationResult Generate(RequirementsContext context)
 	{
-		if (context.Pattern != null)
-		{
-			if (context.StringLengths != null) throw new NotSupportedException("Cannot generate strings that match regex and also specify string lengths");
-
-			string overallRegex = string.Empty;
-
-			//if (context.Patterns != null)
-			//{
-			//	if (context.Patterns.Count == 1)
-			//		overallRegex = context.Patterns[0].ToString();
-			//	else
-			//		overallRegex += HelperExtensions.Require(context.Patterns.Select(x => x.ToString()));
-			//}
-
-			//if (context.AntiPatterns != null)
-			//	overallRegex += HelperExtensions.Forbid(context.AntiPatterns.Select(x => x.ToString()));
-			if (context.Pattern != null)
-				overallRegex = context.Pattern;
-
-#if DEBUG
-			Console.WriteLine(overallRegex);
-#endif
-			return GenerationResult.Success(new Xeger(overallRegex).Generate());
-		}
-
 		var ranges = context.StringLengths ?? _defaultRange;
 		var range = JsonSchemaExtensions.Randomizer.ArrayElement(ranges.Ranges.ToArray());
 		var minimum = range.Minimum.Value != NumberRangeSet.MinRangeValue
@@ -82,6 +56,12 @@ internal class StringGenerator : IDataGenerator
 		var maximum = range.Maximum.Value != NumberRangeSet.MaxRangeValue
 			? (uint)Math.Min(_maxStringLength, range.Maximum.Value)
 			: Math.Min(_maxStringLength, DefaultMaxLength);
+
+		if (minimum > maximum)
+			return GenerationResult.Fail("No valid string lengths possible");
+
+		if ((context.Patterns?.Count ?? 0) > 0 || (context.AntiPatterns?.Count ?? 0) > 0)
+			return RegexValueGenerator.Generate(context.Patterns, context.AntiPatterns, context.Format, minimum, maximum);
 
 		if (context.Format != null)
 		{
