@@ -30,3 +30,5 @@ This file defines how AI agents should orient themselves before making changes i
 - Preserve public API compatibility unless the task explicitly requires a breaking change.
 - Keep changes aligned with the repository's library-first design (packages under `src/`).
 - Add or update tests for behavioral changes.
+- Keep instructions dynamic. Do not wait for an explicit request to update instruction files when recurring feedback reveals a missing rule.
+- If the user repeatedly asks for the same behavior or repeatedly corrects the same mistake, update instructions to capture that pattern so future work aligns automatically.

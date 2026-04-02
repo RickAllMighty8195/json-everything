@@ -43,3 +43,6 @@ Rules:
 - Update instruction files when conventions evolve.
 - Remove outdated guidance promptly.
 - Keep overlap low across files; if a rule belongs in one file, reference it from others instead of repeating it.
+- Treat instruction files as living guidance. Apply proactive updates when recurring user requests or repeated corrections indicate a stable preference or workflow rule.
+- Do not wait for a direct "update instructions" request when a clear pattern is present.
+- Capture repeated mistakes as explicit rules so the same error is less likely to recur.
