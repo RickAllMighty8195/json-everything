@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Json.Pointer;
 
 namespace Json.Schema.DataGeneration;
 
@@ -21,36 +22,46 @@ public class GenerationResult
 	/// Gets the result objects from nested data generations.
 	/// </summary>
 	public IEnumerable<GenerationResult>? InnerResults { get; }
+	/// <summary>
+	/// Gets the relative instance location at which this failure occurred, if known.
+	/// </summary>
+	public JsonPointer? Location { get; }
+	/// <summary>
+	/// Gets the related schema locations for this failure, if known.
+	/// </summary>
+	public IReadOnlyList<JsonPointer>? SchemaLocations { get; }
 
 	/// <summary>
 	/// Gets whether the data generation was successful.
 	/// </summary>
 	public bool IsSuccess => ErrorMessage == null && InnerResults == null;
 
-	private GenerationResult(JsonNode? result, string? errorMessage, IEnumerable<GenerationResult>? inner)
+	private GenerationResult(JsonNode? result, string? errorMessage, IEnumerable<GenerationResult>? inner, JsonPointer? location, IReadOnlyList<JsonPointer>? schemaLocations)
 	{
 		Result = result ?? null;
 		ErrorMessage = errorMessage;
 		InnerResults = inner;
+		Location = location;
+		SchemaLocations = schemaLocations;
 	}
 
 	internal static GenerationResult Success(JsonElement? result)
 	{
-		return new GenerationResult(JsonNode.Parse(result!.Value.GetRawText()), null, null);
+		return new GenerationResult(JsonNode.Parse(result!.Value.GetRawText()), null, null, null, null);
 	}
 
 	internal static GenerationResult Success(JsonNode? result)
 	{
-		return new GenerationResult(result, null, null);
+		return new GenerationResult(result, null, null, null, null);
 	}
 
-	internal static GenerationResult Fail(string errorMessage)
+	internal static GenerationResult Fail(string errorMessage, JsonPointer? location = null, IReadOnlyList<JsonPointer>? schemaLocations = null)
 	{
-		return new GenerationResult(null, errorMessage, null);
+		return new GenerationResult(null, errorMessage, null, location, schemaLocations);
 	}
 
-	internal static GenerationResult Fail(IEnumerable<GenerationResult> inner)
+	internal static GenerationResult Fail(IEnumerable<GenerationResult> inner, JsonPointer? location = null, IReadOnlyList<JsonPointer>? schemaLocations = null)
 	{
-		return new GenerationResult(null, null, inner);
+		return new GenerationResult(null, null, inner, location, schemaLocations);
 	}
 }

@@ -1,4 +1,6 @@
-﻿namespace Json.Schema.DataGeneration.Generators;
+﻿using System.Linq;
+
+namespace Json.Schema.DataGeneration.Generators;
 
 internal class EnumGenerator : IPrioritizedDataGenerator
 {
@@ -8,12 +10,12 @@ internal class EnumGenerator : IPrioritizedDataGenerator
 
 	public bool Applies(RequirementsContext context)
 	{
-		return context.EnumOptions != null;
+		return context.EnumOptions?.Any(x => x.Item1) == true;
 	}
 
 	public GenerationResult Generate(RequirementsContext context)
 	{
-		var value = JsonSchemaExtensions.Randomizer.ListItem(context.EnumOptions);
+		var value = JsonSchemaExtensions.Randomizer.ListItem(context.EnumOptions!.Where(x => x.Item1).ToList());
 		return GenerationResult.Success(value.Item2);
 	}
 }

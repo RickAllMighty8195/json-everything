@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Json.More;
+using Json.Pointer;
 
 namespace Json.Schema.DataGeneration.Generators;
 
@@ -74,7 +75,10 @@ internal class ArrayGenerator : IDataGenerator
 			while (currentSequenceIndex < itemCount && currentSequenceIndex < context.SequentialItems.Count)
 			{
 				var itemRequirement = context.SequentialItems[currentSequenceIndex];
-				itemGenerationResults.Add(itemRequirement.GenerateData());
+				var itemResult = itemRequirement.GenerateData();
+				if (!itemResult.IsSuccess)
+					itemResult = GenerationResult.Fail([itemResult], JsonPointer.Create(currentSequenceIndex.ToString()));
+				itemGenerationResults.Add(itemResult);
 				currentSequenceIndex++;
 			}
 		}
@@ -84,22 +88,60 @@ internal class ArrayGenerator : IDataGenerator
 			.ArrayElements(possibleIndices, Math.Min(possibleIndices.Length, containsCount))
 			.OrderBy(x => x)
 			.ToArray();
-
 		var remainingRequirements = context.RemainingItems ?? new RequirementsContext();
+		var hasExplicitMaxContains = context.ContainsCounts?.Ranges.All(x => x.Maximum.Value != NumberRangeSet.MaxRangeValue) ?? false;
+		RequirementsContext? nonContainsRequirement = null;
+		if (hasExplicitMaxContains)
+		{
+			for (var i = 0; i < 10; i++)
+			{
+				var candidate = new RequirementsContext(remainingRequirements);
+				candidate.And(context.Contains!.Break());
+				if (!candidate.HasConflict)
+				{
+					nonContainsRequirement = candidate;
+					break;
+				}
+			}
+
+			if (nonContainsRequirement == null && context.Contains?.NumberRanges != null)
+			{
+				var numericCandidate = new RequirementsContext(remainingRequirements)
+				{
+					NumberRanges = remainingRequirements.NumberRanges != null
+						? remainingRequirements.NumberRanges * context.Contains.NumberRanges.GetComplement()
+						: context.Contains.NumberRanges.GetComplement()
+				};
+
+				if (numericCandidate.NumberRanges?.Ranges.Any() == true)
+					nonContainsRequirement = numericCandidate;
+			}
+
+			if (nonContainsRequirement == null)
+				hasExplicitMaxContains = false;
+		}
 		if (!remainingRequirements.IsFalse)
 		{
 			int currentContainsIndex = 0;
 			for (int i = currentSequenceIndex; i < itemCount; i++)
 			{
 				var itemRequirement = remainingRequirements;
-				if (containsCount > 0 && currentContainsIndex < containsIndices.Length && i == containsIndices[currentContainsIndex])
+				var isContainsIndex = containsCount > 0 && currentContainsIndex < containsIndices.Length && i == containsIndices[currentContainsIndex];
+				if (isContainsIndex)
 				{
 					itemRequirement = new RequirementsContext(itemRequirement);
 					itemRequirement.And(context.Contains!);
 					currentContainsIndex++;
 				}
+				else if (hasExplicitMaxContains)
+				{
+					itemRequirement = nonContainsRequirement!;
+				}
 
-				itemGenerationResults.Add(itemRequirement.GenerateData());
+				var itemResult = itemRequirement.GenerateData();
+				if (!itemResult.IsSuccess)
+					itemResult = GenerationResult.Fail([itemResult], JsonPointer.Create(i.ToString()));
+				itemGenerationResults.Add(itemResult);
 			}
 		}
 		else if (itemGenerationResults.Count < minItems)

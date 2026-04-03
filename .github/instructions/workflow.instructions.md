@@ -4,25 +4,26 @@ applyTo: "**"
 
 # Agent Workflow
 
-This file defines how AI agents should orient themselves before making changes in this repository.
+This file defines how AI agents MUST orient themselves before making changes in this repository.
+
+Each step in this section MUST be executed as an explicit tool call. A step MUST NOT be skipped; having a file's content already in context is not a valid reason to omit the tool call.
 
 ## Before Making Any Code Changes
 
 1. List instruction files in `.github/instructions/*.instructions.md` and read relevant files for the task.
-2. If present, read `.notes/personal-preferences.instructions.md` for local user preferences that are intentionally not committed.
-   - Project instructions in `.github/instructions/` always take precedence over personal preferences.
-3. Always read these first:
+2. The following files MUST always be read via explicit tool calls before any other action:
    - `workflow.instructions.md`
    - `commands.instructions.md`
-4. Read additional files by concern:
+   - `personal-preferences.instructions.md`
+3. Read additional files by concern:
    - `code-style.instructions.md` when editing C# code.
    - `architecture.instructions.md` when adding projects, files, package references, or changing structure.
    - `tests.instructions.md` when editing tests or changing behavior.
    - `apis.instructions.md` when editing `src/JsonSchema.Api/` or its tests.
    - `domain-knowledge.instructions.md` when implementing behavior tied to JSON specifications or package intent.
    - `instructions.instructions.md` when editing `.instructions.md` files.
-5. For C# style and formatting, treat `.editorconfig` and `json-everything.sln.DotSettings` in the repo root as authoritative.
-6. Prefer minimal, targeted changes. Do not refactor unrelated code.
+4. For C# style and formatting, treat `.editorconfig` and `json-everything.sln.DotSettings` in the repo root as authoritative.
+5. Prefer minimal, targeted changes. Do not refactor unrelated code.
 
 ## Principles
 
@@ -30,5 +31,5 @@ This file defines how AI agents should orient themselves before making changes i
 - Preserve public API compatibility unless the task explicitly requires a breaking change.
 - Keep changes aligned with the repository's library-first design (packages under `src/`).
 - Add or update tests for behavioral changes.
-- Keep instructions dynamic. Do not wait for an explicit request to update instruction files when recurring feedback reveals a missing rule.
-- If the user repeatedly asks for the same behavior or repeatedly corrects the same mistake, update instructions to capture that pattern so future work aligns automatically.
+- Keep instructions dynamic. Do not wait for an explicit request to update instruction files when feedback reveals a missing or incorrect rule.
+- If the user corrects a mistake or asks for a specific behavior — even once — update the relevant instruction file immediately alongside the code fix, without waiting to be asked.

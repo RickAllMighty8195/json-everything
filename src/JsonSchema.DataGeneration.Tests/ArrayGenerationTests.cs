@@ -391,4 +391,46 @@ public class ArrayGenerationTests
 
 		RunFailure(schema, buildOptions);
 	}
+
+	[Test]
+	public void AllOfWithCompatibleSequentialItemsGenerates()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.AllOf(
+				new JsonSchemaBuilder().PrefixItems(
+					new JsonSchemaBuilder().Type(SchemaValueType.Integer).Minimum(10),
+					new JsonSchemaBuilder().Type(SchemaValueType.String).MinLength(3)
+				),
+				new JsonSchemaBuilder().PrefixItems(
+					new JsonSchemaBuilder().Type(SchemaValueType.Integer).Maximum(20).MultipleOf(2),
+					new JsonSchemaBuilder().Type(SchemaValueType.String).MaxLength(10)
+				)
+			)
+			.Type(SchemaValueType.Array)
+			.MinItems(2)
+			.MaxItems(2);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void AllOfWithConflictingSequentialItemsFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.AllOf(
+				new JsonSchemaBuilder().PrefixItems(
+					new JsonSchemaBuilder().Type(SchemaValueType.Integer)
+				),
+				new JsonSchemaBuilder().PrefixItems(
+					new JsonSchemaBuilder().Type(SchemaValueType.String)
+				)
+			)
+			.Type(SchemaValueType.Array)
+			.MinItems(1)
+			.MaxItems(1);
+
+		RunFailure(schema, buildOptions);
+	}
 }

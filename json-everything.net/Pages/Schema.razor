@@ -1,6 +1,6 @@
 ﻿@page "/json-schema"
 @implements IDisposable
-@* @using Json.Schema.DataGeneration *@
+@using Json.Schema.DataGeneration
 @using Json.Schema
 @using System.Text.Json
 @using Json.Schema.Generation
@@ -17,6 +17,8 @@
 @using Json.Schema.Generation.XmlComments
 @using Json.Schema.OpenApi.Keywords
 @using Yaml2JsonNode
+@using System.Text
+@using Json.Pointer
 
 
 @inject DataManager DataManager;
@@ -195,7 +197,7 @@
 		LibraryVersion.GetFor<UniqueKeysKeyword>(),
 		LibraryVersion.GetFor<DiscriminatorKeyword>(),
 		LibraryVersion.GetFor<ISchemaRefiner>(),
-		// LibraryVersion.GetFor<Bound>()
+		LibraryVersion.GetFor<Bound>()
     ];
 
     private readonly List<Dialect> _dialects =
@@ -234,7 +236,7 @@
     {
         Evaluate,
         GenerateSchema,
-        // GenerateData
+		GenerateData
     }
 
     private class SchemaOptionsModel
@@ -294,9 +296,9 @@
 				case SchemaOperations.GenerateSchema:
 					ConfigureForSchemaGen();
 					break;
-				// case SchemaOperations.GenerateData:
-				// 	ConfigureForDataGen();
-				// 	break;
+				case SchemaOperations.GenerateData:
+					ConfigureForDataGen();
+					break;
 				case SchemaOperations.Evaluate:
 				default:
 					ConfigureForEvaluation();
@@ -335,7 +337,7 @@
 	{
 		SchemaOperations.Evaluate => "Evaluate JSON",
 		SchemaOperations.GenerateSchema => "Generate a Schema",
-		// SchemaOperations.GenerateData => "Generate Data",
+		SchemaOperations.GenerateData => "Generate Data",
 		_ => "Evaluate JSON"
 	};
 
@@ -398,9 +400,9 @@
 			case SchemaOperations.GenerateSchema:
 				await GenerateSchema();
 				break;
-			// case SchemaOperations.GenerateData:
-			// 	await GenerateData();
-			// 	break;
+			case SchemaOperations.GenerateData:
+				await GenerateData();
+				break;
 			default:
 				throw new ArgumentOutOfRangeException();
 		}
@@ -458,36 +460,108 @@
 		}
 	}
 
-	// private async Task GenerateData()
-	// {
-	// 	await _outputEditor.SetLanguageAsync("json", JsRuntime);
-	// 	await _outputEditor.SetValue(string.Empty);
+	private async Task GenerateData()
+	{
+		await _outputEditor.SetLanguageAsync("json", JsRuntime);
+		await _outputEditor.SetValue(string.Empty);
 
-	// 	JsonSchema schema;
-	// 	try
-	// 	{
-	// 		schema = YamlSerializer.Deserialize<JsonSchema>(await _schemaEditor.GetValue())!;
-	// 	}
-	// 	catch (Exception e)
-	// 	{
-	// 		await _outputEditor.SetLanguageAsync("text", JsRuntime);
-	// 		await _outputEditor.SetValue($"Schema is invalid\n\n{e.Message}");
-	// 		return;
-	// 	}
+		JsonSchema schema;
+		try
+		{
+			var schemaJson = YamlSerializer.Parse(await _schemaEditor.GetValue()).Single().ToJsonElement();
+			schema = JsonSchema.Build(schemaJson, _options.ToBuildOptions());
+		}
+		catch (Exception e)
+		{
+			await _outputEditor.SetLanguageAsync("text", JsRuntime);
+			await _outputEditor.SetValue($"Schema is invalid\n\n{e.Message}");
+			return;
+		}
 
-	// 	var generationResults = schema.GenerateData();
+		var generationResults = schema.GenerateData(_options.ToBuildOptions());
 
-	// 	if (generationResults.IsSuccess)
-	// 	{
-	// 		var instance = JsonSerializer.Serialize(generationResults.Result, new JsonSerializerOptions {WriteIndented = true});
-	// 		await _instanceEditor.SetValue(instance);
-	// 		await SaveInstance();
-	// 	}
-	// 	else
-	// 	{
-	// 		await _outputEditor.SetValue(generationResults.ErrorMessage);
-	// 	}
-	// }
+		if (generationResults.IsSuccess)
+		{
+			var instance = JsonSerializer.Serialize(generationResults.Result, new JsonSerializerOptions { WriteIndented = true });
+			await _instanceEditor.SetValue(instance);
+			await SaveInstance();
+		}
+		else
+		{
+			await _outputEditor.SetLanguageAsync("text", JsRuntime);
+			await _outputEditor.SetValue(FormatGenerationError(generationResults));
+		}
+	}
+
+	private static string FormatGenerationError(GenerationResult result)
+	{
+		const int maxLeafReasons = 7;
+		const int maxVisitedNodes = 2000;
+
+		var leafReasons = new List<(string? Path, string Message, IReadOnlyList<JsonPointer>? SchemaLocations)>();
+		var seenKeys = new HashSet<string>();
+
+		void AddLeafReason(string? path, string message, IReadOnlyList<JsonPointer>? schemaLocations)
+		{
+			if (seenKeys.Add($"{path}|{message}"))
+				leafReasons.Add((path, message, schemaLocations));
+		}
+
+		var stack = new Stack<(GenerationResult Result, string? Path)>();
+		stack.Push((result, null));
+
+		var visited = 0;
+		while (stack.Count > 0 && visited < maxVisitedNodes)
+		{
+			visited++;
+			var (current, parentPath) = stack.Pop();
+
+			var path = current.Location.HasValue
+				? (parentPath != null ? parentPath + current.Location.Value : current.Location.Value.ToString())
+				: parentPath;
+
+			if (current.ErrorMessage != null)
+			{
+				AddLeafReason(path, current.ErrorMessage, current.SchemaLocations);
+				continue;
+			}
+
+			if (current.InnerResults == null)
+			{
+				AddLeafReason(path, "Data generation failed.", null);
+				continue;
+			}
+
+			foreach (var inner in current.InnerResults.Reverse())
+				stack.Push((inner, path));
+		}
+
+		if (leafReasons.Count == 0)
+			return "Data generation failed.";
+
+		var displayed = leafReasons.Take(maxLeafReasons).ToList();
+		var sb = new StringBuilder();
+		for (var i = 0; i < displayed.Count; i++)
+		{
+			var (path, message, schemaLocations) = displayed[i];
+			if (i > 0) sb.AppendLine();
+			sb.Append($"{i + 1}.");
+			if (path != null) sb.AppendLine($" at {path}");
+			else sb.AppendLine();
+			sb.AppendLine($"   {message}");
+			if (schemaLocations != null && schemaLocations.Count > 0)
+			{
+				sb.AppendLine($"   from {schemaLocations[0]}");
+				for (var j = 1; j < schemaLocations.Count; j++)
+					sb.AppendLine($"        {schemaLocations[j]}");
+			}
+		}
+
+		if (leafReasons.Count > maxLeafReasons)
+			sb.AppendLine($"\n...and {leafReasons.Count - maxLeafReasons} more reason(s)");
+
+		return sb.ToString().TrimEnd();
+	}
 
 #pragma warning disable CS0618 // Type or member is obsolete
 	private async Task GenerateSchema()

@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Json.More;
+using Json.Pointer;
 
 namespace Json.Schema.DataGeneration;
 
+internal readonly record struct ErrorReason(string Message, JsonPointer? LeftSchemaLocation = null, JsonPointer? RightSchemaLocation = null);
+
 internal class RequirementsContext
 {
-	private static readonly JsonElement _one = 1.AsJsonElement();
-
-	public const SchemaValueType AllTypes =
+	private const SchemaValueType _allTypes =
 		SchemaValueType.Array |
 		SchemaValueType.Boolean |
 		SchemaValueType.Integer |
@@ -25,15 +26,16 @@ internal class RequirementsContext
 	public SchemaValueType InferredType { get; set; }
 
 	public NumberRangeSet? NumberRanges { get; set; }
+	public JsonPointer? NumberRangesSource { get; set; }
 	public List<decimal>? Multiples { get; set; }
 	public List<decimal>? AntiMultiples { get; set; }
 
 	public NumberRangeSet? StringLengths { get; set; }
-	// https://www.ocpsoft.org/tutorials/regular-expressions/and-in-regex/
-	//public List<Regex>? Patterns { get; set; }
-	//public List<Regex>? AntiPatterns { get; set; }
-	public string? Pattern { get; set; }
+	public JsonPointer? StringLengthsSource { get; set; }
+	public List<string>? Patterns { get; set; }
+	public List<string>? AntiPatterns { get; set; }
 	public string? Format { get; set; }
+	public JsonPointer? FormatSource { get; set; }
 
 	public List<RequirementsContext>? SequentialItems { get; set; }
 	public RequirementsContext? RemainingItems { get; set; }
@@ -45,6 +47,7 @@ internal class RequirementsContext
 
 	public Dictionary<string, RequirementsContext>? Properties { get; set; }
 	public RequirementsContext? RemainingProperties { get; set; }
+	public RequirementsContext? PropertyNames { get; set; }
 	public NumberRangeSet? PropertyCounts { get; set; }
 	public List<string>? RequiredProperties { get; set; }
 	public List<string>? AvoidProperties { get; set; }
@@ -52,11 +55,15 @@ internal class RequirementsContext
 
 	public JsonElement? Const { get; set; }
 	public bool ConstIsSet { get; set; }
+	public JsonPointer? ConstSource { get; set; }
 	public List<(bool, JsonElement)>? EnumOptions { get; set; }
+	public JsonPointer? EnumSource { get; set; }
+	public JsonPointer? TypeSource { get; set; }
 
 	public List<RequirementsContext>? Options { get; set; }
 
 	public bool HasConflict { get; set; }
+	public List<ErrorReason>? ErrorReasons { get; set; }
 
 	public RequirementsContext() { }
 
@@ -68,6 +75,7 @@ internal class RequirementsContext
 
 		if (other.NumberRanges != null)
 			NumberRanges = new NumberRangeSet(other.NumberRanges);
+		NumberRangesSource = other.NumberRangesSource;
 		if (other.Multiples != null)
 			Multiples = [.. other.Multiples];
 		if (other.AntiMultiples != null)
@@ -75,29 +83,45 @@ internal class RequirementsContext
 
 		if (other.StringLengths != null)
 			StringLengths = new NumberRangeSet(other.StringLengths);
-		//if (other.Patterns != null)
-		//	Patterns = other.Patterns.ToList();
-		//if (other.AntiPatterns != null)
-		//	AntiPatterns = other.AntiPatterns.ToList();
-		if (other.Pattern != null)
-			Pattern = other.Pattern;
+		StringLengthsSource = other.StringLengthsSource;
+		if (other.Patterns != null)
+			Patterns = [.. other.Patterns];
+		if (other.AntiPatterns != null)
+			AntiPatterns = [.. other.AntiPatterns];
+		Format = other.Format;
+		FormatSource = other.FormatSource;
 
 		if (other.ItemCounts != null)
 			ItemCounts = new NumberRangeSet(other.ItemCounts);
+		if (other.SequentialItems != null)
+			SequentialItems = other.SequentialItems.Select(x => new RequirementsContext(x)).ToList();
 		if (other.RemainingItems != null)
 			RemainingItems = new RequirementsContext(other.RemainingItems);
+		if (other.Contains != null)
+			Contains = new RequirementsContext(other.Contains);
+		if (other.ContainsCounts != null)
+			ContainsCounts = new NumberRangeSet(other.ContainsCounts);
 
 		if (copyOptions && other.Options != null)
 			Options = other.Options.Select(x => new RequirementsContext(x)).ToList();
 
 		Const = other.Const;
 		ConstIsSet = other.ConstIsSet;
+		ConstSource = other.ConstSource;
+		if (other.EnumOptions != null)
+			EnumOptions = [.. other.EnumOptions];
+		EnumSource = other.EnumSource;
+		TypeSource = other.TypeSource;
 		HasConflict = other.HasConflict;
+		if (other.ErrorReasons != null)
+			ErrorReasons = [.. other.ErrorReasons];
 
 		if (other.Properties != null)
-			Properties = other.Properties.ToDictionary(x => x.Key, x => x.Value);
+			Properties = other.Properties.ToDictionary(x => x.Key, x => new RequirementsContext(x.Value));
 		if (other.RemainingProperties != null)
 			RemainingProperties = new RequirementsContext(other.RemainingProperties);
+		if (other.PropertyNames != null)
+			PropertyNames = new RequirementsContext(other.PropertyNames);
 		if (other.PropertyCounts != null)
 			PropertyCounts = other.PropertyCounts;
 		if (other.RequiredProperties != null)
@@ -137,7 +161,11 @@ internal class RequirementsContext
 
 	// Create a requirements object that doesn't meet this context's requirement
 	// Only need to break one requirement for this to work, not all
-	public RequirementsContext Break()
+	public RequirementsContext Break() => BreakCore(deterministic: false);
+
+	public RequirementsContext BreakDeterministically() => BreakCore(deterministic: true);
+
+	private RequirementsContext BreakCore(bool deterministic)
 	{
 		bool BreakBoolean(RequirementsContext context)
 		{
@@ -159,7 +187,7 @@ internal class RequirementsContext
 		bool BreakType(RequirementsContext context)
 		{
 			if (Type == null) return false;
-			context.Type = ~AllTypes ^ ~Type;
+			context.Type = ~_allTypes ^ ~Type;
 			return true;
 		}
 
@@ -187,14 +215,25 @@ internal class RequirementsContext
 
 		bool BreakPatterns(RequirementsContext context)
 		{
-			//if (Patterns == null && AntiPatterns == null) return false;
-			//context.Patterns = AntiPatterns;
-			//context.AntiPatterns = Patterns;
-			//return true;
-			if (Pattern != null)
-				throw new NotSupportedException("Cannot generate string against negative pattern");
+			if ((Patterns == null || Patterns.Count == 0) && (AntiPatterns == null || AntiPatterns.Count == 0))
+				return false;
 
-			return false;
+			context.Patterns = AntiPatterns != null ? [.. AntiPatterns] : null;
+			context.AntiPatterns = Patterns != null ? [.. Patterns] : null;
+
+			return true;
+		}
+
+		bool BreakFormat(RequirementsContext context)
+		{
+			if (Format == null) return false;
+
+			context.Format = null;
+			context.AntiPatterns ??= [];
+			if (Format == Formats.Date.Key)
+				context.AntiPatterns.Add("^\\d{4}-\\d{2}-\\d{2}$");
+
+			return true;
 		}
 
 		bool BreakItems(RequirementsContext context)
@@ -221,6 +260,20 @@ internal class RequirementsContext
 
 			if (Properties != null)
 			{
+				var forbiddenProperties = Properties
+					.Where(x => x.Value.IsFalse)
+					.Select(x => x.Key)
+					.ToArray();
+				if (forbiddenProperties.Length > 0)
+				{
+					context.Properties = Properties.ToDictionary(
+						x => x.Key,
+						x => x.Value.IsFalse ? new RequirementsContext() : x.Value.Break());
+					context.RequiredProperties ??= [];
+					context.RequiredProperties.AddRange(forbiddenProperties);
+					return true;
+				}
+
 				context.Properties = Properties.ToDictionary(x => x.Key, x => x.Value.Break());
 				context.RequiredProperties ??= [];
 				context.RequiredProperties.AddRange(context.Properties.Where(x => !x.Value.IsFalse).Select(x => x.Key));
@@ -235,6 +288,13 @@ internal class RequirementsContext
 			if (RequiredProperties == null && AvoidProperties == null) return false;
 			context.RequiredProperties = AvoidProperties;
 			context.AvoidProperties = RequiredProperties;
+			return true;
+		}
+
+		bool BreakPropertyNames(RequirementsContext context)
+		{
+			if (PropertyNames == null) return false;
+			context.PropertyNames = PropertyNames.Break();
 			return true;
 		}
 
@@ -262,8 +322,12 @@ internal class RequirementsContext
 		bool BreakConst(RequirementsContext context)
 		{
 			if (!ConstIsSet) return false;
-			context.Const = _one;
-			context.ConstIsSet = true;
+			context.Const = null;
+			context.ConstIsSet = false;
+			context.ConstSource = null;
+			context.EnumOptions ??= [];
+			context.EnumOptions.Add((false, Const!.Value));
+			context.EnumSource ??= ConstSource;
 			return true;
 		}
 
@@ -275,16 +339,18 @@ internal class RequirementsContext
 			BreakMultiples,
 			BreakStringLength,
 			BreakPatterns,
+			BreakFormat,
 			BreakItems,
 			BreakItemCount,
 			BreakProperties,
 			BreakRequired,
+			BreakPropertyNames,
 			BreakPropertyCounts,
 			BreakContains,
 			BreakContainsCount,
 			BreakConst
 		};
-		var breakers = JsonSchemaExtensions.Randomizer.Shuffle(allBreakers);
+		var breakers = deterministic ? allBreakers : JsonSchemaExtensions.Randomizer.Shuffle(allBreakers);
 
 		var broken = new RequirementsContext(this);
 		using var enumerator = breakers.GetEnumerator();
@@ -295,19 +361,112 @@ internal class RequirementsContext
 
 	public void And(RequirementsContext other)
 	{
+		var thisOptions = Options?.Select(x => new RequirementsContext(x)).ToList();
+		var otherOptions = other.Options?.Select(x => new RequirementsContext(x)).ToList();
+
+		Options = null;
+
+		void AddConflict(string reason, JsonPointer? leftSchemaLocation = null, JsonPointer? rightSchemaLocation = null)
+		{
+			HasConflict = true;
+			ErrorReasons ??= [];
+			if (ErrorReasons.Count < 5)
+				ErrorReasons.Add(new ErrorReason(reason, leftSchemaLocation, rightSchemaLocation));
+		}
+
+		static string DescribeTypes(SchemaValueType? types)
+		{
+			if (types == null) return "any";
+			return types.Value.ToString();
+		}
+
+		static string DescribeConst(JsonElement? value)
+		{
+			return value?.GetRawText() ?? "null";
+		}
+
+		static string DescribeRanges(NumberRangeSet rangeSet)
+		{
+			if (!rangeSet.Ranges.Any()) return "(empty)";
+			return string.Join(", ", rangeSet.Ranges.Select(x => x.ToString()));
+		}
+
+		static string DescribeEnumOptions(List<(bool, JsonElement)> options)
+		{
+			var values = options.Select(x => x.Item2.GetRawText()).Distinct().Take(5).ToArray();
+			var suffix = options.Count > 5 ? ", ..." : string.Empty;
+			return $"[{string.Join(", ", values)}{suffix}]";
+		}
+
+		static List<RequirementsContext> MergeSequentialItems(RequirementsContext leftContext, RequirementsContext rightContext)
+		{
+			var leftSequentialItems = leftContext.SequentialItems!;
+			var rightSequentialItems = rightContext.SequentialItems!;
+			var maxLength = Math.Max(leftSequentialItems.Count, rightSequentialItems.Count);
+			var merged = new List<RequirementsContext>(maxLength);
+
+			RequirementsContext GetRequirementForIndex(RequirementsContext context, int index)
+			{
+				if (context.SequentialItems != null && index < context.SequentialItems.Count)
+					return new RequirementsContext(context.SequentialItems[index]);
+
+				if (context.RemainingItems != null)
+					return new RequirementsContext(context.RemainingItems);
+
+				return new RequirementsContext();
+			}
+
+			for (var i = 0; i < maxLength; i++)
+			{
+				var left = GetRequirementForIndex(leftContext, i);
+				left.And(GetRequirementForIndex(rightContext, i));
+				merged.Add(left);
+			}
+
+			return merged;
+		}
+
 		IsFalse |= other.IsFalse;
+		if (other.ErrorReasons != null)
+		{
+			ErrorReasons ??= [];
+			foreach (var reason in other.ErrorReasons)
+			{
+				if (ErrorReasons.Count >= 5) break;
+				if (!ErrorReasons.Contains(reason))
+					ErrorReasons.Add(reason);
+			}
+		}
 
 		if (Type == null)
+		{
 			Type = other.Type;
+			TypeSource = other.TypeSource;
+		}
 		else if (other.Type != null)
+		{
+			var thisType = Type;
+			var thisTypeSource = TypeSource;
 			Type &= other.Type;
+			if (Type == 0)
+				AddConflict($"Conflicting type constraints have no overlap: {DescribeTypes(thisType)} vs {DescribeTypes(other.Type)}.", thisTypeSource, other.TypeSource);
+		}
 
 		InferredType |= other.InferredType;
 
 		if (NumberRanges == null || !NumberRanges.Ranges.Any())
+		{
 			NumberRanges = other.NumberRanges;
+			NumberRangesSource = other.NumberRangesSource;
+		}
 		else if (other.NumberRanges != null)
+		{
+			var thisRangesDescription = DescribeRanges(NumberRanges);
+			var otherRangesDescription = DescribeRanges(other.NumberRanges);
 			NumberRanges *= other.NumberRanges;
+			if (!NumberRanges.Ranges.Any())
+				AddConflict($"Conflicting numeric ranges have no overlap: {thisRangesDescription} vs {otherRangesDescription}.", NumberRangesSource, other.NumberRangesSource);
+		}
 
 		if (Multiples == null)
 			Multiples = other.Multiples;
@@ -320,47 +479,136 @@ internal class RequirementsContext
 			AntiMultiples.AddRange(other.AntiMultiples);
 
 		if (StringLengths == null || !StringLengths.Ranges.Any())
+		{
 			StringLengths = other.StringLengths;
+			StringLengthsSource = other.StringLengthsSource;
+		}
 		else if (other.StringLengths != null)
+		{
 			StringLengths *= other.StringLengths;
+			if (!StringLengths.Ranges.Any())
+				AddConflict("Conflicting string length constraints have no overlap.", StringLengthsSource, other.StringLengthsSource);
+		}
 
 		if (Format == null)
+		{
 			Format = other.Format;
+			FormatSource = other.FormatSource;
+		}
 		else if (other.Format != null)
-			HasConflict = Format != other.Format;
+		{
+			if (Format != other.Format)
+				AddConflict($"Conflicting format constraints: '{Format}' vs '{other.Format}'.", FormatSource, other.FormatSource);
+		}
 
 		if (!ConstIsSet)
 		{
 			Const = other.Const;
 			ConstIsSet = other.ConstIsSet;
+			ConstSource = other.ConstSource;
 		}
 		else if (other.ConstIsSet)
-			HasConflict = Const?.IsEquivalentTo(other.Const!.Value) ?? false;
+		{
+			if (!(Const?.IsEquivalentTo(other.Const!.Value) ?? false))
+				AddConflict($"Conflicting const values: {DescribeConst(Const)} vs {DescribeConst(other.Const)}.", ConstSource, other.ConstSource);
+		}
 
-		//if (Patterns == null)
-		//	Patterns = other.Patterns;
-		//else if (other.Patterns != null)
-		//	Patterns.AddRange(other.Patterns);
+		if (EnumOptions == null)
+		{
+			EnumOptions = other.EnumOptions != null ? [.. other.EnumOptions] : null;
+			EnumSource = other.EnumSource;
+		}
+		else if (other.EnumOptions != null)
+		{
+			List<JsonElement> DistinctElements(IEnumerable<JsonElement> source)
+			{
+				var result = new List<JsonElement>();
+				foreach (var item in source)
+				{
+					if (!result.Any(x => x.IsEquivalentTo(item)))
+						result.Add(item);
+				}
 
-		//if (AntiPatterns == null)
-		//	AntiPatterns = other.AntiPatterns;
-		//else if (other.AntiPatterns != null)
-		//	AntiPatterns.AddRange(other.AntiPatterns);
+				return result;
+			}
 
-		if (Pattern == null)
-			Pattern = other.Pattern;
-		else if (other.Pattern != null)
-			throw new NotSupportedException("Generator only supports `pattern` on a single branch.");
+			List<JsonElement> IntersectElements(IEnumerable<JsonElement> left, IEnumerable<JsonElement> right)
+			{
+				var rightDistinct = DistinctElements(right);
+				return DistinctElements(left).Where(x => rightDistinct.Any(y => y.IsEquivalentTo(x))).ToList();
+			}
+
+			List<JsonElement> SubtractElements(IEnumerable<JsonElement> left, IEnumerable<JsonElement> remove)
+			{
+				var removeDistinct = DistinctElements(remove);
+				return DistinctElements(left).Where(x => !removeDistinct.Any(y => y.IsEquivalentTo(x))).ToList();
+			}
+
+			var thisAllowed = DistinctElements(EnumOptions.Where(x => x.Item1).Select(x => x.Item2));
+			var otherAllowed = DistinctElements(other.EnumOptions.Where(x => x.Item1).Select(x => x.Item2));
+			var thisDisallowed = DistinctElements(EnumOptions.Where(x => !x.Item1).Select(x => x.Item2));
+			var otherDisallowed = DistinctElements(other.EnumOptions.Where(x => !x.Item1).Select(x => x.Item2));
+
+			var disallowed = DistinctElements(thisDisallowed.Concat(otherDisallowed));
+
+			var hasThisAllowed = thisAllowed.Count != 0;
+			var hasOtherAllowed = otherAllowed.Count != 0;
+			List<JsonElement> allowed;
+			if (hasThisAllowed && hasOtherAllowed)
+				allowed = IntersectElements(thisAllowed, otherAllowed);
+			else if (hasThisAllowed)
+				allowed = thisAllowed;
+			else if (hasOtherAllowed)
+				allowed = otherAllowed;
+			else
+				allowed = [];
+
+			if (allowed.Count != 0)
+				allowed = SubtractElements(allowed, disallowed);
+
+			var thisEnumDescription = DescribeEnumOptions(EnumOptions);
+			var otherEnumDescription = DescribeEnumOptions(other.EnumOptions);
+			if (hasThisAllowed || hasOtherAllowed)
+				EnumOptions = allowed.Select(x => (true, x)).ToList();
+			else
+				EnumOptions = disallowed.Select(x => (false, x)).ToList();
+
+			if ((hasThisAllowed || hasOtherAllowed) && EnumOptions.Count == 0)
+				AddConflict($"Conflicting enum options have no overlap: {thisEnumDescription} vs {otherEnumDescription}.", EnumSource, other.EnumSource);
+		}
+
+		if (ConstIsSet && EnumOptions != null)
+		{
+			var allowed = EnumOptions.Where(x => x.Item1).Select(x => x.Item2).ToList();
+			var disallowed = EnumOptions.Where(x => !x.Item1).Select(x => x.Item2).ToList();
+			if (allowed.Count != 0 && allowed.All(x => !x.IsEquivalentTo(Const!.Value)))
+				AddConflict($"Const value {DescribeConst(Const)} is not present in enum options.", ConstSource, EnumSource);
+			if (disallowed.Any(x => x.IsEquivalentTo(Const!.Value)))
+				AddConflict($"Const value {DescribeConst(Const)} is explicitly disallowed by enum options.", ConstSource, EnumSource);
+		}
+
+		if (Patterns == null)
+			Patterns = other.Patterns != null ? [.. other.Patterns] : null;
+		else if (other.Patterns != null)
+			Patterns.AddRange(other.Patterns);
+
+		if (AntiPatterns == null)
+			AntiPatterns = other.AntiPatterns != null ? [.. other.AntiPatterns] : null;
+		else if (other.AntiPatterns != null)
+			AntiPatterns.AddRange(other.AntiPatterns);
 
 		if (ItemCounts == null || !ItemCounts.Ranges.Any())
 			ItemCounts = other.ItemCounts;
 		else if (other.ItemCounts != null)
 			ItemCounts *= other.ItemCounts;
 
-		// sequentialItems?
+		if (SequentialItems == null)
+			SequentialItems = other.SequentialItems?.Select(x => new RequirementsContext(x)).ToList();
+		else if (other.SequentialItems != null)
+			SequentialItems = MergeSequentialItems(this, other);
 
 		if (RemainingItems == null)
-			RemainingItems = other.RemainingItems;
+			RemainingItems = other.RemainingItems != null ? new RequirementsContext(other.RemainingItems) : null;
 		else if (other.RemainingItems != null)
 			RemainingItems.And(other.RemainingItems);
 
@@ -370,7 +618,7 @@ internal class RequirementsContext
 			PropertyCounts *= other.PropertyCounts;
 
 		if (Properties == null)
-			Properties = other.Properties;
+			Properties = other.Properties?.ToDictionary(x => x.Key, x => new RequirementsContext(x.Value));
 		else if (other.Properties != null)
 		{
 			var allKeys = Properties.Keys.Union(other.Properties.Keys);
@@ -380,16 +628,21 @@ internal class RequirementsContext
 				other.Properties.TryGetValue(key, out var otherProperty);
 
 				if (thisProperty == null)
-					Properties[key] = otherProperty!;
+					Properties[key] = new RequirementsContext(otherProperty!);
 				else if (otherProperty != null)
 					thisProperty.And(otherProperty);
 			}
 		}
 
 		if (RemainingProperties == null)
-			RemainingProperties = other.RemainingProperties;
+			RemainingProperties = other.RemainingProperties != null ? new RequirementsContext(other.RemainingProperties) : null;
 		else if (other.RemainingProperties != null)
 			RemainingProperties.And(other.RemainingProperties);
+
+		if (PropertyNames == null)
+			PropertyNames = other.PropertyNames != null ? new RequirementsContext(other.PropertyNames) : null;
+		else if (other.PropertyNames != null)
+			PropertyNames.And(other.PropertyNames);
 
 		if (RequiredProperties == null)
 			RequiredProperties = other.RequiredProperties;
@@ -401,8 +654,15 @@ internal class RequirementsContext
 		else if (other.AvoidProperties != null)
 			AvoidProperties.AddRange(other.AvoidProperties);
 
+		if (RequiredProperties != null && AvoidProperties != null)
+		{
+			var overlappingProperties = RequiredProperties.Intersect(AvoidProperties).Distinct().ToArray();
+			if (overlappingProperties.Length != 0)
+				AddConflict($"Properties cannot be both required and avoided: {string.Join(", ", overlappingProperties)}.");
+		}
+
 		if (Contains == null)
-			Contains = other.Contains;
+			Contains = other.Contains != null ? new RequirementsContext(other.Contains) : null;
 		else if (other.Contains != null)
 			// is this right?
 			Contains.And(other.Contains);
@@ -411,6 +671,29 @@ internal class RequirementsContext
 			ContainsCounts = other.ContainsCounts;
 		else if (other.ContainsCounts != null)
 			ContainsCounts *= other.ContainsCounts;
+
+		if (thisOptions == null)
+		{
+			Options = otherOptions;
+			return;
+		}
+
+		if (otherOptions == null)
+		{
+			Options = thisOptions;
+			return;
+		}
+
+		Options = [];
+		foreach (var thisOption in thisOptions)
+		{
+			foreach (var otherOption in otherOptions)
+			{
+				var combined = new RequirementsContext(thisOption);
+				combined.And(new RequirementsContext(otherOption));
+				Options.Add(combined);
+			}
+		}
 	}
 
 	private bool IsTrue()
@@ -421,9 +704,8 @@ internal class RequirementsContext
 		       Multiples == null &&
 		       AntiMultiples == null &&
 		       StringLengths == null &&
-		       //Patterns == null &&
-		       //AntiPatterns == null &&
-		       Pattern == null &&
+		       Patterns == null &&
+		       AntiPatterns == null &&
 		       Format == null &&
 		       SequentialItems == null &&
 		       RemainingItems == null &&
@@ -432,6 +714,7 @@ internal class RequirementsContext
 		       ContainsCounts == null &&
 		       Properties == null &&
 		       RemainingProperties == null &&
+		       PropertyNames == null &&
 		       PropertyCounts == null &&
 		       RequiredProperties == null &&
 		       AvoidProperties == null &&

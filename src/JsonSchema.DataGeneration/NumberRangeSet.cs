@@ -39,16 +39,16 @@ public class NumberRangeSet
 
 	static NumberRangeSet()
 	{
-		None = new NumberRangeSet(Array.Empty<NumberRange>());
-		Full = new NumberRangeSet(new[] { new NumberRange(MinRangeValue, MaxRangeValue) });
-		NonNegative = new NumberRangeSet(new[] { new NumberRange(0, MaxRangeValue) });
+		None = new NumberRangeSet([]);
+		Full = new NumberRangeSet([new NumberRange(MinRangeValue, MaxRangeValue)]);
+		NonNegative = new NumberRangeSet([new NumberRange(0, MaxRangeValue)]);
 	}
 
 	/// <summary>
 	/// Creates a new set from a single range.
 	/// </summary>
 	public NumberRangeSet(NumberRange range)
-		: this(new[] { range }) { }
+		: this([range]) { }
 
 	/// <summary>
 	/// Copies a range set.
@@ -77,7 +77,10 @@ public class NumberRangeSet
 		if (intersecting.Count == 0)
 		{
 			index = newRanges.FindIndex(x => range.Minimum < x.Minimum);
-			newRanges.Insert(index, range);
+			if (index == -1)
+				newRanges.Add(range);
+			else
+				newRanges.Insert(index, range);
 		}
 		else
 		{
@@ -98,10 +101,8 @@ public class NumberRangeSet
 	/// Calculates the union of two sets.
 	/// </summary>
 	/// <returns>The resulting set of ranges that exist in either parameters.</returns>
-	public static NumberRangeSet Union(NumberRangeSet left, NumberRangeSet right)
-	{
-		return right._ranges.Aggregate(left, (current, range) => current.Union(range));
-	}
+	public static NumberRangeSet Union(NumberRangeSet left, NumberRangeSet right) => 
+		right._ranges.Aggregate(left, (current, range) => current.Union(range));
 
 	/// <summary>
 	/// Calculates the set of one set omitting another.
@@ -133,10 +134,8 @@ public class NumberRangeSet
 	/// <param name="left">The source set.</param>
 	/// <param name="right">The operating set.</param>
 	/// <returns>The resulting set of ranges that exist in the source set but not the operating set.</returns>
-	public static NumberRangeSet Subtract(NumberRangeSet left, NumberRangeSet right)
-	{
-		return right._ranges.Aggregate(left, (current, range) => current.Subtract(range));
-	}
+	public static NumberRangeSet Subtract(NumberRangeSet left, NumberRangeSet right) => 
+		right._ranges.Aggregate(left, (current, range) => current.Subtract(range));
 
 	/// <summary>
 	/// Calculates the intersection of two sets.
@@ -185,28 +184,19 @@ public class NumberRangeSet
 	/// <summary>
 	/// Gets the complement, or inversion, of the set.
 	/// </summary>
-	public NumberRangeSet GetComplement()
-	{
-		return Full - this;
-	}
+	public NumberRangeSet GetComplement() => Full - this;
 
 	/// <summary>
 	/// Applies a ceiling (upper bound).
 	/// </summary>
-	public NumberRangeSet Ceiling(Bound ceiling)
-	{
-		return Intersect(new NumberRange(MinRangeValue, ceiling));
-	}
+	public NumberRangeSet Ceiling(Bound ceiling) => Intersect(new NumberRange(MinRangeValue, ceiling));
 
 	/// <summary>
 	/// Applies a floor (lower bound).
 	/// </summary>
 	/// <param name="floor"></param>
 	/// <returns></returns>
-	public NumberRangeSet Floor(Bound floor)
-	{
-		return Intersect(new NumberRange(floor, MaxRangeValue));
-	}
+	public NumberRangeSet Floor(Bound floor) => Intersect(new NumberRange(floor, MaxRangeValue));
 
 	private List<NumberRange> GetIntersectingRanges(NumberRange range)
 	{
@@ -220,49 +210,31 @@ public class NumberRangeSet
 	/// Implicitly converts a single range to a set.
 	/// </summary>
 	/// <param name="range"></param>
-	public static implicit operator NumberRangeSet(NumberRange range)
-	{
-		return new NumberRangeSet(range);
-	}
+	public static implicit operator NumberRangeSet(NumberRange range) => new(range);
 
 	/// <summary>
 	/// Unions two sets.
 	/// </summary>
-	public static NumberRangeSet operator +(NumberRangeSet left, NumberRangeSet right)
-	{
-		return Union(left, right);
-	}
+	public static NumberRangeSet operator +(NumberRangeSet left, NumberRangeSet right) => Union(left, right);
 
 	/// <summary>
 	/// Omits one set from another.
 	/// </summary>
-	public static NumberRangeSet operator -(NumberRangeSet left, NumberRangeSet right)
-	{
-		return Subtract(left, right);
-	}
+	public static NumberRangeSet operator -(NumberRangeSet left, NumberRangeSet right) => Subtract(left, right);
 
 	/// <summary>
 	/// Intersects two sets.
 	/// </summary>
-	public static NumberRangeSet operator *(NumberRangeSet left, NumberRangeSet right)
-	{
-		return Intersect(left, right);
-	}
+	public static NumberRangeSet operator *(NumberRangeSet left, NumberRangeSet right) => Intersect(left, right);
 
 	/// <summary>
 	/// Calculates the complement (inversion) of a set.
 	/// </summary>
 	/// <param name="set"></param>
 	/// <returns></returns>
-	public static NumberRangeSet operator !(NumberRangeSet set)
-	{
-		return set.GetComplement();
-	}
+	public static NumberRangeSet operator !(NumberRangeSet set) => set.GetComplement();
 
 	/// <summary>Returns a string that represents the current object.</summary>
 	/// <returns>A string that represents the current object.</returns>
-	public override string ToString()
-	{
-		return string.Join(", ", _ranges);
-	}
+	public override string ToString() => string.Join(", ", _ranges);
 }

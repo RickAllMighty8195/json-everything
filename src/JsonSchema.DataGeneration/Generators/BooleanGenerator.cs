@@ -4,9 +4,7 @@ internal class BooleanGenerator : IDataGenerator
 {
 	public static BooleanGenerator Instance { get; } = new();
 
-	private BooleanGenerator()
-	{
-	}
+	private BooleanGenerator() { }
 
 	public SchemaValueType Type => SchemaValueType.Boolean;
 

@@ -6,9 +6,7 @@ internal class NullGenerator : IDataGenerator
 {
 	public static NullGenerator Instance { get; } = new();
 
-	private NullGenerator()
-	{
-	}
+	private NullGenerator() { }
 
 	public SchemaValueType Type => SchemaValueType.Null;
 

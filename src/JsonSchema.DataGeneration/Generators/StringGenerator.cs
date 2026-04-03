@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json.Nodes;
 using Bogus;
 using Bogus.Extensions;
-using Fare;
 
 namespace Json.Schema.DataGeneration.Generators;
 
@@ -41,52 +40,31 @@ internal class StringGenerator : IDataGenerator
 
 	public static StringGenerator Instance { get; } = new();
 
-	private StringGenerator()
-	{
-	}
+	private StringGenerator() { }
 
 	public SchemaValueType Type => SchemaValueType.String;
 
 	public GenerationResult Generate(RequirementsContext context)
 	{
-		if (context.Pattern != null)
-		{
-			if (context.StringLengths != null) throw new NotSupportedException("Cannot generate strings that match regex and also specify string lengths");
-
-			string overallRegex = string.Empty;
-
-			//if (context.Patterns != null)
-			//{
-			//	if (context.Patterns.Count == 1)
-			//		overallRegex = context.Patterns[0].ToString();
-			//	else
-			//		overallRegex += HelperExtensions.Require(context.Patterns.Select(x => x.ToString()));
-			//}
-
-			//if (context.AntiPatterns != null)
-			//	overallRegex += HelperExtensions.Forbid(context.AntiPatterns.Select(x => x.ToString()));
-			if (context.Pattern != null)
-				overallRegex = context.Pattern;
-
-#if DEBUG
-			Console.WriteLine(overallRegex);
-#endif
-			return GenerationResult.Success(new Xeger(overallRegex).Generate());
-		}
-
 		var ranges = context.StringLengths ?? _defaultRange;
 		var range = JsonSchemaExtensions.Randomizer.ArrayElement(ranges.Ranges.ToArray());
 		var minimum = range.Minimum.Value != NumberRangeSet.MinRangeValue
-			? (uint)Math.Max(0, (long)range.Minimum.Value)
+			? (uint)Math.Max(0, (long)range.Minimum.Value + (range.Minimum.Inclusive ? 0 : 1))
 			: Math.Max(0, DefaultMinLength);
 		var maximum = range.Maximum.Value != NumberRangeSet.MaxRangeValue
-			? (uint)Math.Min(_maxStringLength, range.Maximum.Value)
+			? (uint)Math.Min(_maxStringLength, Math.Max(0, (long)range.Maximum.Value - (range.Maximum.Inclusive ? 0 : 1)))
 			: Math.Min(_maxStringLength, DefaultMaxLength);
+
+		if (minimum > maximum)
+			return GenerationResult.Fail("No valid string lengths possible", schemaLocations: context.StringLengthsSource.HasValue ? [context.StringLengthsSource.Value] : null);
+
+		if ((context.Patterns?.Count ?? 0) > 0 || (context.AntiPatterns?.Count ?? 0) > 0)
+			return RegexValueGenerator.Generate(context.Patterns, context.AntiPatterns, context.Format, minimum, maximum);
 
 		if (context.Format != null)
 		{
 			if (!_formatGenerators.TryGetValue(context.Format, out var generate))
-				return GenerationResult.Fail($"Cannot generate data for format '{context.Format}'");
+				return GenerationResult.Fail($"Cannot generate data for format '{context.Format}'", schemaLocations: context.FormatSource.HasValue ? [context.FormatSource.Value] : null);
 
 			return GenerationResult.Success(generate(range));
 		}

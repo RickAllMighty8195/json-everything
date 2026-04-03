@@ -227,6 +227,87 @@ public static class JsonMath
 	}
 
 	/// <summary>
+	/// Determines whether the numeric value represented by the specified JSON element is a mathematical integer (i.e.
+	/// has no fractional part), without converting to a .NET numeric type.
+	/// </summary>
+	/// <remarks>
+	/// Works directly from the JSON text representation so arbitrarily large integers are recognised correctly,
+	/// avoiding overflow issues that arise when using <c>TryGetInt64</c>.
+	/// </remarks>
+	/// <param name="value">A <see cref="JsonElement"/> whose <see cref="JsonElement.ValueKind"/> must be
+	/// <see cref="JsonValueKind.Number"/>.</param>
+	/// <returns><see langword="true"/> if the value has no fractional part; otherwise <see langword="false"/>.</returns>
+	public static bool IsInteger(JsonElement value)
+	{
+		var span = value.GetRawText().AsSpan();
+
+		var index = 0;
+		if (index < span.Length && span[index] == '-')
+			index++;
+
+		// Find optional exponent
+		var mantissaEnd = span.Length;
+		var expStart = -1;
+		for (var i = index; i < span.Length; i++)
+		{
+			if (span[i] == 'e' || span[i] == 'E')
+			{
+				mantissaEnd = i;
+				expStart = i + 1;
+				break;
+			}
+		}
+
+		// Parse exponent value (may be negative)
+		var exponent = 0;
+		if (expStart >= 0)
+		{
+			var expNeg = false;
+			var ei = expStart;
+			if (ei < span.Length && span[ei] == '-')
+			{
+				expNeg = true;
+				ei++;
+			}
+			else if (ei < span.Length && span[ei] == '+') ei++;
+			for (; ei < span.Length; ei++)
+				exponent = exponent * 10 + (span[ei] - '0');
+			if (expNeg) exponent = -exponent;
+		}
+
+		// Find decimal point position within the mantissa
+		var decimalPos = -1;
+		for (var i = index; i < mantissaEnd; i++)
+		{
+			if (span[i] == '.')
+			{
+				decimalPos = i;
+				break;
+			}
+		}
+
+		if (decimalPos == -1)
+			return exponent >= 0;
+
+		// Count fractional digits; a positive exponent shifts the decimal point right
+		var fractionalDigits = mantissaEnd - decimalPos - 1;
+		if (exponent >= fractionalDigits)
+			return true;
+
+		// Any fractional digit that remains after the exponent shift must be zero
+		var significantFractionalStart = decimalPos + 1 + exponent;
+		if (significantFractionalStart < decimalPos + 1)
+			significantFractionalStart = decimalPos + 1;
+		for (var i = significantFractionalStart; i < mantissaEnd; i++)
+		{
+			if (span[i] != '0')
+				return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
 	/// Determines whether the numeric value represented by the specified JSON element is evenly divisible by the value of
 	/// another JSON element.
 	/// </summary>

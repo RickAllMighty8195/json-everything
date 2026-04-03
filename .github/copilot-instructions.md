@@ -1,4 +1,4 @@
-# CLAUDE.md
+# Copilot Instructions
 
 This file is a mandatory entry point for AI agents working in this repository.
 

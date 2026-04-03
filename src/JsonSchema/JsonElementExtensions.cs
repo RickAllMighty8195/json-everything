@@ -30,7 +30,7 @@ public static class JsonElementExtensions
 			JsonValueKind.Object => SchemaValueType.Object,
 			JsonValueKind.Array => SchemaValueType.Array,
 			JsonValueKind.String => SchemaValueType.String,
-			JsonValueKind.Number => element.TryGetInt64(out _)
+			JsonValueKind.Number => JsonMath.IsInteger(element)
 				? SchemaValueType.Integer
 				: SchemaValueType.Number,
 			JsonValueKind.True => SchemaValueType.Boolean,

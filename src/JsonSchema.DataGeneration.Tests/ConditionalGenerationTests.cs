@@ -42,6 +42,18 @@ public class ConditionalGenerationTests
 	}
 
 	[Test]
+	public void IfThen_WithGuaranteedIfCondition()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Integer)
+			.If(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
+			.Then(new JsonSchemaBuilder().MultipleOf(3));
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
 	public void IfElse()
 	{
 		var buildOptions = new BuildOptions { SchemaRegistry = new() };
@@ -104,6 +116,29 @@ public class ConditionalGenerationTests
 				)
 			)
 			.Required("people");
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void AllOfWithMutuallyExclusiveConditionals()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.Properties(
+				("kind", new JsonSchemaBuilder().Type(SchemaValueType.String).Enum("A", "B")),
+				("value", new JsonSchemaBuilder().Type(SchemaValueType.Integer))
+			)
+			.Required("kind", "value")
+			.AllOf(
+				new JsonSchemaBuilder()
+					.If(new JsonSchemaBuilder().Properties(("kind", new JsonSchemaBuilder().Const("A"))).Required("kind"))
+					.Then(new JsonSchemaBuilder().Properties(("value", new JsonSchemaBuilder().Const(1))).Required("value")),
+				new JsonSchemaBuilder()
+					.If(new JsonSchemaBuilder().Properties(("kind", new JsonSchemaBuilder().Const("B"))).Required("kind"))
+					.Then(new JsonSchemaBuilder().Properties(("value", new JsonSchemaBuilder().Const(2))).Required("value"))
+			);
 
 		Run(schema, buildOptions);
 	}

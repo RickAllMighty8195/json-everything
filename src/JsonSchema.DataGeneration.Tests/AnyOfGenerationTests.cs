@@ -34,4 +34,21 @@ internal class AnyOfGenerationTests
 
 		Run(schema, buildOptions);
 	}
+
+	[Test]
+	public void AnyOfAllBranchesImpossibleFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.AnyOf(
+				new JsonSchemaBuilder()
+					.Type(SchemaValueType.Number)
+					.Not(new JsonSchemaBuilder().Type(SchemaValueType.Number)),
+				new JsonSchemaBuilder()
+					.Type(SchemaValueType.String)
+					.Not(new JsonSchemaBuilder().Type(SchemaValueType.String))
+			);
+
+		RunFailure(schema, buildOptions);
+	}
 }

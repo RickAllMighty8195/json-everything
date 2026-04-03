@@ -30,8 +30,67 @@ internal class AllOfGenerationTests
 				new JsonSchemaBuilder().Type(SchemaValueType.String)
 			);
 
-		var result = schema.GenerateData(buildOptions);
+		RunFailure(schema, buildOptions);
+	}
 
-		Assert.That(result.IsSuccess, Is.False, "generation succeeded somehow");
+	[Test]
+	public void AllOfConflictingMinimaFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.AllOf(
+				new JsonSchemaBuilder().Type(SchemaValueType.Integer).Minimum(100),
+				new JsonSchemaBuilder().Maximum(5)
+			);
+
+		RunFailure(schema, buildOptions);
+	}
+
+	[Test]
+	public void AllOfWithTypeRangeAndMultiple()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.AllOf(
+				new JsonSchemaBuilder().Type(SchemaValueType.Integer),
+				new JsonSchemaBuilder().Minimum(10),
+				new JsonSchemaBuilder().Maximum(100),
+				new JsonSchemaBuilder().MultipleOf(5)
+			);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void AllOfConflictingNestedObjectConstraintsFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.Required("workflow")
+			.AllOf(
+				new JsonSchemaBuilder()
+					.Properties(("workflow", new JsonSchemaBuilder()
+						.Type(SchemaValueType.Object)
+						.Required("step", "retries", "title")
+						.Properties(
+							("step", new JsonSchemaBuilder().Const("start")),
+							("retries", new JsonSchemaBuilder().Minimum(10)),
+							("title", new JsonSchemaBuilder().Const("ALPHA"))
+						)
+					)),
+				new JsonSchemaBuilder()
+					.Properties(("workflow", new JsonSchemaBuilder()
+						.Type(SchemaValueType.Object)
+						.Required("step", "retries", "title")
+						.Properties(
+							("step", new JsonSchemaBuilder().Const("finish")),
+							("retries", new JsonSchemaBuilder().Maximum(2)),
+							("title", new JsonSchemaBuilder().Const("BETA"))
+						)
+					))
+			);
+
+		RunFailure(schema, buildOptions);
 	}
 }
