@@ -34,4 +34,32 @@ internal class AllOfGenerationTests
 
 		Assert.That(result.IsSuccess, Is.False, "generation succeeded somehow");
 	}
+
+	[Test]
+	public void AllOfConflictingMinimaFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.AllOf(
+				new JsonSchemaBuilder().Type(SchemaValueType.Integer).Minimum(100),
+				new JsonSchemaBuilder().Maximum(5)
+			);
+
+		RunFailure(schema, buildOptions);
+	}
+
+	[Test]
+	public void AllOfWithTypeRangeAndMultiple()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.AllOf(
+				new JsonSchemaBuilder().Type(SchemaValueType.Integer),
+				new JsonSchemaBuilder().Minimum(10),
+				new JsonSchemaBuilder().Maximum(100),
+				new JsonSchemaBuilder().MultipleOf(5)
+			);
+
+		Run(schema, buildOptions);
+	}
 }

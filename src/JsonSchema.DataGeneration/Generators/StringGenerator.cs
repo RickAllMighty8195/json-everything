@@ -51,10 +51,10 @@ internal class StringGenerator : IDataGenerator
 		var ranges = context.StringLengths ?? _defaultRange;
 		var range = JsonSchemaExtensions.Randomizer.ArrayElement(ranges.Ranges.ToArray());
 		var minimum = range.Minimum.Value != NumberRangeSet.MinRangeValue
-			? (uint)Math.Max(0, (long)range.Minimum.Value)
+			? (uint)Math.Max(0, (long)range.Minimum.Value + (range.Minimum.Inclusive ? 0 : 1))
 			: Math.Max(0, DefaultMinLength);
 		var maximum = range.Maximum.Value != NumberRangeSet.MaxRangeValue
-			? (uint)Math.Min(_maxStringLength, range.Maximum.Value)
+			? (uint)Math.Min(_maxStringLength, Math.Max(0, (long)range.Maximum.Value - (range.Maximum.Inclusive ? 0 : 1)))
 			: Math.Min(_maxStringLength, DefaultMaxLength);
 
 		if (minimum > maximum)

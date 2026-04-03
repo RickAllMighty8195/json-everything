@@ -95,4 +95,71 @@ public class ObjectGenerationTests
 
 		Run(schema, buildOptions);
 	}
+
+	[Test]
+	public void MinProperties()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.MinProperties(3);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void MinAndMaxProperties()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.MinProperties(2)
+			.MaxProperties(4);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void AdditionalPropertiesWithSchema()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.Properties(
+				("id", new JsonSchemaBuilder().Type(SchemaValueType.Integer))
+			)
+			.AdditionalProperties(new JsonSchemaBuilder().Type(SchemaValueType.String));
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void PropertyWithPatternConstraint()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.Properties(
+				("name", new JsonSchemaBuilder()
+					.Type(SchemaValueType.String)
+					.Pattern(@"^[A-Z][a-z]+$")
+					.MinLength(2)
+					.MaxLength(20))
+			)
+			.Required("name");
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void MinPropertiesExceedsMaxPropertiesFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.MinProperties(3)
+			.MaxProperties(1);
+
+		RunFailure(schema, buildOptions);
+	}
 }

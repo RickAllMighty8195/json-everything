@@ -77,7 +77,10 @@ public class NumberRangeSet
 		if (intersecting.Count == 0)
 		{
 			index = newRanges.FindIndex(x => range.Minimum < x.Minimum);
-			newRanges.Insert(index, range);
+			if (index == -1)
+				newRanges.Add(range);
+			else
+				newRanges.Insert(index, range);
 		}
 		else
 		{

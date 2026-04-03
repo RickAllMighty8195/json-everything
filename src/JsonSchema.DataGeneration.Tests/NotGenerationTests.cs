@@ -154,4 +154,29 @@ public class NotGenerationTests
 
 		Run(schema, buildOptions);
 	}
+
+	[Test]
+	public void StringNotInLengthRange()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.String)
+			.Not(new JsonSchemaBuilder()
+				.MinLength(10)
+				.MaxLength(20)
+			);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void StringNotMatchingFormat()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.String)
+			.Not(new JsonSchemaBuilder().Format(Formats.Date));
+
+		Run(schema, buildOptions);
+	}
 }

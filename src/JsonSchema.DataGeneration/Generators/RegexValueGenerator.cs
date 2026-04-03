@@ -58,7 +58,7 @@ internal static class RegexValueGenerator
 			if (antiRegexes.Any(regex => regex.IsMatch(candidate)))
 				return false;
 
-			if (!string.IsNullOrEmpty(format) && !MatchesKnownFormat(candidate, format))
+			if (!string.IsNullOrEmpty(format) && !MatchesKnownFormat(candidate, format!))
 				return false;
 
 			return true;

@@ -216,6 +216,20 @@ internal class RequirementsContext
 
 			if (Properties != null)
 			{
+				var forbiddenProperties = Properties
+					.Where(x => x.Value.IsFalse)
+					.Select(x => x.Key)
+					.ToArray();
+				if (forbiddenProperties.Length > 0)
+				{
+					context.Properties = Properties.ToDictionary(
+						x => x.Key,
+						x => x.Value.IsFalse ? new RequirementsContext() : x.Value.Break());
+					context.RequiredProperties ??= [];
+					context.RequiredProperties.AddRange(forbiddenProperties);
+					return true;
+				}
+
 				context.Properties = Properties.ToDictionary(x => x.Key, x => x.Value.Break());
 				context.RequiredProperties ??= [];
 				context.RequiredProperties.AddRange(context.Properties.Where(x => !x.Value.IsFalse).Select(x => x.Key));
@@ -330,7 +344,11 @@ internal class RequirementsContext
 		if (NumberRanges == null || !NumberRanges.Ranges.Any())
 			NumberRanges = other.NumberRanges;
 		else if (other.NumberRanges != null)
+		{
 			NumberRanges *= other.NumberRanges;
+			if (!NumberRanges.Ranges.Any())
+				HasConflict = true;
+		}
 
 		if (Multiples == null)
 			Multiples = other.Multiples;

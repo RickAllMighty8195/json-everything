@@ -86,7 +86,10 @@ internal class ObjectGenerator : IDataGenerator
 		}
 		if (context.Properties != null)
 		{
-			var propertyNames = context.Properties.Keys.Except(definedPropertyNames).ToArray();
+			var propertyNames = context.Properties
+				.Where(x => !definedPropertyNames.Contains(x.Key) && !x.Value.IsFalse && !x.Value.HasConflict)
+				.Select(x => x.Key)
+				.ToArray();
 			if (propertyNames.Length != 0)
 			{
 				propertyNames = JsonSchemaExtensions.Randomizer.ArrayElements(propertyNames, Math.Min(propertyNames.Length, remainingPropertyCount));
@@ -123,8 +126,10 @@ internal class ObjectGenerator : IDataGenerator
 			}
 
 			var propertyGenerationResult = propertyRequirement!.GenerateData();
-			if (propertyGenerationResult.IsSuccess)
-				propertyGenerationResults[propertyName] = propertyGenerationResult;
+			if (!propertyGenerationResult.IsSuccess)
+				return GenerationResult.Fail(new[] { propertyGenerationResult });
+
+			propertyGenerationResults[propertyName] = propertyGenerationResult;
 		}
 
 		return propertyGenerationResults.All(x => x.Value.IsSuccess)

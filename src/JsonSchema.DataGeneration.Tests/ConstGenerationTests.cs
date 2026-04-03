@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System.Text.Json.Nodes;
+using NUnit.Framework;
 
 using static Json.Schema.DataGeneration.Tests.TestRunner;
 
@@ -51,5 +52,35 @@ public class ConstGenerationTests
 			);
 
 		RunFailure(schema, buildOptions);
+	}
+
+	[Test]
+	public void ConstNull()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Const((JsonNode?)null);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void ConstBoolean()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Const(true);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void ConstNumber()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Const(42);
+
+		Run(schema, buildOptions);
 	}
 }

@@ -124,7 +124,7 @@ public struct NumberRange : IEquatable<NumberRange>
 
 		// intersected (different end): a1  b1  a2  b2 -> a1  !b1
 		// intersected (same end): a1  b1  a2b2 -> a1  !b1
-		if (a.Minimum < b.Minimum && a.Maximum < b.Maximum)
+		if (a.Minimum < b.Minimum && a.Maximum <= b.Maximum)
 			return new[] { new NumberRange(a.Minimum, Bound.Complement(b.Minimum)) };
 
 		// same start (a ends): a1b1  b2  a2 -> !b2 a2

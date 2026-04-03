@@ -591,4 +591,69 @@ public class StringGenerationTests
 
 		Run(schema, buildOptions);
 	}
+
+	// ---- pattern + format ----
+
+	[Test]
+	public void PatternWithFormat()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.String)
+			.Pattern(@"\w+")
+			.Format(Formats.Email);
+
+		Run(schema, buildOptions);
+	}
+
+	// ---- pattern inside structural keywords ----
+
+	[Test]
+	public void PatternInsideArrayItems()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Array)
+			.Items(new JsonSchemaBuilder()
+				.Type(SchemaValueType.String)
+				.Pattern("cat")
+				.MinLength(3)
+				.MaxLength(20))
+			.MinItems(2)
+			.MaxItems(5);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void PatternOnObjectProperty()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.Properties(
+				("name", new JsonSchemaBuilder()
+					.Type(SchemaValueType.String)
+					.Pattern(@"\w+")
+					.MinLength(1)
+					.MaxLength(30))
+			)
+			.Required("name");
+
+		Run(schema, buildOptions);
+	}
+
+	// ---- failure cases ----
+
+	[Test]
+	public void ImpossiblePatternWithLengthFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.String)
+			.Pattern(@"^\d{100}$")
+			.MaxLength(5);
+
+		RunFailure(schema, buildOptions);
+	}
 }

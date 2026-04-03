@@ -15,4 +15,24 @@ public class EnumGenerationTests
 
 		Run(schema, buildOptions);
 	}
+
+	[Test]
+	public void EnumSingleValue()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Enum("only");
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void EnumMixedTypes()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Enum(1, "two", true, null);
+
+		Run(schema, buildOptions);
+	}
 }

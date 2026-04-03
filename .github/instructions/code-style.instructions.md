@@ -20,6 +20,10 @@ This document covers C# style conventions that complement `.editorconfig`.
 - Use expressive type and member names; avoid abbreviations unless they are established JSON terms.
 - Keep methods focused and small.
 
+## Numeric Literals
+
+- Do not use digit separators (e.g. `1_000_000`). Write numeric literals without separators (e.g. `1000000`).
+
 ## Comments And Documentation
 
 - Do not add comments that restate obvious code flow.
