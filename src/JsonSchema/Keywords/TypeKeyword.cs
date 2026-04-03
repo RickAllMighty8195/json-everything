@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text.Json;
 
@@ -111,18 +110,6 @@ public class TypeKeyword : IKeywordHandler
 				Keyword = Name,
 				IsValid = true
 			};
-
-		// instance is n.0 and expected type has integer but not number
-		if (instanceType == SchemaValueType.Number && expectedType.HasFlag(SchemaValueType.Integer))
-		{
-			// TODO: consider number handling
-			if (context.Instance.TryGetDouble(out var number) && number == Math.Truncate(number))
-				return new KeywordEvaluation
-				{
-					Keyword = Name,
-					IsValid = true
-				};
-		}
 
 		return new KeywordEvaluation
 		{

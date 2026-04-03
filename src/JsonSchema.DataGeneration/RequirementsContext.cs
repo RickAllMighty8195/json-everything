@@ -163,6 +163,16 @@ internal class RequirementsContext
 	// Only need to break one requirement for this to work, not all
 	public RequirementsContext Break()
 	{
+		return BreakCore(deterministic: false);
+	}
+
+	public RequirementsContext BreakDeterministically()
+	{
+		return BreakCore(deterministic: true);
+	}
+
+	private RequirementsContext BreakCore(bool deterministic)
+	{
 		bool BreakBoolean(RequirementsContext context)
 		{
 			if (IsTrue())
@@ -318,8 +328,12 @@ internal class RequirementsContext
 		bool BreakConst(RequirementsContext context)
 		{
 			if (!ConstIsSet) return false;
-			context.Const = Guid.NewGuid().ToString().AsJsonElement();
-			context.ConstIsSet = true;
+			context.Const = null;
+			context.ConstIsSet = false;
+			context.ConstSource = null;
+			context.EnumOptions ??= [];
+			context.EnumOptions.Add((false, Const!.Value));
+			context.EnumSource ??= ConstSource;
 			return true;
 		}
 
@@ -342,7 +356,7 @@ internal class RequirementsContext
 			BreakContainsCount,
 			BreakConst
 		};
-		var breakers = JsonSchemaExtensions.Randomizer.Shuffle(allBreakers);
+		var breakers = deterministic ? allBreakers : JsonSchemaExtensions.Randomizer.Shuffle(allBreakers);
 
 		var broken = new RequirementsContext(this);
 		using var enumerator = breakers.GetEnumerator();
@@ -353,6 +367,11 @@ internal class RequirementsContext
 
 	public void And(RequirementsContext other)
 	{
+		var thisOptions = Options?.Select(x => new RequirementsContext(x)).ToList();
+		var otherOptions = other.Options?.Select(x => new RequirementsContext(x)).ToList();
+
+		Options = null;
+
 		void AddConflict(string reason, JsonPointer? leftSchemaLocation = null, JsonPointer? rightSchemaLocation = null)
 		{
 			HasConflict = true;
@@ -507,11 +526,71 @@ internal class RequirementsContext
 		}
 		else if (other.EnumOptions != null)
 		{
+			List<JsonElement> DistinctElements(IEnumerable<JsonElement> source)
+			{
+				var result = new List<JsonElement>();
+				foreach (var item in source)
+				{
+					if (!result.Any(x => x.IsEquivalentTo(item)))
+						result.Add(item);
+				}
+
+				return result;
+			}
+
+			List<JsonElement> IntersectElements(IEnumerable<JsonElement> left, IEnumerable<JsonElement> right)
+			{
+				var rightDistinct = DistinctElements(right);
+				return DistinctElements(left).Where(x => rightDistinct.Any(y => y.IsEquivalentTo(x))).ToList();
+			}
+
+			List<JsonElement> SubtractElements(IEnumerable<JsonElement> left, IEnumerable<JsonElement> remove)
+			{
+				var removeDistinct = DistinctElements(remove);
+				return DistinctElements(left).Where(x => !removeDistinct.Any(y => y.IsEquivalentTo(x))).ToList();
+			}
+
+			var thisAllowed = DistinctElements(EnumOptions.Where(x => x.Item1).Select(x => x.Item2));
+			var otherAllowed = DistinctElements(other.EnumOptions.Where(x => x.Item1).Select(x => x.Item2));
+			var thisDisallowed = DistinctElements(EnumOptions.Where(x => !x.Item1).Select(x => x.Item2));
+			var otherDisallowed = DistinctElements(other.EnumOptions.Where(x => !x.Item1).Select(x => x.Item2));
+
+			var disallowed = DistinctElements(thisDisallowed.Concat(otherDisallowed));
+
+			var hasThisAllowed = thisAllowed.Count != 0;
+			var hasOtherAllowed = otherAllowed.Count != 0;
+			List<JsonElement> allowed;
+			if (hasThisAllowed && hasOtherAllowed)
+				allowed = IntersectElements(thisAllowed, otherAllowed);
+			else if (hasThisAllowed)
+				allowed = thisAllowed;
+			else if (hasOtherAllowed)
+				allowed = otherAllowed;
+			else
+				allowed = [];
+
+			if (allowed.Count != 0)
+				allowed = SubtractElements(allowed, disallowed);
+
 			var thisEnumDescription = DescribeEnumOptions(EnumOptions);
 			var otherEnumDescription = DescribeEnumOptions(other.EnumOptions);
-			EnumOptions = EnumOptions.Where(x => other.EnumOptions.Any(y => x.Item2.IsEquivalentTo(y.Item2))).ToList();
-			if (!EnumOptions.Any())
+			if (hasThisAllowed || hasOtherAllowed)
+				EnumOptions = allowed.Select(x => (true, x)).ToList();
+			else
+				EnumOptions = disallowed.Select(x => (false, x)).ToList();
+
+			if ((hasThisAllowed || hasOtherAllowed) && EnumOptions.Count == 0)
 				AddConflict($"Conflicting enum options have no overlap: {thisEnumDescription} vs {otherEnumDescription}.", EnumSource, other.EnumSource);
+		}
+
+		if (ConstIsSet && EnumOptions != null)
+		{
+			var allowed = EnumOptions.Where(x => x.Item1).Select(x => x.Item2).ToList();
+			var disallowed = EnumOptions.Where(x => !x.Item1).Select(x => x.Item2).ToList();
+			if (allowed.Count != 0 && allowed.All(x => !x.IsEquivalentTo(Const!.Value)))
+				AddConflict($"Const value {DescribeConst(Const)} is not present in enum options.", ConstSource, EnumSource);
+			if (disallowed.Any(x => x.IsEquivalentTo(Const!.Value)))
+				AddConflict($"Const value {DescribeConst(Const)} is explicitly disallowed by enum options.", ConstSource, EnumSource);
 		}
 
 		if (Patterns == null)
@@ -535,7 +614,7 @@ internal class RequirementsContext
 			SequentialItems = MergeSequentialItems(this, other);
 
 		if (RemainingItems == null)
-			RemainingItems = other.RemainingItems;
+			RemainingItems = other.RemainingItems != null ? new RequirementsContext(other.RemainingItems) : null;
 		else if (other.RemainingItems != null)
 			RemainingItems.And(other.RemainingItems);
 
@@ -545,7 +624,7 @@ internal class RequirementsContext
 			PropertyCounts *= other.PropertyCounts;
 
 		if (Properties == null)
-			Properties = other.Properties;
+			Properties = other.Properties?.ToDictionary(x => x.Key, x => new RequirementsContext(x.Value));
 		else if (other.Properties != null)
 		{
 			var allKeys = Properties.Keys.Union(other.Properties.Keys);
@@ -555,19 +634,19 @@ internal class RequirementsContext
 				other.Properties.TryGetValue(key, out var otherProperty);
 
 				if (thisProperty == null)
-					Properties[key] = otherProperty!;
+					Properties[key] = new RequirementsContext(otherProperty!);
 				else if (otherProperty != null)
 					thisProperty.And(otherProperty);
 			}
 		}
 
 		if (RemainingProperties == null)
-			RemainingProperties = other.RemainingProperties;
+			RemainingProperties = other.RemainingProperties != null ? new RequirementsContext(other.RemainingProperties) : null;
 		else if (other.RemainingProperties != null)
 			RemainingProperties.And(other.RemainingProperties);
 
 		if (PropertyNames == null)
-			PropertyNames = other.PropertyNames;
+			PropertyNames = other.PropertyNames != null ? new RequirementsContext(other.PropertyNames) : null;
 		else if (other.PropertyNames != null)
 			PropertyNames.And(other.PropertyNames);
 
@@ -581,8 +660,15 @@ internal class RequirementsContext
 		else if (other.AvoidProperties != null)
 			AvoidProperties.AddRange(other.AvoidProperties);
 
+		if (RequiredProperties != null && AvoidProperties != null)
+		{
+			var overlappingProperties = RequiredProperties.Intersect(AvoidProperties).Distinct().ToArray();
+			if (overlappingProperties.Length != 0)
+				AddConflict($"Properties cannot be both required and avoided: {string.Join(", ", overlappingProperties)}.");
+		}
+
 		if (Contains == null)
-			Contains = other.Contains;
+			Contains = other.Contains != null ? new RequirementsContext(other.Contains) : null;
 		else if (other.Contains != null)
 			// is this right?
 			Contains.And(other.Contains);
@@ -592,22 +678,27 @@ internal class RequirementsContext
 		else if (other.ContainsCounts != null)
 			ContainsCounts *= other.ContainsCounts;
 
-		if (Options == null)
-			Options = other.Options?.Select(x => new RequirementsContext(x)).ToList();
-		else if (other.Options != null)
+		if (thisOptions == null)
 		{
-			var combined = new List<RequirementsContext>(Options.Count * other.Options.Count);
-			foreach (var thisOption in Options)
-			{
-				foreach (var otherOption in other.Options)
-				{
-					var option = new RequirementsContext(thisOption);
-					option.And(new RequirementsContext(otherOption));
-					combined.Add(option);
-				}
-			}
+			Options = otherOptions;
+			return;
+		}
 
-			Options = combined;
+		if (otherOptions == null)
+		{
+			Options = thisOptions;
+			return;
+		}
+
+		Options = [];
+		foreach (var thisOption in thisOptions)
+		{
+			foreach (var otherOption in otherOptions)
+			{
+				var combined = new RequirementsContext(thisOption);
+				combined.And(new RequirementsContext(otherOption));
+				Options.Add(combined);
+			}
 		}
 	}
 

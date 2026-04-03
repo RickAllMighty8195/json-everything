@@ -39,20 +39,23 @@ internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 			#pragma warning restore CS0618 // Type or member is obsolete
 
 			var ifRequirement = GetBranchRequirements(ifKeyword, sourceRoot.Combine(JsonPointer.Create("if")));
+			var notIfRequirement = ifRequirement.BreakDeterministically();
 
 			RequirementsContext? ifthen = null;
+			RequirementsContext? thenOnly = null;
 			if (thenKeyword != null)
 			{
-				var thenOnly = GetBranchRequirements(thenKeyword, sourceRoot.Combine(JsonPointer.Create("then")));
+				thenOnly = GetBranchRequirements(thenKeyword, sourceRoot.Combine(JsonPointer.Create("then")));
 				ifthen = new RequirementsContext(ifRequirement);
 				ifthen.And(new RequirementsContext(thenOnly));
 			}
 
 			RequirementsContext? ifelse = null;
+			RequirementsContext? elseOnly = null;
 			if (elseKeyword != null)
 			{
-				var elseOnly = GetBranchRequirements(elseKeyword, sourceRoot.Combine(JsonPointer.Create("else")));
-				ifelse = new RequirementsContext(ifRequirement.Break());
+				elseOnly = GetBranchRequirements(elseKeyword, sourceRoot.Combine(JsonPointer.Create("else")));
+				ifelse = new RequirementsContext(notIfRequirement);
 				ifelse.And(new RequirementsContext(elseOnly));
 			}
 
@@ -60,7 +63,7 @@ internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 			if (ifthen == null)
 				AddOptions(ifRequirement, ifelse!);
 			else if (ifelse == null)
-				AddOptions(ifthen, ifRequirement.Break());
+				AddOptions(ifthen, notIfRequirement);
 			else
 				AddOptions(ifthen, ifelse);
 		}
