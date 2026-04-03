@@ -4,7 +4,7 @@ applyTo: "**"
 
 # Agent Workflow
 
-This file defines how AI agents should orient themselves before making changes in this repository.
+This file defines how AI agents MUST orient themselves before making changes in this repository.
 
 ## Before Making Any Code Changes
 
