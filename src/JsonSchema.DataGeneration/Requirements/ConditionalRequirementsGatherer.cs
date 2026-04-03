@@ -41,28 +41,26 @@ internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 			var ifRequirement = GetBranchRequirements(ifKeyword, sourceRoot.Combine(JsonPointer.Create("if")));
 
 			RequirementsContext? ifthen = null;
-			RequirementsContext? thenOnly = null;
 			if (thenKeyword != null)
 			{
-				thenOnly = GetBranchRequirements(thenKeyword, sourceRoot.Combine(JsonPointer.Create("then")));
+				var thenOnly = GetBranchRequirements(thenKeyword, sourceRoot.Combine(JsonPointer.Create("then")));
 				ifthen = new RequirementsContext(ifRequirement);
 				ifthen.And(new RequirementsContext(thenOnly));
 			}
 
 			RequirementsContext? ifelse = null;
-			RequirementsContext? elseOnly = null;
 			if (elseKeyword != null)
 			{
-				elseOnly = GetBranchRequirements(elseKeyword, sourceRoot.Combine(JsonPointer.Create("else")));
+				var elseOnly = GetBranchRequirements(elseKeyword, sourceRoot.Combine(JsonPointer.Create("else")));
 				ifelse = new RequirementsContext(ifRequirement.Break());
 				ifelse.And(new RequirementsContext(elseOnly));
 			}
 
 			if (ifthen == null && ifelse == null) return;
 			if (ifthen == null)
-				AddOptions(ifRequirement, elseOnly!);
+				AddOptions(ifRequirement, ifelse!);
 			else if (ifelse == null)
-				AddOptions(ifthen, thenOnly!);
+				AddOptions(ifthen, ifRequirement.Break());
 			else
 				AddOptions(ifthen, ifelse);
 		}

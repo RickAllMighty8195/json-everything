@@ -11,9 +11,7 @@ internal readonly record struct ErrorReason(string Message, JsonPointer? LeftSch
 
 internal class RequirementsContext
 {
-	private static readonly JsonElement _one = 1.AsJsonElement();
-
-	public const SchemaValueType AllTypes =
+	private const SchemaValueType _allTypes =
 		SchemaValueType.Array |
 		SchemaValueType.Boolean |
 		SchemaValueType.Integer |
@@ -119,7 +117,7 @@ internal class RequirementsContext
 			ErrorReasons = [.. other.ErrorReasons];
 
 		if (other.Properties != null)
-			Properties = other.Properties.ToDictionary(x => x.Key, x => x.Value);
+			Properties = other.Properties.ToDictionary(x => x.Key, x => new RequirementsContext(x.Value));
 		if (other.RemainingProperties != null)
 			RemainingProperties = new RequirementsContext(other.RemainingProperties);
 		if (other.PropertyNames != null)
@@ -185,7 +183,7 @@ internal class RequirementsContext
 		bool BreakType(RequirementsContext context)
 		{
 			if (Type == null) return false;
-			context.Type = ~AllTypes ^ ~Type;
+			context.Type = ~_allTypes ^ ~Type;
 			return true;
 		}
 
@@ -320,7 +318,7 @@ internal class RequirementsContext
 		bool BreakConst(RequirementsContext context)
 		{
 			if (!ConstIsSet) return false;
-			context.Const = _one;
+			context.Const = Guid.NewGuid().ToString().AsJsonElement();
 			context.ConstIsSet = true;
 			return true;
 		}
@@ -593,6 +591,24 @@ internal class RequirementsContext
 			ContainsCounts = other.ContainsCounts;
 		else if (other.ContainsCounts != null)
 			ContainsCounts *= other.ContainsCounts;
+
+		if (Options == null)
+			Options = other.Options?.Select(x => new RequirementsContext(x)).ToList();
+		else if (other.Options != null)
+		{
+			var combined = new List<RequirementsContext>(Options.Count * other.Options.Count);
+			foreach (var thisOption in Options)
+			{
+				foreach (var otherOption in other.Options)
+				{
+					var option = new RequirementsContext(thisOption);
+					option.And(new RequirementsContext(otherOption));
+					combined.Add(option);
+				}
+			}
+
+			Options = combined;
+		}
 	}
 
 	private bool IsTrue()
