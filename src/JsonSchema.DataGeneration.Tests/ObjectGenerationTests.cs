@@ -162,4 +162,72 @@ public class ObjectGenerationTests
 
 		RunFailure(schema, buildOptions);
 	}
+
+	[Test]
+	public void PropertyNamesPatternForGeneratedProperties()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.MinProperties(3)
+			.MaxProperties(5)
+			.PropertyNames(new JsonSchemaBuilder()
+				.Type(SchemaValueType.String)
+				.Pattern("^[a-z]{3,8}$")
+			);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void PropertyNamesLengthForGeneratedProperties()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.MinProperties(2)
+			.MaxProperties(4)
+			.PropertyNames(new JsonSchemaBuilder()
+				.Type(SchemaValueType.String)
+				.MinLength(4)
+				.MaxLength(6)
+			);
+
+		Run(schema, buildOptions);
+	}
+
+	[Test]
+	public void RequiredNameViolatesPropertyNamesFails()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.Properties(
+				("A", true)
+			)
+			.Required("A")
+			.PropertyNames(new JsonSchemaBuilder()
+				.Type(SchemaValueType.String)
+				.Pattern("^[a-z]+$")
+			);
+
+		RunFailure(schema, buildOptions);
+	}
+
+	[Test]
+	public void PropertyNamesFromEnum()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = new JsonSchemaBuilder(buildOptions)
+			.Type(SchemaValueType.Object)
+			.MinProperties(2)
+			.MaxProperties(2)
+			.PropertyNames(new JsonSchemaBuilder()
+				.Type(SchemaValueType.String)
+				.Enum("alpha", "beta")
+			)
+			.AdditionalProperties(true);
+
+		Run(schema, buildOptions);
+	}
 }

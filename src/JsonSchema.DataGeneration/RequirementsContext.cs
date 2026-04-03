@@ -43,6 +43,7 @@ internal class RequirementsContext
 
 	public Dictionary<string, RequirementsContext>? Properties { get; set; }
 	public RequirementsContext? RemainingProperties { get; set; }
+	public RequirementsContext? PropertyNames { get; set; }
 	public NumberRangeSet? PropertyCounts { get; set; }
 	public List<string>? RequiredProperties { get; set; }
 	public List<string>? AvoidProperties { get; set; }
@@ -77,23 +78,34 @@ internal class RequirementsContext
 			Patterns = [.. other.Patterns];
 		if (other.AntiPatterns != null)
 			AntiPatterns = [.. other.AntiPatterns];
+		Format = other.Format;
 
 		if (other.ItemCounts != null)
 			ItemCounts = new NumberRangeSet(other.ItemCounts);
+		if (other.SequentialItems != null)
+			SequentialItems = other.SequentialItems.Select(x => new RequirementsContext(x)).ToList();
 		if (other.RemainingItems != null)
 			RemainingItems = new RequirementsContext(other.RemainingItems);
+		if (other.Contains != null)
+			Contains = new RequirementsContext(other.Contains);
+		if (other.ContainsCounts != null)
+			ContainsCounts = new NumberRangeSet(other.ContainsCounts);
 
 		if (copyOptions && other.Options != null)
 			Options = other.Options.Select(x => new RequirementsContext(x)).ToList();
 
 		Const = other.Const;
 		ConstIsSet = other.ConstIsSet;
+		if (other.EnumOptions != null)
+			EnumOptions = [.. other.EnumOptions];
 		HasConflict = other.HasConflict;
 
 		if (other.Properties != null)
 			Properties = other.Properties.ToDictionary(x => x.Key, x => x.Value);
 		if (other.RemainingProperties != null)
 			RemainingProperties = new RequirementsContext(other.RemainingProperties);
+		if (other.PropertyNames != null)
+			PropertyNames = new RequirementsContext(other.PropertyNames);
 		if (other.PropertyCounts != null)
 			PropertyCounts = other.PropertyCounts;
 		if (other.RequiredProperties != null)
@@ -247,6 +259,13 @@ internal class RequirementsContext
 			return true;
 		}
 
+		bool BreakPropertyNames(RequirementsContext context)
+		{
+			if (PropertyNames == null) return false;
+			context.PropertyNames = PropertyNames.Break();
+			return true;
+		}
+
 		bool BreakPropertyCounts(RequirementsContext context)
 		{
 			if (PropertyCounts == null) return false;
@@ -288,6 +307,7 @@ internal class RequirementsContext
 			BreakItemCount,
 			BreakProperties,
 			BreakRequired,
+			BreakPropertyNames,
 			BreakPropertyCounts,
 			BreakContains,
 			BreakContainsCount,
@@ -378,6 +398,15 @@ internal class RequirementsContext
 		else if (other.ConstIsSet)
 			HasConflict |= !(Const?.IsEquivalentTo(other.Const!.Value) ?? false);
 
+		if (EnumOptions == null)
+			EnumOptions = other.EnumOptions != null ? [.. other.EnumOptions] : null;
+		else if (other.EnumOptions != null)
+		{
+			EnumOptions = EnumOptions.Where(x => other.EnumOptions.Any(y => x.Item2.IsEquivalentTo(y.Item2))).ToList();
+			if (!EnumOptions.Any())
+				HasConflict = true;
+		}
+
 		if (Patterns == null)
 			Patterns = other.Patterns != null ? [.. other.Patterns] : null;
 		else if (other.Patterns != null)
@@ -430,6 +459,11 @@ internal class RequirementsContext
 		else if (other.RemainingProperties != null)
 			RemainingProperties.And(other.RemainingProperties);
 
+		if (PropertyNames == null)
+			PropertyNames = other.PropertyNames;
+		else if (other.PropertyNames != null)
+			PropertyNames.And(other.PropertyNames);
+
 		if (RequiredProperties == null)
 			RequiredProperties = other.RequiredProperties;
 		else if (other.RequiredProperties != null)
@@ -470,6 +504,7 @@ internal class RequirementsContext
 		       ContainsCounts == null &&
 		       Properties == null &&
 		       RemainingProperties == null &&
+		       PropertyNames == null &&
 		       PropertyCounts == null &&
 		       RequiredProperties == null &&
 		       AvoidProperties == null &&

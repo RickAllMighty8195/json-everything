@@ -65,6 +65,16 @@ internal class PropertiesRequirementsGatherer : IRequirementsGatherer
 			supportsObjects = true;
 		}
 
+		var propertyNames = schema.GetKeyword<PropertyNamesKeyword>();
+		if (propertyNames != null)
+		{
+			if (context.PropertyNames != null)
+				context.PropertyNames.And(propertyNames.Subschemas[0].GetRequirements(options));
+			else
+				context.PropertyNames = propertyNames.Subschemas[0].GetRequirements(options);
+			supportsObjects = true;
+		}
+
 		additionalProperties = schema.GetKeyword<UnevaluatedPropertiesKeyword>();
 		if (additionalProperties != null)
 		{
