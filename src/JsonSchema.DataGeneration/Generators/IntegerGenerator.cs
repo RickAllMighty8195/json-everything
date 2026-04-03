@@ -7,9 +7,7 @@ internal class IntegerGenerator : IDataGenerator
 {
 	public static IntegerGenerator Instance { get; } = new();
 
-	private IntegerGenerator()
-	{
-	}
+	private IntegerGenerator() { }
 
 	public SchemaValueType Type => SchemaValueType.Integer;
 

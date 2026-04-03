@@ -161,15 +161,9 @@ internal class RequirementsContext
 
 	// Create a requirements object that doesn't meet this context's requirement
 	// Only need to break one requirement for this to work, not all
-	public RequirementsContext Break()
-	{
-		return BreakCore(deterministic: false);
-	}
+	public RequirementsContext Break() => BreakCore(deterministic: false);
 
-	public RequirementsContext BreakDeterministically()
-	{
-		return BreakCore(deterministic: true);
-	}
+	public RequirementsContext BreakDeterministically() => BreakCore(deterministic: true);
 
 	private RequirementsContext BreakCore(bool deterministic)
 	{

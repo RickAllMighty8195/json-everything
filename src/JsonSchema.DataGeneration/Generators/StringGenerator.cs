@@ -40,9 +40,7 @@ internal class StringGenerator : IDataGenerator
 
 	public static StringGenerator Instance { get; } = new();
 
-	private StringGenerator()
-	{
-	}
+	private StringGenerator() { }
 
 	public SchemaValueType Type => SchemaValueType.String;
 
