@@ -1,4 +1,4 @@
-﻿using System.Linq;
+﻿using Json.Pointer;
 using Json.Schema.Keywords;
 
 namespace Json.Schema.DataGeneration.Requirements;
@@ -7,6 +7,21 @@ internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 {
 	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
 	{
+		RequirementsContext GetBranchRequirements(KeywordData keyword, JsonPointer branchPath)
+		{
+			var branchBuildContext = BuildContext.From(keyword) with
+			{
+				LocalSchema = keyword.RawValue,
+				RelativePath = JsonPointer.Empty,
+				#pragma warning disable CS0618 // Type or member is obsolete
+				PathFromResourceRoot = branchPath
+				#pragma warning restore CS0618 // Type or member is obsolete
+			};
+
+			var branchNode = JsonSchema.BuildNode(branchBuildContext);
+			return branchNode.GetRequirements(options);
+		}
+
 		void AddOptions(params RequirementsContext[] optionContexts)
 		{
 			context.Options ??= [];
@@ -19,13 +34,17 @@ internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 
 		if (ifKeyword != null)
 		{
-			var ifRequirement = ifKeyword.Subschemas[0].GetRequirements(options);
+			#pragma warning disable CS0618 // Type or member is obsolete
+			var sourceRoot = schema.PathFromResourceRoot;
+			#pragma warning restore CS0618 // Type or member is obsolete
+
+			var ifRequirement = GetBranchRequirements(ifKeyword, sourceRoot.Combine(JsonPointer.Create("if")));
 
 			RequirementsContext? ifthen = null;
 			RequirementsContext? thenOnly = null;
 			if (thenKeyword != null)
 			{
-				thenOnly = thenKeyword.Subschemas[0].GetRequirements(options);
+				thenOnly = GetBranchRequirements(thenKeyword, sourceRoot.Combine(JsonPointer.Create("then")));
 				ifthen = new RequirementsContext(ifRequirement);
 				ifthen.And(new RequirementsContext(thenOnly));
 			}
@@ -34,7 +53,7 @@ internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 			RequirementsContext? elseOnly = null;
 			if (elseKeyword != null)
 			{
-				elseOnly = elseKeyword.Subschemas[0].GetRequirements(options);
+				elseOnly = GetBranchRequirements(elseKeyword, sourceRoot.Combine(JsonPointer.Create("else")));
 				ifelse = new RequirementsContext(ifRequirement.Break());
 				ifelse.And(new RequirementsContext(elseOnly));
 			}
