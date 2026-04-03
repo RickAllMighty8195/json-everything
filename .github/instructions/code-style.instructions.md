@@ -20,6 +20,11 @@ This document covers C# style conventions that complement `.editorconfig`.
 - Use expressive type and member names; avoid abbreviations unless they are established JSON terms.
 - Keep methods focused and small.
 
+## Language Features
+
+- Prefer modern C# language features supported by the target frameworks when they improve readability.
+- Prefer collection expressions (e.g. `[value]`, `[a, b]`) instead of `new[] { ... }` when the target type is clear.
+
 ## Member Ordering
 
 - Class member order should be:

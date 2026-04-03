@@ -35,7 +35,7 @@ internal class IntegerGenerator : IDataGenerator
 
 		return value.HasValue
 			? GenerationResult.Success(value.Value)
-			: GenerationResult.Fail("Cannot generate random with that meets all requirements");
+			: GenerationResult.Fail("Cannot generate random with that meets all requirements", schemaLocations: context.NumberRangesSource.HasValue ? [context.NumberRangesSource.Value] : null);
 	}
 
 	private static long? GetValue(long lowerBound, long upperBound, decimal[] requireMultiple, decimal[] requireNotMultiple)

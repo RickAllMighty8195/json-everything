@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Json.More;
+using Json.Pointer;
 
 namespace Json.Schema.DataGeneration.Generators;
 
@@ -74,7 +75,10 @@ internal class ArrayGenerator : IDataGenerator
 			while (currentSequenceIndex < itemCount && currentSequenceIndex < context.SequentialItems.Count)
 			{
 				var itemRequirement = context.SequentialItems[currentSequenceIndex];
-				itemGenerationResults.Add(itemRequirement.GenerateData());
+				var itemResult = itemRequirement.GenerateData();
+				if (!itemResult.IsSuccess)
+					itemResult = GenerationResult.Fail([itemResult], JsonPointer.Create(currentSequenceIndex.ToString()));
+				itemGenerationResults.Add(itemResult);
 				currentSequenceIndex++;
 			}
 		}
@@ -134,7 +138,10 @@ internal class ArrayGenerator : IDataGenerator
 					itemRequirement = nonContainsRequirement!;
 				}
 
-				itemGenerationResults.Add(itemRequirement.GenerateData());
+				var itemResult = itemRequirement.GenerateData();
+				if (!itemResult.IsSuccess)
+					itemResult = GenerationResult.Fail([itemResult], JsonPointer.Create(i.ToString()));
+				itemGenerationResults.Add(itemResult);
 			}
 		}
 		else if (itemGenerationResults.Count < minItems)

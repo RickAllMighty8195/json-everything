@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Bogus;
+using Json.Pointer;
 using Json.Schema.DataGeneration.Generators;
 using Json.Schema.DataGeneration.Requirements;
 
@@ -55,9 +56,34 @@ public static class JsonSchemaExtensions
 		if (requirements.IsFalse)
 			return GenerationResult.Fail("Boolean schema `false` allows no values");
 
+		var failures = new List<GenerationResult>();
+		var conflictVariations = 0;
+		var noGeneratorVariations = 0;
 		foreach (var variation in Randomizer.Shuffle(requirements.GetAllVariations()))
 		{
-			if (variation.HasConflict) continue;
+			if (variation.HasConflict)
+			{
+				conflictVariations++;
+				if (failures.Count < 5)
+				{
+					if (variation.ErrorReasons != null && variation.ErrorReasons.Count != 0)
+					{
+						foreach (var reason in variation.ErrorReasons)
+						{
+							if (failures.Count >= 5) break;
+							var schemaLocations = new List<JsonPointer>(2);
+							if (reason.LeftSchemaLocation.HasValue)
+								schemaLocations.Add(reason.LeftSchemaLocation.Value);
+							if (reason.RightSchemaLocation.HasValue)
+								schemaLocations.Add(reason.RightSchemaLocation.Value);
+							failures.Add(GenerationResult.Fail(reason.Message, schemaLocations: schemaLocations.Count != 0 ? schemaLocations : null));
+						}
+					}
+					else
+						failures.Add(GenerationResult.Fail("Conflicting constraints were detected while combining schema requirements."));
+				}
+				continue;
+			}
 
 			var priorityGenerator = _priorityGenerators.FirstOrDefault(x => x.Applies(variation));
 			if (priorityGenerator != null)
@@ -71,14 +97,22 @@ public static class JsonSchemaExtensions
 					return variation.InferredType.HasFlag(x.Type);
 				})
 				.ToArray();
-			if (applicableGenerators.Length == 0) continue;
+			if (applicableGenerators.Length == 0)
+			{
+				noGeneratorVariations++;
+				continue;
+			}
 
 			var generator = Randomizer.ArrayElement(applicableGenerators);
 			var result = generator.Generate(variation);
 			if (result.IsSuccess) return result;
+			if (failures.Count < 5)
+				failures.Add(result);
 		}
 
-		return GenerationResult.Fail("Could not generate data that validates against the schema.");
+		return failures.Count > 0
+			? GenerationResult.Fail(failures)
+			: GenerationResult.Fail($"Could not generate data that validates against the schema. Tried {conflictVariations + noGeneratorVariations} variation(s): {conflictVariations} conflicting variation(s), {noGeneratorVariations} variation(s) had no applicable generator.");
 	}
 
 	private static readonly IRequirementsGatherer[] _requirementsGatherers =

@@ -70,7 +70,7 @@ internal class NumberGenerator : IDataGenerator
 			availableRanges.RemoveAt(selectedIndex);
 		}
 
-		return GenerationResult.Fail("Could not generate a numeric value that met all requirements.");
+		return GenerationResult.Fail("Could not generate a numeric value that met all requirements.", schemaLocations: context.NumberRangesSource.HasValue ? [context.NumberRangesSource.Value] : null);
 	}
 
 	private static decimal Lcm(IEnumerable<decimal> values)

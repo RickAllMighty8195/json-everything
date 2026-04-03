@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Bogus;
+using Json.Pointer;
 
 namespace Json.Schema.DataGeneration.Generators;
 
@@ -69,6 +70,7 @@ internal class ObjectGenerator : IDataGenerator
 		}
 
 		var propertyGenerationResults = new Dictionary<string, GenerationResult>();
+		var propertyGenerationFailures = new List<GenerationResult>();
 		var definedPropertyNames = new List<string>();
 		var remainingPropertyCount = propertyCount;
 		if (context.RequiredProperties != null)
@@ -131,14 +133,18 @@ internal class ObjectGenerator : IDataGenerator
 
 			var propertyGenerationResult = propertyRequirement!.GenerateData();
 			if (!propertyGenerationResult.IsSuccess)
-				return GenerationResult.Fail(new[] { propertyGenerationResult });
+			{
+				propertyGenerationFailures.Add(GenerationResult.Fail([propertyGenerationResult], JsonPointer.Create(propertyName)));
+				continue;
+			}
 
 			propertyGenerationResults[propertyName] = propertyGenerationResult;
 		}
 
-		return propertyGenerationResults.All(x => x.Value.IsSuccess)
-			? GenerationResult.Success(new JsonObject(propertyGenerationResults.ToDictionary(x => x.Key, x => x.Value.Result?.DeepClone())))
-			: GenerationResult.Fail(propertyGenerationResults.Values);
+		if (propertyGenerationFailures.Count != 0)
+			return GenerationResult.Fail(propertyGenerationFailures);
+
+		return GenerationResult.Success(new JsonObject(propertyGenerationResults.ToDictionary(x => x.Key, x => x.Value.Result?.DeepClone())));
 	}
 
 	private static bool SatisfiesPropertyNameRequirements(string propertyName, RequirementsContext? propertyNameRequirements)

@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using Json.More;
+using Json.Pointer;
 
 namespace Json.Schema.DataGeneration;
+
+internal readonly record struct ErrorReason(string Message, JsonPointer? LeftSchemaLocation = null, JsonPointer? RightSchemaLocation = null);
 
 internal class RequirementsContext
 {
@@ -25,13 +28,16 @@ internal class RequirementsContext
 	public SchemaValueType InferredType { get; set; }
 
 	public NumberRangeSet? NumberRanges { get; set; }
+	public JsonPointer? NumberRangesSource { get; set; }
 	public List<decimal>? Multiples { get; set; }
 	public List<decimal>? AntiMultiples { get; set; }
 
 	public NumberRangeSet? StringLengths { get; set; }
+	public JsonPointer? StringLengthsSource { get; set; }
 	public List<string>? Patterns { get; set; }
 	public List<string>? AntiPatterns { get; set; }
 	public string? Format { get; set; }
+	public JsonPointer? FormatSource { get; set; }
 
 	public List<RequirementsContext>? SequentialItems { get; set; }
 	public RequirementsContext? RemainingItems { get; set; }
@@ -51,11 +57,15 @@ internal class RequirementsContext
 
 	public JsonElement? Const { get; set; }
 	public bool ConstIsSet { get; set; }
+	public JsonPointer? ConstSource { get; set; }
 	public List<(bool, JsonElement)>? EnumOptions { get; set; }
+	public JsonPointer? EnumSource { get; set; }
+	public JsonPointer? TypeSource { get; set; }
 
 	public List<RequirementsContext>? Options { get; set; }
 
 	public bool HasConflict { get; set; }
+	public List<ErrorReason>? ErrorReasons { get; set; }
 
 	public RequirementsContext() { }
 
@@ -67,6 +77,7 @@ internal class RequirementsContext
 
 		if (other.NumberRanges != null)
 			NumberRanges = new NumberRangeSet(other.NumberRanges);
+		NumberRangesSource = other.NumberRangesSource;
 		if (other.Multiples != null)
 			Multiples = [.. other.Multiples];
 		if (other.AntiMultiples != null)
@@ -74,11 +85,13 @@ internal class RequirementsContext
 
 		if (other.StringLengths != null)
 			StringLengths = new NumberRangeSet(other.StringLengths);
+		StringLengthsSource = other.StringLengthsSource;
 		if (other.Patterns != null)
 			Patterns = [.. other.Patterns];
 		if (other.AntiPatterns != null)
 			AntiPatterns = [.. other.AntiPatterns];
 		Format = other.Format;
+		FormatSource = other.FormatSource;
 
 		if (other.ItemCounts != null)
 			ItemCounts = new NumberRangeSet(other.ItemCounts);
@@ -96,9 +109,14 @@ internal class RequirementsContext
 
 		Const = other.Const;
 		ConstIsSet = other.ConstIsSet;
+		ConstSource = other.ConstSource;
 		if (other.EnumOptions != null)
 			EnumOptions = [.. other.EnumOptions];
+		EnumSource = other.EnumSource;
+		TypeSource = other.TypeSource;
 		HasConflict = other.HasConflict;
+		if (other.ErrorReasons != null)
+			ErrorReasons = [.. other.ErrorReasons];
 
 		if (other.Properties != null)
 			Properties = other.Properties.ToDictionary(x => x.Key, x => x.Value);
@@ -204,6 +222,18 @@ internal class RequirementsContext
 			return true;
 		}
 
+		bool BreakFormat(RequirementsContext context)
+		{
+			if (Format == null) return false;
+
+			context.Format = null;
+			context.AntiPatterns ??= [];
+			if (Format == Formats.Date.Key)
+				context.AntiPatterns.Add("^\\d{4}-\\d{2}-\\d{2}$");
+
+			return true;
+		}
+
 		bool BreakItems(RequirementsContext context)
 		{
 			if (RemainingItems == null) return false;
@@ -303,6 +333,7 @@ internal class RequirementsContext
 			BreakMultiples,
 			BreakStringLength,
 			BreakPatterns,
+			BreakFormat,
 			BreakItems,
 			BreakItemCount,
 			BreakProperties,
@@ -324,6 +355,38 @@ internal class RequirementsContext
 
 	public void And(RequirementsContext other)
 	{
+		void AddConflict(string reason, JsonPointer? leftSchemaLocation = null, JsonPointer? rightSchemaLocation = null)
+		{
+			HasConflict = true;
+			ErrorReasons ??= [];
+			if (ErrorReasons.Count < 5)
+				ErrorReasons.Add(new ErrorReason(reason, leftSchemaLocation, rightSchemaLocation));
+		}
+
+		static string DescribeTypes(SchemaValueType? types)
+		{
+			if (types == null) return "any";
+			return types.Value.ToString();
+		}
+
+		static string DescribeConst(JsonElement? value)
+		{
+			return value?.GetRawText() ?? "null";
+		}
+
+		static string DescribeRanges(NumberRangeSet rangeSet)
+		{
+			if (!rangeSet.Ranges.Any()) return "(empty)";
+			return string.Join(", ", rangeSet.Ranges.Select(x => x.ToString()));
+		}
+
+		static string DescribeEnumOptions(List<(bool, JsonElement)> options)
+		{
+			var values = options.Select(x => x.Item2.GetRawText()).Distinct().Take(5).ToArray();
+			var suffix = options.Count > 5 ? ", ..." : string.Empty;
+			return $"[{string.Join(", ", values)}{suffix}]";
+		}
+
 		static List<RequirementsContext> MergeSequentialItems(RequirementsContext leftContext, RequirementsContext rightContext)
 		{
 			var leftSequentialItems = leftContext.SequentialItems!;
@@ -353,21 +416,45 @@ internal class RequirementsContext
 		}
 
 		IsFalse |= other.IsFalse;
+		if (other.ErrorReasons != null)
+		{
+			ErrorReasons ??= [];
+			foreach (var reason in other.ErrorReasons)
+			{
+				if (ErrorReasons.Count >= 5) break;
+				if (!ErrorReasons.Contains(reason))
+					ErrorReasons.Add(reason);
+			}
+		}
 
 		if (Type == null)
+		{
 			Type = other.Type;
+			TypeSource = other.TypeSource;
+		}
 		else if (other.Type != null)
+		{
+			var thisType = Type;
+			var thisTypeSource = TypeSource;
 			Type &= other.Type;
+			if (Type == 0)
+				AddConflict($"Conflicting type constraints have no overlap: {DescribeTypes(thisType)} vs {DescribeTypes(other.Type)}.", thisTypeSource, other.TypeSource);
+		}
 
 		InferredType |= other.InferredType;
 
 		if (NumberRanges == null || !NumberRanges.Ranges.Any())
+		{
 			NumberRanges = other.NumberRanges;
+			NumberRangesSource = other.NumberRangesSource;
+		}
 		else if (other.NumberRanges != null)
 		{
+			var thisRangesDescription = DescribeRanges(NumberRanges);
+			var otherRangesDescription = DescribeRanges(other.NumberRanges);
 			NumberRanges *= other.NumberRanges;
 			if (!NumberRanges.Ranges.Any())
-				HasConflict = true;
+				AddConflict($"Conflicting numeric ranges have no overlap: {thisRangesDescription} vs {otherRangesDescription}.", NumberRangesSource, other.NumberRangesSource);
 		}
 
 		if (Multiples == null)
@@ -381,30 +468,52 @@ internal class RequirementsContext
 			AntiMultiples.AddRange(other.AntiMultiples);
 
 		if (StringLengths == null || !StringLengths.Ranges.Any())
+		{
 			StringLengths = other.StringLengths;
+			StringLengthsSource = other.StringLengthsSource;
+		}
 		else if (other.StringLengths != null)
+		{
 			StringLengths *= other.StringLengths;
+			if (!StringLengths.Ranges.Any())
+				AddConflict("Conflicting string length constraints have no overlap.", StringLengthsSource, other.StringLengthsSource);
+		}
 
 		if (Format == null)
+		{
 			Format = other.Format;
+			FormatSource = other.FormatSource;
+		}
 		else if (other.Format != null)
-			HasConflict |= Format != other.Format;
+		{
+			if (Format != other.Format)
+				AddConflict($"Conflicting format constraints: '{Format}' vs '{other.Format}'.", FormatSource, other.FormatSource);
+		}
 
 		if (!ConstIsSet)
 		{
 			Const = other.Const;
 			ConstIsSet = other.ConstIsSet;
+			ConstSource = other.ConstSource;
 		}
 		else if (other.ConstIsSet)
-			HasConflict |= !(Const?.IsEquivalentTo(other.Const!.Value) ?? false);
+		{
+			if (!(Const?.IsEquivalentTo(other.Const!.Value) ?? false))
+				AddConflict($"Conflicting const values: {DescribeConst(Const)} vs {DescribeConst(other.Const)}.", ConstSource, other.ConstSource);
+		}
 
 		if (EnumOptions == null)
+		{
 			EnumOptions = other.EnumOptions != null ? [.. other.EnumOptions] : null;
+			EnumSource = other.EnumSource;
+		}
 		else if (other.EnumOptions != null)
 		{
+			var thisEnumDescription = DescribeEnumOptions(EnumOptions);
+			var otherEnumDescription = DescribeEnumOptions(other.EnumOptions);
 			EnumOptions = EnumOptions.Where(x => other.EnumOptions.Any(y => x.Item2.IsEquivalentTo(y.Item2))).ToList();
 			if (!EnumOptions.Any())
-				HasConflict = true;
+				AddConflict($"Conflicting enum options have no overlap: {thisEnumDescription} vs {otherEnumDescription}.", EnumSource, other.EnumSource);
 		}
 
 		if (Patterns == null)

@@ -58,7 +58,7 @@ internal class StringGenerator : IDataGenerator
 			: Math.Min(_maxStringLength, DefaultMaxLength);
 
 		if (minimum > maximum)
-			return GenerationResult.Fail("No valid string lengths possible");
+			return GenerationResult.Fail("No valid string lengths possible", schemaLocations: context.StringLengthsSource.HasValue ? [context.StringLengthsSource.Value] : null);
 
 		if ((context.Patterns?.Count ?? 0) > 0 || (context.AntiPatterns?.Count ?? 0) > 0)
 			return RegexValueGenerator.Generate(context.Patterns, context.AntiPatterns, context.Format, minimum, maximum);
@@ -66,7 +66,7 @@ internal class StringGenerator : IDataGenerator
 		if (context.Format != null)
 		{
 			if (!_formatGenerators.TryGetValue(context.Format, out var generate))
-				return GenerationResult.Fail($"Cannot generate data for format '{context.Format}'");
+				return GenerationResult.Fail($"Cannot generate data for format '{context.Format}'", schemaLocations: context.FormatSource.HasValue ? [context.FormatSource.Value] : null);
 
 			return GenerationResult.Success(generate(range));
 		}
