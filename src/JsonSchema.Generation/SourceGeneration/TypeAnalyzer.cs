@@ -9,7 +9,7 @@ namespace Json.Schema.Generation.SourceGeneration;
 
 internal static class TypeAnalyzer
 {
-	public static TypeInfo? Analyze(Compilation compilation, INamedTypeSymbol typeSymbol, AttributeData attributeData, Action<Diagnostic> reportDiagnostic)
+	public static TypeInfo? Analyze(Compilation compilation, INamedTypeSymbol typeSymbol, AttributeData? attributeData, Action<Diagnostic> reportDiagnostic)
 	{
 		if (typeSymbol is { IsGenericType: true, IsUnboundGenericType: false })
 		{
@@ -31,19 +31,22 @@ internal static class TypeAnalyzer
 		var propertyOrder = PropertyOrder.AsDeclared;
 		var strictConditionals = false;
 
-		foreach (var namedArg in attributeData.NamedArguments)
+		if (attributeData != null)
 		{
-			switch (namedArg.Key)
+			foreach (var namedArg in attributeData.NamedArguments)
 			{
-				case "PropertyNaming" when namedArg.Value.Value is int namingValue:
-					propertyNaming = (NamingConvention)namingValue;
-					break;
-				case "PropertyOrder" when namedArg.Value.Value is int orderValue:
-					propertyOrder = (PropertyOrder)orderValue;
-					break;
-				case "StrictConditionals" when namedArg.Value.Value is bool strictValue:
-					strictConditionals = strictValue;
-					break;
+				switch (namedArg.Key)
+				{
+					case "PropertyNaming" when namedArg.Value.Value is int namingValue:
+						propertyNaming = (NamingConvention)namingValue;
+						break;
+					case "PropertyOrder" when namedArg.Value.Value is int orderValue:
+						propertyOrder = (PropertyOrder)orderValue;
+						break;
+					case "StrictConditionals" when namedArg.Value.Value is bool strictValue:
+						strictConditionals = strictValue;
+						break;
+				}
 			}
 		}
 
@@ -75,10 +78,10 @@ internal static class TypeAnalyzer
 				break;
 		}
 
-		ExtractAttributes(compilation, typeSymbol.GetAttributes(), typeInfo.TypeAttributes, reportDiagnostic);
+		ExtractAttributes(compilation, typeSymbol.GetAttributes(), typeInfo.TypeAttributes);
 
 		if (typeKind == TypeKind.Object)
-			AnalyzeConditionals(typeInfo, reportDiagnostic);
+			AnalyzeConditionals(typeInfo);
 
 		return typeInfo;
 	}
@@ -154,7 +157,7 @@ internal static class TypeAnalyzer
 			}
 
 			ITypeSymbol memberType;
-			var isReadOnly = false;
+			bool isReadOnly;
 			var isWriteOnly = false;
 
 			if (member is IPropertySymbol property)
@@ -221,7 +224,7 @@ internal static class TypeAnalyzer
 				XmlDocSummary = GetXmlDocSummary(member)
 			};
 
-			ExtractAttributes(compilation, member.GetAttributes(), propertyInfo.Attributes, reportDiagnostic);
+			ExtractAttributes(compilation, member.GetAttributes(), propertyInfo.Attributes);
 
 			typeInfo.Properties.Add(propertyInfo);
 		}
@@ -244,7 +247,7 @@ internal static class TypeAnalyzer
 		}
 	}
 
-	private static void AnalyzeConditionals(TypeInfo typeInfo, Action<Diagnostic> reportDiagnostic)
+	private static void AnalyzeConditionals(TypeInfo typeInfo)
 	{
 		var conditionalsByGroup = new Dictionary<object, ConditionalInfo>();
 
@@ -485,7 +488,7 @@ internal static class TypeAnalyzer
 		};
 	}
 
-	private static void ExtractAttributes(Compilation compilation, IEnumerable<AttributeData> attributes, List<AttributeInfo> targetList, Action<Diagnostic> reportDiagnostic)
+	private static void ExtractAttributes(Compilation compilation, IEnumerable<AttributeData> attributes, List<AttributeInfo> targetList)
 	{
 		foreach (var attr in attributes)
 		{

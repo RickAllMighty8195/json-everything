@@ -37,19 +37,6 @@ internal class SchemaEmissionContext
 		return simpleName;
 	}
 
-	public bool ShouldUseRef(ITypeSymbol typeSymbol)
-	{
-		if (RootType != null && SymbolEqualityComparer.Default.Equals(
-			CodeEmitterHelpers.UnwrapNullable(typeSymbol), 
-			CodeEmitterHelpers.UnwrapNullable(RootType)))
-		{
-			return true;
-		}
-		
-		var typeKey = GetTypeKey(typeSymbol);
-		return TypeReferences.ContainsKey(typeKey);
-	}
-
 	public string GetRefUri(ITypeSymbol typeSymbol)
 	{
 		if (RootType != null && SymbolEqualityComparer.Default.Equals(
@@ -61,7 +48,7 @@ internal class SchemaEmissionContext
 		
 		var typeKey = GetTypeKey(typeSymbol);
 		return TypeReferences.TryGetValue(typeKey, out var info)
-			? $"#/$defs/{info.DefName}"
+			? info.Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
 			: "";
 	}
 }
