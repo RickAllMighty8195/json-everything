@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using Json.Schema.Generation.SourceGeneration.Emitters;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -34,9 +35,9 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 		var typesWithAttribute = context.SyntaxProvider
 			.ForAttributeWithMetadataName(
-				fullyQualifiedMetadataName: _generateJsonSchemaAttributeName,
-				predicate: static (node, _) => node is TypeDeclarationSyntax,
-				transform: static (ctx, _) => GetTypeToGenerate(ctx))
+				_generateJsonSchemaAttributeName,
+				static (node, _) => node is TypeDeclarationSyntax,
+				static (ctx, _) => GetTypeToGenerate(ctx))
 			.Where(static type => type is not null);
 
 		var compilationAndTypesAndDisabled = context.CompilationProvider
@@ -48,7 +49,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			var isDisabled = source.Right;
 			if (isDisabled) return;
 
-			Execute(source.Left.Left, source.Left.Right!, spc);
+			Execute(source.Left.Left, source.Left.Right, spc);
 		});
 	}
 
@@ -70,16 +71,34 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		if (validTypes.Count == 0) return;
 
 		var analyzedTypes = new List<TypeInfo>();
+		var allEncounteredTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
 		foreach (var type in validTypes)
 		{
 			var typeInfo = TypeAnalyzer.Analyze(compilation, type.TypeSymbol, type.AttributeData, context.ReportDiagnostic);
 			if (typeInfo != null) 
+			{
 				analyzedTypes.Add(typeInfo);
+				CollectAllTypes(compilation, typeInfo, allEncounteredTypes, context.ReportDiagnostic);
+			}
 		}
 
 		if (analyzedTypes.Count == 0) return;
 
-		var typesByNamespace = analyzedTypes.GroupBy(t => GetNamespace(t.TypeSymbol));
+		// Analyze all encountered types that aren't already analyzed
+		var allTypeInfos = new List<TypeInfo>(analyzedTypes);
+		foreach (var typeSymbol in allEncounteredTypes)
+		{
+			if (analyzedTypes.Any(t => SymbolEqualityComparer.Default.Equals(t.TypeSymbol, typeSymbol))) continue;
+
+			if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
+			{
+				var typeInfo = TypeAnalyzer.Analyze(compilation, namedTypeSymbol, null, context.ReportDiagnostic);
+				if (typeInfo != null)
+					allTypeInfos.Add(typeInfo);
+			}
+		}
+
+		var typesByNamespace = allTypeInfos.GroupBy(t => GetNamespace(t.TypeSymbol));
 
 		foreach (var group in typesByNamespace)
 		{
@@ -97,6 +116,51 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			var fileName = $"{safeName}.g.cs";
 
 			context.AddSource(fileName, SourceText.From(generatedCode, Encoding.UTF8));
+		}
+	}
+
+	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic)
+	{
+		CollectTypeRecursive(compilation, typeInfo.TypeSymbol, allTypes, reportDiagnostic);
+
+		foreach (var prop in typeInfo.Properties)
+		{
+			CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic);
+		}
+	}
+
+	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic)
+	{
+		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
+		var typeKind = SchemaCodeEmitter.DetermineTypeKind(unwrapped);
+		if (typeKind is TypeKind.Boolean or TypeKind.Integer or 
+		    TypeKind.Number or TypeKind.String or 
+		    TypeKind.DateTime or TypeKind.Guid or 
+		    TypeKind.Uri or TypeKind.Enum)
+			return;
+
+		if (typeKind == TypeKind.Array)
+		{
+			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
+			if (elementType != null)
+				CollectTypeRecursive(compilation, elementType, allTypes, reportDiagnostic);
+			return;
+		}
+
+		if (typeKind == TypeKind.Object && unwrapped is INamedTypeSymbol namedType)
+		{
+			if (allTypes.Add(namedType))
+			{
+				// Analyze the type to collect its properties' types
+				var tempTypeInfo = TypeAnalyzer.Analyze(compilation, namedType, null, reportDiagnostic);
+				if (tempTypeInfo != null)
+				{
+					foreach (var prop in tempTypeInfo.Properties)
+					{
+						CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic);
+					}
+				}
+			}
 		}
 	}
 

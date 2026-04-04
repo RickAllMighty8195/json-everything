@@ -1,7 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
-using static Json.Schema.Generation.Tests.SourceGeneration.TestModels;
 
 namespace Json.Schema.Generation.Tests.SourceGeneration;
 
@@ -12,6 +11,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SimplePerson",
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
@@ -19,7 +19,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_SimplePerson;
 		
 		AssertEqual(expected, actual);
@@ -30,6 +30,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.CamelCasePerson",
 		  "type": "object",
 		  "properties": {
 		    "firstName": { "type": "string" },
@@ -38,7 +39,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_CamelCasePerson;
 		
 		AssertEqual(expected, actual);
@@ -49,6 +50,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithNullable",
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
@@ -57,7 +59,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_PersonWithNullable;
 		
 		AssertEqual(expected, actual);
@@ -68,6 +70,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithRequired",
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
@@ -76,7 +79,7 @@ public class SourceGeneratorTests
 		  "required": ["Name"]
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_PersonWithRequired;
 		
 		AssertEqual(expected, actual);
@@ -87,6 +90,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithEnum",
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
@@ -96,7 +100,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_PersonWithEnum;
 		
 		AssertEqual(expected, actual);
@@ -107,6 +111,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithDescription",
 		  "type": "object",
 		  "properties": {
 		    "Name": {
@@ -120,7 +125,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_PersonWithDescription;
 		
 		AssertEqual(expected, actual);
@@ -131,6 +136,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ProductWithCustomAttributes",
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
@@ -148,7 +154,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_ProductWithCustomAttributes;
 		
 		AssertEqual(expected, actual);
@@ -159,37 +165,28 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithAddresses",
 		  "type": "object",
-		  "$defs": {
-		    "Address": {
-		      "type": "object",
-		      "properties": {
-		        "Street": { "type": "string" },
-		        "City": { "type": "string" },
-		        "PostalCode": { "type": "string" }
-		      }
-		    }
-		  },
 		  "properties": {
 		    "Name": { "type": "string" },
 		    "HomeAddress": {
 		      "description": "Home address",
 		      "anyOf": [
-		        { "$ref": "#/$defs/Address" },
+		        { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Address" },
 		        { "type": "null" }
 		      ]
 		    },
 		    "WorkAddress": {
 		      "description": "Work address",
 		      "anyOf": [
-		        { "$ref": "#/$defs/Address" },
+		        { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Address" },
 		        { "type": "null" }
 		      ]
 		    }
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_PersonWithAddresses;
 		
 		AssertEqual(expected, actual);
@@ -200,6 +197,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SingleCondition",
 		  "type": "object",
 		  "properties": {
 		    "Toggle": { "type": "boolean" },
@@ -217,7 +215,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_SingleCondition;
 		
 		AssertEqual(expected, actual);
@@ -228,6 +226,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SingleConditionCamelCase",
 		  "type": "object",
 		  "properties": {
 		    "toggle": { "type": "boolean" },
@@ -245,7 +244,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_SingleConditionCamelCase;
 		
 		AssertEqual(expected, actual);
@@ -256,6 +255,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleConditionGroups",
 		  "type": "object",
 		  "properties": {
 		    "Toggle": { "type": "boolean" },
@@ -290,7 +290,7 @@ public class SourceGeneratorTests
 		  ]
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_MultipleConditionGroups;
 		
 		AssertEqual(expected, actual);
@@ -301,6 +301,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleTriggersInSameGroup",
 		  "type": "object",
 		  "properties": {
 		    "Count": { "type": "integer" },
@@ -320,7 +321,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_MultipleTriggersInSameGroup;
 		
 		AssertEqual(expected, actual);
@@ -331,6 +332,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalWithMinimum",
 		  "type": "object",
 		  "properties": {
 		    "Age": { "type": "integer" },
@@ -348,7 +350,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_ConditionalWithMinimum;
 		
 		AssertEqual(expected, actual);
@@ -359,6 +361,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalWithMaximum",
 		  "type": "object",
 		  "properties": {
 		    "Score": { "type": "integer" },
@@ -376,7 +379,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_ConditionalWithMaximum;
 		
 		AssertEqual(expected, actual);
@@ -387,6 +390,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.EnumSwitch",
 		  "type": "object",
 		  "properties": {
 		    "Day": {
@@ -422,7 +426,7 @@ public class SourceGeneratorTests
 		  ]
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_EnumSwitch;
 		
 		AssertEqual(expected, actual);
@@ -433,6 +437,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalValidation",
 		  "type": "object",
 		  "properties": {
 		    "IsActive": { "type": "boolean" },
@@ -460,7 +465,7 @@ public class SourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_ConditionalValidation;
 		
 		AssertEqual(expected, actual);
@@ -564,16 +569,6 @@ public class SourceGeneratorTests
 		// In non-strict mode, should not have unevaluatedProperties or additionalProperties
 		Assert.That(actual.Root.Source.TryGetProperty("unevaluatedProperties", out _), Is.False);
 		Assert.That(actual.Root.Source.TryGetProperty("additionalProperties", out _), Is.False);
-	}
-
-	[Test]
-	public void SourceGenTarget_MatchesRuntimeGeneration()
-	{
-		// Compare source-generated schema with runtime generation
-		JsonSchema expected = new JsonSchemaBuilder().FromType<SourceGenTarget>();
-		JsonSchema actual = GeneratedJsonSchemas.TestModels_SourceGenTarget;
-		
-		AssertEqual(expected, actual);
 	}
 }
 

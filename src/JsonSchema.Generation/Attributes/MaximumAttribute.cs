@@ -12,7 +12,7 @@ namespace Json.Schema.Generation;
 /// because `decimal` is not a valid attribute parameter type.
 /// As such, to prevent overflows, the value is clamped to the `decimal` range prior to being converted.
 /// </remarks>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field |
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.GenericParameter |
                 AttributeTargets.Enum | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface,
 	AllowMultiple = true)]
 public class MaximumAttribute : ConditionalAttribute, INestableAttribute, IAttributeHandler

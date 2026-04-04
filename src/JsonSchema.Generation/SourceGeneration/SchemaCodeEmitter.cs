@@ -12,9 +12,12 @@ internal static class SchemaCodeEmitter
 {
 	public static void EmitSchemaForType(StringBuilder sb, ITypeSymbol typeSymbol, bool isNullable, string indent, SchemaEmissionContext? context = null, List<AttributeInfo>? itemAttributes = null, List<AttributeInfo>? propertyAttributes = null)
 	{
-		if (context != null && context.ShouldUseRef(typeSymbol))
+		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
+		var typeKind = DetermineTypeKind(unwrapped);
+		if (typeKind == TypeKind.Object && context != null && 
+		    (context.RootType == null || !SymbolEqualityComparer.Default.Equals(unwrapped, CodeEmitterHelpers.UnwrapNullable(context.RootType))))
 		{
-			var refUri = context.GetRefUri(typeSymbol);
+			var refUri = context.GetRefUri(unwrapped);
 			sb.AppendLine();
 			
 			if (isNullable)
@@ -32,8 +35,6 @@ internal static class SchemaCodeEmitter
 
 			return;
 		}
-		
-		var typeKind = DetermineTypeKind(typeSymbol);
 		
 		if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
 		{
@@ -79,7 +80,7 @@ internal static class SchemaCodeEmitter
 		}
 	}
 
-	private static TypeKind DetermineTypeKind(ITypeSymbol typeSymbol)
+	internal static TypeKind DetermineTypeKind(ITypeSymbol typeSymbol)
 	{
 		var unwrappedType = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
 		
@@ -164,10 +165,14 @@ internal static class SchemaCodeEmitter
 		sb.AppendLine(classDeclaration.GetDeclarationString());
 		sb.AppendLine("{");
 
-		foreach (var type in types)
+		var orderedTypes = OrderTypesTopologically(types);
+
+		foreach (var type in orderedTypes)
 		{
 			EmitSchemaProperty(sb, type);
 		}
+
+		EmitRegisterSchemasMethod(sb, orderedTypes);
 
 		sb.AppendLine("}");
 		sb.AppendLine();
@@ -175,6 +180,83 @@ internal static class SchemaCodeEmitter
 		EmitRegistrationClass(sb, types);
 
 		return sb.ToString();
+	}
+
+	private static void EmitRegisterSchemasMethod(StringBuilder sb, List<TypeInfo> types)
+	{
+		sb.AppendLine();
+		sb.AppendLine("\t/// <summary>");
+		sb.AppendLine("\t/// Registers all generated schemas in the specified schema registry.");
+		sb.AppendLine("\t/// </summary>");
+		sb.AppendLine("\tpublic static void RegisterSchemas(Json.Schema.SchemaRegistry registry)");
+		sb.AppendLine("\t{");
+
+		foreach (var type in types)
+		{
+			sb.AppendLine($"\t\tregistry.Register({type.SchemaPropertyName});");
+		}
+
+		sb.AppendLine("\t}");
+	}
+
+	private static List<TypeInfo> OrderTypesTopologically(List<TypeInfo> types)
+	{
+		var graph = new Dictionary<TypeInfo, List<TypeInfo>>();
+		var inDegree = new Dictionary<TypeInfo, int>();
+
+		foreach (var type in types)
+		{
+			graph[type] = new List<TypeInfo>();
+			inDegree[type] = 0;
+		}
+
+		foreach (var type in types)
+		{
+			foreach (var prop in type.Properties)
+			{
+				var depType = FindTypeBySymbol(types, prop.Type);
+				if (depType != null && depType != type)
+				{
+					graph[type].Add(depType);
+					inDegree[depType]++;
+				}
+			}
+		}
+
+		var queue = new Queue<TypeInfo>();
+		foreach (var type in types)
+		{
+			if (inDegree[type] == 0)
+				queue.Enqueue(type);
+		}
+
+		var result = new List<TypeInfo>();
+		while (queue.Count > 0)
+		{
+			var current = queue.Dequeue();
+			result.Add(current);
+
+			foreach (var dep in graph[current])
+			{
+				inDegree[dep]--;
+				if (inDegree[dep] == 0)
+					queue.Enqueue(dep);
+			}
+		}
+
+		// If there are cycles, just return the original order
+		if (result.Count != types.Count)
+			return types;
+
+		return result;
+	}
+
+	private static TypeInfo? FindTypeBySymbol(List<TypeInfo> types, ITypeSymbol symbol)
+	{
+		var unwrapped = CodeEmitterHelpers.UnwrapNullable(symbol);
+		if (unwrapped is not INamedTypeSymbol named) return null;
+
+		return types.FirstOrDefault(t => SymbolEqualityComparer.Default.Equals(t.TypeSymbol, named));
 	}
 
 	private static void EmitSchemaProperty(StringBuilder sb, TypeInfo type)
@@ -205,10 +287,14 @@ internal static class SchemaCodeEmitter
 	{
 		var indentStr = new string('\t', indent);
 		
-		var context = AnalyzeReusedTypes(type);
+		var context = AnalyzeTypeReferences(type);
 		context.RootType = type.TypeSymbol;
 		
 		sb.Append("new JsonSchemaBuilder()");
+
+		var id = type.FullyQualifiedName;
+		sb.AppendLine();
+		sb.Append($"{indentStr}.Id(\"{id}\")");
 
 		var emitter = SchemaEmitterRegistry.Emitters.FirstOrDefault(e => e.Handles(type));
 		if (emitter != null)
@@ -220,9 +306,6 @@ internal static class SchemaCodeEmitter
 			sb.AppendLine();
 			sb.Append($"{indentStr}.Type(SchemaValueType.Object)");
 		}
-
-		if (context.TypeReferences.Count > 0) 
-			EmitDefs(sb, context, indentStr);
 
 		EmitAttributes(sb, type.TypeAttributes, indentStr);
 	}
@@ -438,30 +521,19 @@ internal static class SchemaCodeEmitter
 		sb.Append(')');
 	}
 
-	private static SchemaEmissionContext AnalyzeReusedTypes(TypeInfo type)
+	private static SchemaEmissionContext AnalyzeTypeReferences(TypeInfo type)
 	{
 		var context = new SchemaEmissionContext();
 		
-		var typeCounts = new Dictionary<string, (ITypeSymbol Symbol, int Count)>();
-		
 		foreach (var prop in type.Properties)
 		{
-			CollectPropertyTypes(prop.Type, typeCounts);
-		}
-		
-		foreach (var kvp in typeCounts)
-		{
-			if (kvp.Value.Count > 1)
-			{
-				var defName = SchemaEmissionContext.GetDefinitionName(kvp.Value.Symbol);
-				context.TypeReferences[kvp.Key] = (defName, kvp.Value.Symbol);
-			}
+			CollectPropertyTypes(prop.Type, context);
 		}
 		
 		return context;
 	}
 
-	private static void CollectPropertyTypes(ITypeSymbol typeSymbol, Dictionary<string, (ITypeSymbol Symbol, int Count)> typeCounts)
+	private static void CollectPropertyTypes(ITypeSymbol typeSymbol, SchemaEmissionContext context)
 	{
 		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
 		
@@ -474,7 +546,7 @@ internal static class SchemaCodeEmitter
 		{
 			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
 			if (elementType != null) 
-				CollectPropertyTypes(elementType, typeCounts);
+				CollectPropertyTypes(elementType, context);
 
 			return;
 		}
@@ -482,133 +554,12 @@ internal static class SchemaCodeEmitter
 		if (typeKind == TypeKind.Object)
 		{
 			var typeKey = SchemaEmissionContext.GetTypeKey(unwrapped);
-			if (typeCounts.TryGetValue(typeKey, out var existing))
-				typeCounts[typeKey] = (existing.Symbol, existing.Count + 1);
-			else
-				typeCounts[typeKey] = (unwrapped, 1);
-		}
-	}
-
-	private static void EmitDefs(StringBuilder sb, SchemaEmissionContext context, string indent)
-	{
-		sb.AppendLine();
-		sb.Append($"{indent}.Defs(");
-		sb.AppendLine();
-		
-		var first = true;
-		foreach (var kvp in context.TypeReferences)
-		{
-			if (!first)
+			if (!context.TypeReferences.ContainsKey(typeKey))
 			{
-				sb.Append(',');
-				sb.AppendLine();
-			}
-			first = false;
-			
-			var (defName, typeSymbol) = kvp.Value;
-			sb.Append($"{indent}\t(\"{defName}\", new JsonSchemaBuilder()");
-			
-			if (typeSymbol is INamedTypeSymbol namedType)
-			{
-				var typeInfo = BuildTypeInfoForRef(namedType);
-				var emitter = SchemaEmitterRegistry.Emitters.FirstOrDefault(e => e.Handles(typeInfo));
-				if (emitter != null)
-					emitter.EmitSchema(sb, typeInfo, indent + "\t\t", new SchemaEmissionContext());
-				else
-				{
-					sb.AppendLine();
-					sb.Append($"{indent}\t\t.Type(SchemaValueType.Object)");
-				}
-			}
-			else
-			{
-				sb.AppendLine();
-				sb.Append($"{indent}\t\t.Type(SchemaValueType.Object)");
-			}
-			
-			sb.Append(')');
-		}
-		
-		sb.AppendLine();
-		sb.Append($"{indent})");
-	}
-
-	private static TypeInfo BuildTypeInfoForRef(INamedTypeSymbol typeSymbol)
-	{
-		var typeKind = DetermineTypeKind(typeSymbol);
-		var typeInfo = new TypeInfo
-		{
-			TypeSymbol = typeSymbol,
-			FullyQualifiedName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-			SchemaPropertyName = "",
-			PropertyNaming = NamingConvention.AsDeclared,
-			PropertyOrder = PropertyOrder.AsDeclared,
-			StrictConditionals = false,
-			Kind = typeKind,
-			IsNullable = false
-		};
-
-		if (typeKind == TypeKind.Object)
-		{
-			foreach (var member in typeSymbol.GetMembers())
-			{
-				ITypeSymbol? memberType;
-				bool isReadOnly;
-				var isWriteOnly = false;
-
-				if (member is IPropertySymbol property)
-				{
-					if (property.DeclaredAccessibility != Accessibility.Public) continue;
-
-					memberType = property.Type;
-					isReadOnly = property.SetMethod == null;
-					isWriteOnly = property.GetMethod == null;
-
-					if (isWriteOnly) continue;
-				}
-				else if (member is IFieldSymbol field)
-				{
-					if (field.DeclaredAccessibility != Accessibility.Public) continue;
-
-					memberType = field.Type;
-					isReadOnly = field.IsReadOnly;
-				}
-				else continue;
-
-				var schemaName = member.Name;
-				var isRequired = false;
-				if (member is IPropertySymbol prop)
-					isRequired = prop.IsRequired;
-
-				var isNullable = memberType.NullableAnnotation == NullableAnnotation.Annotated;
-
-				var propertyInfo = new PropertyInfo
-				{
-					Name = member.Name,
-					SchemaName = schemaName,
-					Type = memberType,
-					IsRequired = isRequired,
-					IsNullable = isNullable,
-					IsReadOnly = isReadOnly,
-					IsWriteOnly = isWriteOnly
-				};
-
-				typeInfo.Properties.Add(propertyInfo);
+				var defName = SchemaEmissionContext.GetDefinitionName(unwrapped);
+				context.TypeReferences[typeKey] = (defName, unwrapped);
 			}
 		}
-		else if (typeKind == TypeKind.Enum)
-		{
-			foreach (var member in typeSymbol.GetMembers())
-			{
-				if (member is IFieldSymbol { IsConst: true, HasConstantValue: true } field)
-				{
-					if (CodeEmitterHelpers.ShouldIncludeEnumMember(field))
-						typeInfo.EnumValues.Add(field.Name);
-				}
-			}
-		}
-
-		return typeInfo;
 	}
 
 	private static void EmitRegistrationClass(StringBuilder sb, List<TypeInfo> types)

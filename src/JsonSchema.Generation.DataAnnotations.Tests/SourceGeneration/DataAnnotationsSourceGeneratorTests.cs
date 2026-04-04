@@ -11,6 +11,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithMaxLength",
 		  "type": "object",
 		  "properties": {
 		    "Name": {
@@ -21,7 +22,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithMaxLength;
 		
 		AssertEqual(expected, actual);
@@ -32,6 +33,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithMinLength",
 		  "type": "object",
 		  "properties": {
 		    "Name": {
@@ -42,7 +44,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithMinLength;
 		
 		AssertEqual(expected, actual);
@@ -53,6 +55,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithStringLength",
 		  "type": "object",
 		  "properties": {
 		    "Name": {
@@ -64,7 +67,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithStringLength;
 		
 		AssertEqual(expected, actual);
@@ -75,6 +78,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithRange",
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
@@ -86,7 +90,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithRange;
 		
 		AssertEqual(expected, actual);
@@ -97,6 +101,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithRegex",
 		  "type": "object",
 		  "properties": {
 		    "SSN": {
@@ -106,7 +111,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithRegex;
 		
 		AssertEqual(expected, actual);
@@ -117,6 +122,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithEmail",
 		  "type": "object",
 		  "properties": {
 		    "Email": {
@@ -126,7 +132,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithEmail;
 		
 		AssertEqual(expected, actual);
@@ -137,6 +143,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithUrl",
 		  "type": "object",
 		  "properties": {
 		    "Website": {
@@ -146,7 +153,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithUrl;
 		
 		AssertEqual(expected, actual);
@@ -158,6 +165,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithLength",
 		  "type": "object",
 		  "properties": {
 		    "Name": {
@@ -168,7 +176,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithLength;
 		
 		AssertEqual(expected, actual);
@@ -179,6 +187,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithBase64",
 		  "type": "object",
 		  "properties": {
 		    "Image": {
@@ -188,7 +197,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithBase64;
 		
 		AssertEqual(expected, actual);
@@ -200,6 +209,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithMultipleConstraints",
 		  "type": "object",
 		  "properties": {
 		    "Name": {
@@ -220,7 +230,7 @@ public class DataAnnotationsSourceGeneratorTests
 		  }
 		}
 		""";
-		var expected = JsonSchema.FromText(expectedJson);
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.DataAnnotationsTestModels_PersonWithMultipleConstraints;
 		
 		AssertEqual(expected, actual);
