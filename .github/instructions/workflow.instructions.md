@@ -33,3 +33,4 @@ Each step in this section MUST be executed as an explicit tool call. A step MUST
 - Add or update tests for behavioral changes.
 - Keep instructions dynamic. Do not wait for an explicit request to update instruction files when feedback reveals a missing or incorrect rule.
 - If the user corrects a mistake or asks for a specific behavior — even once — update the relevant instruction file immediately alongside the code fix, without waiting to be asked.
+- If an attempted fix does not work, revert that failed change before trying a different solution.

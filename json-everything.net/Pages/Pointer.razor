@@ -45,7 +45,7 @@
 	<div class="main-content">
 		<div class="path-input-row">
 			<EditForm Model="_input">
-				<InputText @bind-Value="_input.Pointer" DisplayName="Pointer" class="form-control" @oninput="SavePath" placeholder="Pointer"/>
+				<InputText @bind-Value="_input.Pointer" DisplayName="Pointer" class="form-control path-input-field" @oninput="SavePath" placeholder="Pointer"/>
 			</EditForm>
 		</div>
 		<div class="editor-grid">
@@ -71,6 +71,7 @@
 	#pragma warning disable CS8618
 	private StandaloneCodeEditor _instanceEditor;
 	private StandaloneCodeEditor _outputEditor;
+	private string _savedInstanceText = string.Empty;
 
 	private readonly InputModel _input = new();
 
@@ -88,16 +89,22 @@
 	private StandaloneEditorConstructionOptions BasicOptions(StandaloneCodeEditor _) => EditorOptions.Basic();
 	private StandaloneEditorConstructionOptions ReadOnlyOptions(StandaloneCodeEditor _) => EditorOptions.Readonly();
 
+	protected override async Task OnInitializedAsync()
+	{
+		ThemeService.OnThemeChanged += HandleThemeChanged;
+		await LoadSavedPath();
+		_savedInstanceText = await DataManager.Get("pointer-instance") ?? string.Empty;
+		await base.OnInitializedAsync();
+	}
+
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
 		{
-			ThemeService.OnThemeChanged += HandleThemeChanged;
 			HandleThemeChanged();
 			
 			await JsRuntime.InvokeVoidAsync("initResizableSidebar");
-			await LoadSavedPath();
-			await LoadSavedInstance();
+			await _instanceEditor.SetValue(_savedInstanceText);
 			await _outputEditor.SetValue(string.Empty);
 		}
 
@@ -159,11 +166,6 @@
 	private async Task SaveInstance()
 	{
 		await DataManager.SaveEditorValue(_instanceEditor, "pointer-instance");
-	}
-
-	private async Task LoadSavedInstance()
-	{
-		await DataManager.LoadEditorValue(_instanceEditor, "pointer-instance");
 	}
 
 	private string GetImageUrl() =>

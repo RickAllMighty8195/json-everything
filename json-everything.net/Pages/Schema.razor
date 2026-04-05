@@ -55,7 +55,7 @@
 			<EditForm Model="_options" class="vstack">
 				<label class="my-2">
 					What do you want to do?<br />
-					<InputSelect @bind-Value="Operation" DisplayName="Spec version" class="form-control">
+					<InputSelect @bind-Value="Operation" @bind-Value:after="SaveSettings" DisplayName="Spec version" class="form-control">
 						@foreach (SchemaOperations operation in Enum.GetValues(typeof(SchemaOperations)))
 						{
 							<option value="@operation">@GetDescription(operation)</option>
@@ -72,7 +72,7 @@
 							</span>
 						</span>
 						<br />
-						<InputSelect @bind-Value="_options.DialectId" DisplayName="Spec version" class="form-control">
+						<InputSelect @bind-Value="_options.DialectId" @bind-Value:after="SaveSettings" DisplayName="Spec version" class="form-control">
 							@foreach (var dialect in _dialects)
 							{
 								<option value="@dialect.Id!.OriginalString">@GetDescription(dialect)</option>
@@ -88,7 +88,7 @@
 							</span>
 						</span>
 						<br />
-						<InputSelect @bind-Value="_options.OutputFormat" DisplayName="Output format" class="form-control">
+						<InputSelect @bind-Value="_options.OutputFormat" @bind-Value:after="SaveSettings" DisplayName="Output format" class="form-control">
 							@foreach (var format in Enum.GetValues(typeof(OutputFormat)))
 							{
 								<option value="@format">@format</option>
@@ -104,7 +104,7 @@
                             </span>
                         </span>
                         <br />
-                        <InputSelect @bind-Value="_options.CultureCode" DisplayName="Language" class="form-control">
+                        <InputSelect @bind-Value="_options.CultureCode" @bind-Value:after="SaveSettings" DisplayName="Language" class="form-control">
                             @foreach (var culture in _cultures)
                             {
                                 <option value="@culture.Key">@culture.Value</option>
@@ -112,7 +112,7 @@
                         </InputSelect>
                     </label>
                     <label class="my-2">
-						<InputCheckbox @bind-Value="_options.IncludeDroppedAnnotations" DisplayName="Preserve dropped annotations" />
+						<InputCheckbox @bind-Value="_options.IncludeDroppedAnnotations" @bind-Value:after="SaveSettings" DisplayName="Preserve dropped annotations" />
 						Preserve dropped annotations
 						<span class="tooltip-icon">
 							ⓘ
@@ -122,7 +122,7 @@
 						</span>
 					</label>
 					<label class="my-2">
-						<InputCheckbox @bind-Value="_options.AddAnnotationForUnknownKeywords" DisplayName="Unknown keywords annotation" />
+						<InputCheckbox @bind-Value="_options.AddAnnotationForUnknownKeywords" @bind-Value:after="SaveSettings" DisplayName="Unknown keywords annotation" />
 						Unknown keywords annotation
 						<span class="tooltip-icon">
 							ⓘ
@@ -132,7 +132,7 @@
 						</span>
 					</label>
 					<label class="my-2">
-						<InputCheckbox @bind-Value="_options.ValidateFormat" DisplayName="Validate format" />
+						<InputCheckbox @bind-Value="_options.ValidateFormat" @bind-Value:after="SaveSettings" DisplayName="Validate format" />
 						Validate <span class="font-monospace">format</span>
 						<span class="tooltip-icon">
 							ⓘ
@@ -150,7 +150,7 @@
 	</div>
 	<div class="resize-handle"></div>
 	<div class="main-content">
-		<div class="editor-grid">
+		<div class="editor-grid @(Operation != SchemaOperations.Evaluate ? "no-output-mode" : string.Empty)">
 			<div class="top-editors-row" id="top-editors-row">
 				<div class="editor-cell left-editor" id="left-editor-cell">
 					<div class="editor-container">
@@ -229,6 +229,7 @@
 
     private IEnumerable<MetadataReference> _references;
     private SchemaOperations _operation = SchemaOperations.Evaluate;
+	private bool _editorsInitialized;
 
 #pragma warning restore CS8618
 
@@ -291,6 +292,12 @@
 		{
 			_operation = value;
 
+			if (!_editorsInitialized)
+			{
+				ApplyOperationDisplayState();
+				return;
+			}
+
 			switch (value)
 			{
 				case SchemaOperations.GenerateSchema:
@@ -307,12 +314,41 @@
 		}
 	}
 
+	private void ApplyOperationDisplayState()
+	{
+		switch (_operation)
+		{
+			case SchemaOperations.GenerateSchema:
+				SchemaEditorLabel = "Classes (C#)";
+				HelpSummary = HelpContent.SchemaGenerateSchema;
+				EvaluationOptionsVisibility = "d-none";
+				break;
+			case SchemaOperations.GenerateData:
+				SchemaEditorLabel = "Schema";
+				HelpSummary = HelpContent.SchemaGenerateData;
+				EvaluationOptionsVisibility = "d-none";
+				break;
+			case SchemaOperations.Evaluate:
+			default:
+				SchemaEditorLabel = "Schema";
+				HelpSummary = HelpContent.SchemaEvaluate;
+				EvaluationOptionsVisibility = "";
+				break;
+		}
+	}
+
 	private string HelpSummary { get; set; } = HelpContent.SchemaEvaluate;
 	private string SchemaEditorLabel { get; set; } = "Schema (supports JSON & YAML)";
 	private string EvaluationOptionsVisibility { get; set; } = "visible";
 
 	private StandaloneEditorConstructionOptions BasicOptions(StandaloneCodeEditor _) => EditorOptions.Basic();
 	private StandaloneEditorConstructionOptions ReadOnlyOptions(StandaloneCodeEditor _) => EditorOptions.Readonly();
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadSavedSettings();
+		await base.OnInitializedAsync();
+	}
 
 	private static string GetLanguageText(string langKey) => langKey switch
 	{
@@ -346,9 +382,11 @@
 		_schemaEditor.UpdateOptions(new EditorUpdateOptions { TabSize = 2 });
 		Task.Run(async () =>
 		{
-			_schemaEditorLanguage = await _schemaEditor.DetectLanguage(JsRuntime);
-			await DataManager.Set("schema-input-language", "json");
+			var language = await _schemaEditor.DetectLanguage(JsRuntime);
+			await _schemaEditor.SetLanguageAsync(language, JsRuntime);
+			_schemaEditorLanguage = language;
 		});
+		_instanceEditor.UpdateOptions(new EditorUpdateOptions { ReadOnly = false });
 
 		SchemaEditorLabel = "Schema";
 
@@ -362,7 +400,7 @@
 		_schemaEditor.SetLanguage("csharp", JsRuntime);
 		_schemaEditorLanguage = "csharp";
 		_schemaEditor.UpdateOptions(new EditorUpdateOptions { TabSize = 4 });
-		Task.Run(() => DataManager.Set("schema-input-language", "csharp"));
+		_instanceEditor.UpdateOptions(new EditorUpdateOptions { ReadOnly = true });
 
 		SchemaEditorLabel = "Classes (C#)";
 
@@ -377,8 +415,8 @@
 		Task.Run(async () =>
 		{
 			_schemaEditorLanguage = await _schemaEditor.DetectLanguage(JsRuntime);
-			await DataManager.Set("schema-input-language", "json");
 		});
+		_instanceEditor.UpdateOptions(new EditorUpdateOptions { ReadOnly = true });
 
 		SchemaEditorLabel = "Schema";
 
@@ -389,6 +427,7 @@
 
 	private async Task Run()
 	{
+		SaveSettings();
 		await SaveSchema();
 		await SaveInstance();
 
@@ -484,12 +523,14 @@
 		{
 			var instance = JsonSerializer.Serialize(generationResults.Result, new JsonSerializerOptions { WriteIndented = true });
 			await _instanceEditor.SetValue(instance);
+			await _instanceEditor.SetLanguageAsync("json", JsRuntime);
 			await SaveInstance();
 		}
 		else
 		{
-			await _outputEditor.SetLanguageAsync("text", JsRuntime);
-			await _outputEditor.SetValue(FormatGenerationError(generationResults));
+			var errorText = FormatGenerationError(generationResults);
+			await _instanceEditor.SetValue(errorText);
+			await _instanceEditor.SetLanguageAsync("text", JsRuntime);
 		}
 	}
 
@@ -546,14 +587,14 @@
 			var (path, message, schemaLocations) = displayed[i];
 			if (i > 0) sb.AppendLine();
 			sb.Append($"{i + 1}.");
-			if (path != null) sb.AppendLine($" at {path}");
-			else sb.AppendLine();
+			if (path != null) sb.AppendLine($" at instance {path}");
+			else sb.AppendLine(" at instance root");
 			sb.AppendLine($"   {message}");
 			if (schemaLocations != null && schemaLocations.Count > 0)
 			{
-				sb.AppendLine($"   from {schemaLocations[0]}");
+				sb.AppendLine($"   at schema {schemaLocations[0]}");
 				for (var j = 1; j < schemaLocations.Count; j++)
-					sb.AppendLine($"        {schemaLocations[j]}");
+					sb.AppendLine($"             {schemaLocations[j]}");
 			}
 		}
 
@@ -566,8 +607,8 @@
 #pragma warning disable CS0618 // Type or member is obsolete
 	private async Task GenerateSchema()
 	{
-		await _outputEditor.SetLanguageAsync("json", JsRuntime);
-		await _outputEditor.SetValue(string.Empty);
+		await _instanceEditor.SetLanguageAsync("json", JsRuntime);
+		await _instanceEditor.SetValue(string.Empty);
 
 		Assembly? assembly = null;
 		try
@@ -605,7 +646,8 @@ namespace JsonEverythingTemp;
 				var errors = string.Join("\n", emitResult.Diagnostics
 					.Where(x => x.Severity == DiagnosticSeverity.Error)
 					.Select((x, i) => $"{i+1}. {x.GetMessage()}"));
-				await _outputEditor.SetValue($"Compilation error:\n\n{errors}");
+				await _instanceEditor.SetLanguageAsync("text", JsRuntime);
+				await _instanceEditor.SetValue($"Compilation error:\n\n{errors}");
 				return;
 			}
 
@@ -621,12 +663,13 @@ namespace JsonEverythingTemp;
 			Console.WriteLine($"Generating schema for type '{type.Name}'");
 			JsonSchema schema = new JsonSchemaBuilder().FromType(type);
 
-			await _outputEditor.SetValue(JsonSerializer.Serialize(schema, new JsonSerializerOptions { WriteIndented = true }));
+			await _instanceEditor.SetValue(JsonSerializer.Serialize(schema, new JsonSerializerOptions { WriteIndented = true }));
+			await SaveInstance();
 		}
 		catch (Exception e)
 		{
-			await _outputEditor.SetLanguageAsync("text", JsRuntime);
-			await _outputEditor.SetValue(e.Message);
+			await _instanceEditor.SetLanguageAsync("text", JsRuntime);
+			await _instanceEditor.SetValue(e.Message);
 		}
 		finally
 		{
@@ -681,14 +724,27 @@ namespace JsonEverythingTemp;
 
 	private async Task LoadSavedSettings()
 	{
-		var language = await DataManager.Get("schema-input-language") ?? "json";
-		await _schemaEditor.SetLanguageAsync(language, JsRuntime);
+		_options.OutputFormat = Enum.Parse<OutputFormat>(await DataManager.Get("schema-output-format") ?? "Hierarchical");
+		_options.DialectId = await DataManager.Get("schema-dialect") ?? "https://json-schema.org/draft/2020-12/schema";
+		_options.ValidateFormat = bool.Parse(await DataManager.Get("schema-validate-format") ?? "False");
+		_options.IncludeDroppedAnnotations = bool.Parse(await DataManager.Get("schema-include-dropped-annotations") ?? "False");
+		_options.AddAnnotationForUnknownKeywords = bool.Parse(await DataManager.Get("schema-add-annotation-unknown") ?? "False");
+		_options.CultureCode = await DataManager.Get("error-culture") ?? "en-US";
 
-		Operation = language == "json" ? SchemaOperations.Evaluate : SchemaOperations.GenerateSchema;
-		SchemaEditorLabel = language == "json" ? "Classes" : "Schema";
-		HelpSummary = language == "json" ? HelpContent.SchemaEvaluate : HelpContent.SchemaGenerateSchema;
-        _options.CultureCode = await DataManager.Get("error-culture") ?? "en-US";
-    }
+		var operationStr = await DataManager.Get("schema-operation") ?? "Evaluate";
+		Operation = Enum.Parse<SchemaOperations>(operationStr);
+	}
+
+	private async void SaveSettings()
+	{
+		await DataManager.Set("schema-operation", Operation.ToString());
+		await DataManager.Set("schema-output-format", _options.OutputFormat.ToString());
+		await DataManager.Set("schema-dialect", _options.DialectId);
+		await DataManager.Set("schema-validate-format", _options.ValidateFormat.ToString());
+		await DataManager.Set("schema-include-dropped-annotations", _options.IncludeDroppedAnnotations.ToString());
+		await DataManager.Set("schema-add-annotation-unknown", _options.AddAnnotationForUnknownKeywords.ToString());
+		await DataManager.Set("error-culture", _options.CultureCode);
+	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
@@ -709,7 +765,8 @@ namespace JsonEverythingTemp;
 
 			await LoadSavedSchema();
 			await LoadSavedInstance();
-			await LoadSavedSettings();
+			_editorsInitialized = true;
+			Operation = _operation;
 
 			await LoadAssemblyReferences();
 

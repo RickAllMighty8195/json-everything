@@ -81,6 +81,8 @@
 	private StandaloneCodeEditor _contextEditor;
 	private string _contextEditorLanguage;
 	private StandaloneCodeEditor _outputEditor;
+	private string _savedTemplateText = string.Empty;
+	private string _savedContextText = string.Empty;
 #pragma warning restore CS8618
 
 	private readonly List<LibraryVersion> _libraries = [LibraryVersion.GetFor<JsonFunction>()];
@@ -92,6 +94,14 @@
 
 	private StandaloneEditorConstructionOptions BasicOptions(StandaloneCodeEditor _) => EditorOptions.Basic();
 	private StandaloneEditorConstructionOptions ReadOnlyOptions(StandaloneCodeEditor _) => EditorOptions.Readonly();
+
+	protected override async Task OnInitializedAsync()
+	{
+		ThemeService.OnThemeChanged += HandleThemeChanged;
+		_savedTemplateText = await DataManager.Get("json-e-template") ?? string.Empty;
+		_savedContextText = await DataManager.Get("json-e-context") ?? string.Empty;
+		await base.OnInitializedAsync();
+	}
 
 	private async Task Run()
 	{
@@ -161,11 +171,6 @@
 		await DataManager.SaveEditorValue(_templateEditor, "json-e-template");
 	}
 
-	private async Task LoadSavedTemplate()
-	{
-		await DataManager.LoadEditorValue(_templateEditor, "json-e-template");
-	}
-
 	private async Task HandleContextChanged()
 	{
 		_contextEditorLanguage = await _contextEditor.DetectLanguage(JsRuntime);
@@ -176,22 +181,16 @@
 		await DataManager.SaveEditorValue(_contextEditor, "json-e-context");
 	}
 
-	private async Task LoadSavedContext()
-	{
-		await DataManager.LoadEditorValue(_contextEditor, "json-e-context");
-	}
-
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
 		{
-			ThemeService.OnThemeChanged += HandleThemeChanged;
 			HandleThemeChanged();
 			
 			await JsRuntime.InvokeVoidAsync("initResizableSidebar");
 			
-			await LoadSavedTemplate();
-			await LoadSavedContext();
+			await _templateEditor.SetValue(_savedTemplateText);
+			await _contextEditor.SetValue(_savedContextText);
 
 			_templateEditorLanguage = await _templateEditor.DetectLanguage(JsRuntime);
 			_contextEditorLanguage = await _contextEditor.DetectLanguage(JsRuntime);
