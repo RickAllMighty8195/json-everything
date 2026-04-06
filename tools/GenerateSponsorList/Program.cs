@@ -85,12 +85,12 @@ var options = new JsonSerializerOptions
 	WriteIndented = true
 };
 var allSponsorsJson = JsonSerializer.Serialize(sponsorData, options);
-Console.WriteLine(allSponsorsJson);
+// Console.WriteLine(allSponsorsJson);
 
 var sponsorsWithBubbles = sponsorData.Where(x => x.BubbleSize != BubbleSize.None).ToList();
 Arrange(sponsorsWithBubbles);
 var featuredSponsorsJson = JsonSerializer.Serialize(sponsorsWithBubbles, options);
-Console.WriteLine(featuredSponsorsJson);
+// Console.WriteLine(featuredSponsorsJson);
 
 File.WriteAllText("sponsor-data.json", featuredSponsorsJson);
 

@@ -47,7 +47,7 @@ jobs:
           cd tools/GenerateSponsorList/bin/Release/net9.0
           dotnet GenerateSponsorList.dll > /dev/null
           echo "Copying sponsor-data.json to website..."
-          cp sponsor-data.json ../../../../json-everything.net/wwwroot/data/
+          cp sponsor-data.json $GITHUB_WORKSPACE/json-everything.net/wwwroot/data/
           echo "Sponsor data generation complete."
         env:
           GENERATE_SPONSOR_LIST: ${{ secrets.GENERATE_SPONSOR_LIST }}
