@@ -16,9 +16,9 @@ var filename = args.Length == 0 ? null : args[0];
 List<SponsorData> sponsorData;
 if (filename is null)
 {
-	var accessToken = Environment.GetEnvironmentVariable("GenerateSponsorList");
+	var accessToken = Environment.GetEnvironmentVariable("GENERATE_SPONSOR_LIST");
 	if (string.IsNullOrEmpty(accessToken))
-		throw new ArgumentException("Cannot locate GitHub GraphQL API access token in env var `GenerateSponsorList`");
+		throw new ArgumentException("Cannot locate GitHub GraphQL API access token in env var `GENERATE_SPONSOR_LIST`");
 
 	var serviceCollection = new ServiceCollection();
 
@@ -98,15 +98,10 @@ return;
 
 static BubbleSize GetBubbleSize(int value)
 {
-#if DEBUG
-	return (BubbleSize)Random.Shared.Next(1, 3);
-#else
-
-	if (value < 100) return BubbleSize.None;
-	if (value < 250) return BubbleSize.Small;
-	if (value < 500) return BubbleSize.Medium;
+	if (value < 0) return BubbleSize.None;
+	if (value < 10) return BubbleSize.Small;
+	if (value < 25) return BubbleSize.Medium;
 	return BubbleSize.Large;
-#endif
 }
 
 static void Arrange(List<SponsorData> data)
@@ -140,9 +135,9 @@ static void Arrange(List<SponsorData> data)
 		var done = false;
 		while (!done)
 		{
-			for (double angle = 0; angle < 2* Math.PI; angle += Math.PI/36)  // 5 degrees
+			for (double angle = 0; angle < 2 * Math.PI; angle += Math.PI / 36)  // 5 degrees
 			{
-				var x = radius * Math.Cos(angle);
+				var x = 2 * radius * Math.Cos(angle);
 				var y = radius * Math.Sin(angle);
 				if (!Overlaps(item, x, y, positioned))
 				{
@@ -165,10 +160,10 @@ static void Arrange(List<SponsorData> data)
 
 static void Reposition(HashSet<SponsorData> field)
 {
-	var minX = field.Select(x => x.X - (int)x.BubbleSize).Min();
-	var minY = field.Select(x => x.Y - (int)x.BubbleSize).Min();
-	var maxX = field.Select(x => x.X + (int)x.BubbleSize).Max();
-	var maxY = field.Select(x => x.Y + (int)x.BubbleSize).Max();
+	var minX = field.Min(x => x.X - (int)x.BubbleSize);
+	var minY = field.Min(x => x.Y - (int)x.BubbleSize);
+	var maxX = field.Max(x => x.X + (int)x.BubbleSize);
+	var maxY = field.Max(x => x.Y + (int)x.BubbleSize);
 
 	var deltaX = (maxX + minX) / 2;
 	var deltaY = (maxY + minY) / 2;
@@ -189,7 +184,7 @@ static void Normalize(HashSet<SponsorData> field)
 	// additionally, the bubbles are drawn with a top-left origin instead of
 	// the current center origin, so we need to account for that as well
 
-	var minY = field.Select(x => x.Y - (int)x.BubbleSize).Min();
+	var minY = field.Min(x => x.Y - (int)x.BubbleSize);
 
 	foreach (var data in field)
 	{
@@ -204,8 +199,8 @@ public enum BubbleSize
 {
 	None,
 	Small = 25,
-	Medium = 50,
-	Large = 100
+	Medium = 35,
+	Large = 50
 }
 
 public record SponsorData(string Username, Uri AvatarUrl, Uri WebsiteUrl, BubbleSize BubbleSize)

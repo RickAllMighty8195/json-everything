@@ -3,6 +3,9 @@
 <div class="sponsor-bubble bubble-@Size" style="left: @(X)px; top: @(Y)px;">
 	<a href="@WebsiteUrl">
 		<img src="@AvatarUrl" class="cover bubble-@Size"/>
+		<div class="sponsor-overlay">
+			<span class="sponsor-username">@Username</span>
+		</div>
 	</a>
 </div>
 
@@ -11,6 +14,8 @@
 	public string? AvatarUrl { get; set; }
 	[Parameter]
 	public string? WebsiteUrl { get; set; }
+	[Parameter]
+	public string? Username { get; set; }
 	[Parameter]
 	public BubbleSize Size { get; set; }
 	[Parameter]
