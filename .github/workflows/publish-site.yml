@@ -40,7 +40,7 @@ jobs:
       - name: Get sponsor data
         run: |
           echo "Building GenerateSponsorList tool..."
-          dotnet build tools/GenerateSponsorList/GenerateSponsorList.csproj -c Release --no-restore
+          dotnet build tools/GenerateSponsorList/GenerateSponsorList.csproj -c Release
           echo "Running GenerateSponsorList..."
           cd tools/GenerateSponsorList/bin/Release/net10.0
           dotnet GenerateSponsorList.dll
