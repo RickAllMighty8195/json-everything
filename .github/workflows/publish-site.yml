@@ -42,13 +42,13 @@ jobs:
           echo "Building GenerateSponsorList tool..."
           dotnet build tools/GenerateSponsorList/GenerateSponsorList.csproj -c Release --no-restore
           echo "Running GenerateSponsorList..."
-          cd tools/GenerateSponsorList/bin/Release/net9.0
+          cd tools/GenerateSponsorList/bin/Release/net10.0
           dotnet GenerateSponsorList.dll
           echo "Copying sponsor-data.json to website..."
           cp sponsor-data.json ../../../../json-everything.net/wwwroot/data/
           echo "Sponsor data generation complete."
         env:
-          GenerateSponsorList: ${{ secrets.GENERATE_SPONSOR_LIST }}
+          GENERATE_SPONSOR_LIST: ${{ secrets.GENERATE_SPONSOR_LIST }}
       - name: Build
         run: dotnet publish json-everything.net/json-everything.net.csproj -c Release --no-restore -o bin
       - name: Add .nojekyll file
