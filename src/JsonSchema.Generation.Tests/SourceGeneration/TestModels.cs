@@ -228,6 +228,14 @@ public static class TestModels
 		public PersonWithId? Person { get; set; }
 	}
 
+	[GenerateJsonSchema]
+	public class PersonWithJsonRequired
+	{
+		public string Name { get; set; } = string.Empty;
+		[System.Text.Json.Serialization.JsonRequired]
+		public int Age { get; set; }
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation

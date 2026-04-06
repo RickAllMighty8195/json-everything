@@ -696,4 +696,27 @@ public class ClientTests
 		First = 0,
 		Second = 1
 	}
+
+	public class Issue1018_PersonWithJsonRequired
+	{
+		public string Name { get; set; } = string.Empty;
+		[JsonRequired]
+		public int Age { get; set; }
+	}
+
+	[Test]
+	public void Issue1018_JsonRequired()
+	{
+		JsonSchema expected = new JsonSchemaBuilder()
+			.Type(SchemaValueType.Object)
+			.Properties(
+				("Name", new JsonSchemaBuilder().Type(SchemaValueType.String)),
+				("Age", new JsonSchemaBuilder().Type(SchemaValueType.Integer))
+			)
+			.Required("Age");
+
+		JsonSchema actual = new JsonSchemaBuilder().FromType<Issue1018_PersonWithJsonRequired>();
+
+		AssertEqual(expected, actual);
+	}
 }

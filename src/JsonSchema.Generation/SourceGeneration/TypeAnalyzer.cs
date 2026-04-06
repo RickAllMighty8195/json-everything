@@ -205,7 +205,7 @@ internal static class TypeAnalyzer
 			}
 
 			if (!isRequired)
-				isRequired = HasAttribute(member, "System.ComponentModel.DataAnnotations.RequiredAttribute");
+				isRequired = HasAttribute(member, "JsonRequiredAttribute");
 
 			if (!isRequired && member is IPropertySymbol propertySymbol)
 				isRequired = propertySymbol.IsRequired;
