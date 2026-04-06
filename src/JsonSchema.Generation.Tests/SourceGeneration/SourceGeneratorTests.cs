@@ -193,6 +193,49 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void PersonWithId_UsesCustomId()
+	{
+		var expectedJson = """
+		{
+		  "$id": "https://json-everything.test/schemas/person",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Age": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithId;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void PersonWithIdReference_UsesCustomIdInRef()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithIdReference",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Person": {
+		      "anyOf": [
+		        { "$ref": "https://json-everything.test/schemas/person" },
+		        { "type": "null" }
+		      ]
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithIdReference;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """

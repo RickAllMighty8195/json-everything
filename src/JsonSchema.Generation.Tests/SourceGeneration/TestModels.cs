@@ -213,6 +213,21 @@ public static class TestModels
 		public string City { get; set; } = string.Empty;
 	}
 
+	[GenerateJsonSchema]
+	[Id("https://json-everything.test/schemas/person")]
+	public class PersonWithId
+	{
+		public string Name { get; set; } = string.Empty;
+		public int Age { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	public class PersonWithIdReference
+	{
+		public string Name { get; set; } = string.Empty;
+		public PersonWithId? Person { get; set; }
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation

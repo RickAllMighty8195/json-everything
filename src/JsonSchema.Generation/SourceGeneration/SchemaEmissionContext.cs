@@ -7,7 +7,14 @@ namespace Json.Schema.Generation.SourceGeneration;
 internal class SchemaEmissionContext
 {
 	public Dictionary<string, (string DefName, ITypeSymbol Symbol)> TypeReferences { get; } = new();
+	public Dictionary<string, string> TypeIds { get; } = new();
 	public ITypeSymbol? RootType { get; set; }
+
+	public SchemaEmissionContext(Dictionary<string, string>? typeIds = null)
+	{
+		if (typeIds != null)
+			TypeIds = typeIds;
+	}
 
 	public static string GetTypeKey(ITypeSymbol typeSymbol)
 	{
@@ -47,8 +54,6 @@ internal class SchemaEmissionContext
 		}
 		
 		var typeKey = GetTypeKey(typeSymbol);
-		return TypeReferences.TryGetValue(typeKey, out var info)
-			? info.Symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-			: "";
+		return TypeIds.TryGetValue(typeKey, out var id) ? id : "";
 	}
 }

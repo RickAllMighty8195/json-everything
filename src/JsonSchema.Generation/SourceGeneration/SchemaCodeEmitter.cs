@@ -167,9 +167,22 @@ internal static class SchemaCodeEmitter
 
 		var orderedTypes = OrderTypesTopologically(types);
 
+		var typeIds = new Dictionary<string, string>();
 		foreach (var type in orderedTypes)
 		{
-			EmitSchemaProperty(sb, type);
+			var typeKey = SchemaEmissionContext.GetTypeKey(type.TypeSymbol);
+			var id = type.FullyQualifiedName;
+			var idAttr = type.TypeAttributes.FirstOrDefault(a => a.AttributeName == "IdAttribute");
+			if (idAttr != null && idAttr.Parameters.TryGetValue("arg0", out var idValue) && idValue is string idStr)
+			{
+				id = idStr;
+			}
+			typeIds[typeKey] = id;
+		}
+
+		foreach (var type in orderedTypes)
+		{
+			EmitSchemaProperty(sb, type, typeIds);
 		}
 
 		EmitRegisterSchemasMethod(sb, orderedTypes);
@@ -259,7 +272,7 @@ internal static class SchemaCodeEmitter
 		return types.FirstOrDefault(t => SymbolEqualityComparer.Default.Equals(t.TypeSymbol, named));
 	}
 
-	private static void EmitSchemaProperty(StringBuilder sb, TypeInfo type)
+	private static void EmitSchemaProperty(StringBuilder sb, TypeInfo type, Dictionary<string, string> typeIds)
 	{
 		if (!string.IsNullOrWhiteSpace(type.XmlDocSummary))
 		{
@@ -277,22 +290,28 @@ internal static class SchemaCodeEmitter
 		sb.AppendLine($"\tpublic static readonly JsonSchema {type.SchemaPropertyName} =");
 		sb.Append("\t\t");
 		
-		EmitSchemaBuilder(sb, type, 2);
+		EmitSchemaBuilder(sb, type, 2, typeIds);
 		
 		sb.AppendLine(".Build();");
 		sb.AppendLine();
 	}
 
-	private static void EmitSchemaBuilder(StringBuilder sb, TypeInfo type, int indent)
+	private static void EmitSchemaBuilder(StringBuilder sb, TypeInfo type, int indent, Dictionary<string, string> typeIds)
 	{
 		var indentStr = new string('\t', indent);
 		
-		var context = AnalyzeTypeReferences(type);
+		var context = new SchemaEmissionContext(typeIds);
+		AnalyzeTypeReferences(type, context);
 		context.RootType = type.TypeSymbol;
 		
 		sb.Append("new JsonSchemaBuilder()");
 
 		var id = type.FullyQualifiedName;
+		var idAttr = type.TypeAttributes.FirstOrDefault(a => a.AttributeName == "IdAttribute");
+		if (idAttr != null && idAttr.Parameters.TryGetValue("arg0", out var idValue) && idValue is string idStr)
+		{
+			id = idStr;
+		}
 		sb.AppendLine();
 		sb.Append($"{indentStr}.Id(\"{id}\")");
 
@@ -315,6 +334,9 @@ internal static class SchemaCodeEmitter
 		foreach (var attr in attributes)
 		{
 			if (attr.Parameters.TryGetValue("ConditionGroup", out var conditionGroup) && conditionGroup != null) continue;
+
+			// Skip IdAttribute as it's handled separately in EmitSchemaBuilder
+			if (attr.AttributeName == "IdAttribute") continue;
 
 			if (attr.IsCustomEmitter && attr.AttributeFullName != null)
 			{
@@ -521,16 +543,12 @@ internal static class SchemaCodeEmitter
 		sb.Append(')');
 	}
 
-	private static SchemaEmissionContext AnalyzeTypeReferences(TypeInfo type)
+	private static void AnalyzeTypeReferences(TypeInfo type, SchemaEmissionContext context)
 	{
-		var context = new SchemaEmissionContext();
-		
 		foreach (var prop in type.Properties)
 		{
 			CollectPropertyTypes(prop.Type, context);
 		}
-		
-		return context;
 	}
 
 	private static void CollectPropertyTypes(ITypeSymbol typeSymbol, SchemaEmissionContext context)
