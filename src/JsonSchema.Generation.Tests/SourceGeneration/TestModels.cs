@@ -236,6 +236,17 @@ public static class TestModels
 		public int Age { get; set; }
 	}
 
+	[GenerateJsonSchema]
+	public class PersonWithDefaults
+	{
+		[Default("anonymous")]
+		public string Name { get; set; } = string.Empty;
+		[Default(0)]
+		public int Age { get; set; }
+		[Default(true)]
+		public bool IsActive { get; set; }
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation

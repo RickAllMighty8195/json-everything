@@ -256,6 +256,26 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void PersonWithDefaults_EmitsDefaultValues()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithDefaults",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string", "default": "anonymous" },
+		    "Age": { "type": "integer", "default": 0 },
+		    "IsActive": { "type": "boolean", "default": true }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithDefaults;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """

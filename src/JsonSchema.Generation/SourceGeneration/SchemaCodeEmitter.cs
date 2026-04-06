@@ -419,6 +419,9 @@ internal static class SchemaCodeEmitter
 			case "WriteOnlyAttribute":
 				sb.Append(".WriteOnly(true)");
 				break;
+			case "DefaultAttribute" when attr.Parameters.TryGetValue("arg0", out var defaultValue):
+				sb.Append($".Default({CodeEmitterHelpers.FormatValue(defaultValue)})");
+				break;
 		}
 	}
 
@@ -542,6 +545,7 @@ internal static class SchemaCodeEmitter
 		
 		sb.Append(')');
 	}
+
 
 	private static void AnalyzeTypeReferences(TypeInfo type, SchemaEmissionContext context)
 	{
