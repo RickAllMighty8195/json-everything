@@ -260,11 +260,28 @@ public static class TestModels
 		public T Value { get; set; } = default!;
 	}
 
+	public class Optional<T>
+	{
+		public T Value { get; set; } = default!;
+	}
+
 	[GenerateJsonSchema]
 	public class ModelWithMultipleClosedGenerics
 	{
 		public GenericHolder<int>? IntHolder { get; set; }
 		public GenericHolder<string>? StringHolder { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithOptionalWrapper
+	{
+		public Optional<int> Age { get; set; } = new();
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithOptionalObjectWrapper
+	{
+		public Optional<SimplePerson> Person { get; set; } = new();
 	}
 
 	[GenerateJsonSchema(StrictConditionals = true)]

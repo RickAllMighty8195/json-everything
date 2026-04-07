@@ -337,7 +337,7 @@ public class SourceGeneratorTests
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
-		var actual = GeneratedJsonSchemas.TestModels_GenericHolder_Int32;
+		var actual = GeneratedJsonSchemas.TestModels_GenericHolderOfInt32;
 
 		AssertEqual(expected, actual);
 	}
@@ -355,7 +355,59 @@ public class SourceGeneratorTests
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
-		var actual = GeneratedJsonSchemas.TestModels_GenericHolder_String;
+		var actual = GeneratedJsonSchemas.TestModels_GenericHolderOfString;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithOptionalWrapper_UsesSchemaHandlerForWrappedType()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithOptionalWrapper",
+		  "type": "object",
+		  "properties": {
+		    "Age": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithOptionalWrapper;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithOptionalObjectWrapper_UsesRefForGeneratedType()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithOptionalObjectWrapper",
+		  "type": "object",
+		  "properties": {
+		    "Person": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SimplePerson" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithOptionalObjectWrapper;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void BuildForType_UsesSchemaHandlerForOpenGenericType()
+	{
+		var expectedJson = """
+		{
+		  "type": "string"
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = new JsonSchemaBuilder()
+			.BuildForType(typeof(TestModels.Optional<string>))
+			.Build();
 
 		AssertEqual(expected, actual);
 	}

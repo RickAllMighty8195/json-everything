@@ -680,7 +680,7 @@ internal static class TypeAnalyzer
 		{
 			var typeArgNames = typeSymbol.TypeArguments
 				.Select(GetTypeArgumentPropertyName);
-			currentName = $"{currentName}_{string.Join("_", typeArgNames)}";
+			currentName = $"{currentName}Of{string.Join("And", typeArgNames)}";
 		}
 
 		return typeSymbol.ContainingType != null

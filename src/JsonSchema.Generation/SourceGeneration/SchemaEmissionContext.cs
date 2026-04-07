@@ -8,12 +8,24 @@ internal class SchemaEmissionContext
 {
 	public Dictionary<string, (string DefName, ITypeSymbol Symbol)> TypeReferences { get; } = new();
 	public Dictionary<string, string> TypeIds { get; } = new();
+	private HashSet<string> HandlerTargets { get; } = new();
+	private HashSet<string> OpenGenericHandlerTargets { get; } = new();
 	public ITypeSymbol? RootType { get; set; }
 
-	public SchemaEmissionContext(Dictionary<string, string>? typeIds = null)
+	public SchemaEmissionContext(Dictionary<string, string>? typeIds = null, List<SchemaHandlerInfo>? schemaHandlers = null)
 	{
 		if (typeIds != null)
 			TypeIds = typeIds;
+
+		if (schemaHandlers == null) return;
+
+		foreach (var handler in schemaHandlers)
+		{
+			if (handler.IsOpenGenericTarget)
+				OpenGenericHandlerTargets.Add(handler.TargetTypeName);
+			else
+				HandlerTargets.Add(handler.TargetTypeName);
+		}
 	}
 
 	public static string GetTypeKey(ITypeSymbol typeSymbol)
@@ -55,5 +67,21 @@ internal class SchemaEmissionContext
 		
 		var typeKey = GetTypeKey(typeSymbol);
 		return TypeIds.TryGetValue(typeKey, out var id) ? id : "";
+	}
+
+	public bool HasSchemaHandler(ITypeSymbol typeSymbol)
+	{
+		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
+		var fullyQualified = unwrapped.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		if (HandlerTargets.Contains(fullyQualified))
+			return true;
+
+		if (unwrapped is INamedTypeSymbol { IsGenericType: true } named)
+		{
+			var unbound = named.ConstructUnboundGenericType().ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+			return OpenGenericHandlerTargets.Contains(unbound);
+		}
+
+		return false;
 	}
 }
