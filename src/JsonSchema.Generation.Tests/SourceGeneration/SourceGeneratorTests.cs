@@ -276,6 +276,26 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void PersonWithNoAdditionalProperties_EmitsAdditionalProperties()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithNoAdditionalProperties",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Age": { "type": "integer" }
+		  },
+		  "additionalProperties": false
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithNoAdditionalProperties;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """

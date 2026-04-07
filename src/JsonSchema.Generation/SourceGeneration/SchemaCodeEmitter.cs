@@ -422,6 +422,9 @@ internal static class SchemaCodeEmitter
 			case "DefaultAttribute" when attr.Parameters.TryGetValue("arg0", out var defaultValue):
 				sb.Append($".Default({CodeEmitterHelpers.FormatValue(defaultValue)})");
 				break;
+			case "AdditionalPropertiesAttribute" when attr.Parameters.TryGetValue("arg0", out var additionalProps) && additionalProps is bool boolVal:
+				sb.Append($".AdditionalProperties({(boolVal ? "true" : "false")})");
+				break;
 		}
 	}
 

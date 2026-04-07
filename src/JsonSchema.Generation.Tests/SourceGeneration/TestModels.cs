@@ -247,6 +247,14 @@ public static class TestModels
 		public bool IsActive { get; set; }
 	}
 
+	[GenerateJsonSchema]
+	[AdditionalProperties(false)]
+	public class PersonWithNoAdditionalProperties
+	{
+		public string Name { get; set; } = string.Empty;
+		public int Age { get; set; }
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation
