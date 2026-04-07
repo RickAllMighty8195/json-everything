@@ -283,7 +283,7 @@ internal static class SchemaCodeEmitter
 		else
 		{
 			sb.AppendLine("\t/// <summary>");
-			sb.AppendLine($"\t/// Generated schema for <see cref=\"{type.FullyQualifiedName}\"/>.");
+			sb.AppendLine($"\t/// Generated schema for {CodeEmitterHelpers.EscapeXmlDoc(type.FullyQualifiedName)}.");
 			sb.AppendLine("\t/// </summary>");
 		}
 

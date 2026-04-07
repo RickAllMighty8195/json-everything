@@ -255,6 +255,18 @@ public static class TestModels
 		public int Age { get; set; }
 	}
 
+	public class GenericHolder<T>
+	{
+		public T Value { get; set; } = default!;
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithMultipleClosedGenerics
+	{
+		public GenericHolder<int>? IntHolder { get; set; }
+		public GenericHolder<string>? StringHolder { get; set; }
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation

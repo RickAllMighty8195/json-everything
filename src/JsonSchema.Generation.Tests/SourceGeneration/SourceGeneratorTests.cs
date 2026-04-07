@@ -296,6 +296,71 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void ModelWithMultipleClosedGenerics_UsesDistinctRefs()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithMultipleClosedGenerics",
+		  "type": "object",
+		  "properties": {
+		    "IntHolder": {
+		      "anyOf": [
+		        { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<int>" },
+		        { "type": "null" }
+		      ]
+		    },
+		    "StringHolder": {
+		      "anyOf": [
+		        { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<string>" },
+		        { "type": "null" }
+		      ]
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithMultipleClosedGenerics;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void GenericHolderInt_GeneratesSchema()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<int>",
+		  "type": "object",
+		  "properties": {
+		    "Value": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_GenericHolder_Int32;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void GenericHolderString_GeneratesSchema()
+	{
+		var expectedJson = """
+		{
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<string>",
+		  "type": "object",
+		  "properties": {
+		    "Value": { "type": "string" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_GenericHolder_String;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """
