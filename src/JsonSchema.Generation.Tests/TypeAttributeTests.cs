@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 
 using static Json.Schema.Generation.Tests.AssertionExtensions;
 
@@ -22,6 +22,7 @@ public class TypeAttributeTests
 	public void AttributedObjectHasTitleAndDescription()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Title("an object with attributes")
 			.Description("this object has attributes")

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
 // ReSharper disable ClassNeverInstantiated.Local
@@ -49,6 +49,7 @@ public class AttributeHandlerTests
 	public void DirectAttributeHandler()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("MyProperty", new JsonSchemaBuilder().Type(SchemaValueType.String).MaxLength(AttributeWithDirectHandler.MaxLength))
@@ -66,6 +67,7 @@ public class AttributeHandlerTests
 		AttributeHandler.AddHandler<CustomAttributeHandler>();
 
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("MyProperty", new JsonSchemaBuilder().Type(SchemaValueType.String).MaxLength(200))

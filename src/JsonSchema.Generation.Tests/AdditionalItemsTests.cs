@@ -19,6 +19,7 @@ public class AdditionalItemsTests
 			Dialect = Dialect.Draft202012
 		};
 		var expected = new JsonSchemaBuilder(buildOptions)
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			.AdditionalItems(true);
@@ -39,6 +40,7 @@ public class AdditionalItemsTests
 			Dialect = Dialect.Draft202012
 		};
 		var expected = new JsonSchemaBuilder(buildOptions)
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			.AdditionalItems(false);
@@ -59,6 +61,7 @@ public class AdditionalItemsTests
 			Dialect = Dialect.Draft202012
 		};
 		var expected = new JsonSchemaBuilder(buildOptions)
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			.AdditionalItems(new JsonSchemaBuilder().Type(SchemaValueType.String));
@@ -87,6 +90,7 @@ public class AdditionalItemsTests
 			Dialect = Dialect.Draft202012
 		};
 		var expected = new JsonSchemaBuilder(buildOptions)
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Foo", new JsonSchemaBuilder()

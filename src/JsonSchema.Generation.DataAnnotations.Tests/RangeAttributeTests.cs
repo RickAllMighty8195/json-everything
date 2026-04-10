@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using NUnit.Framework;
 
 using DARange = System.ComponentModel.DataAnnotations.RangeAttribute;
@@ -19,6 +19,7 @@ public class RangeAttributeTests
 	public void SupportedRangeUsages()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Simple", new JsonSchemaBuilder()
@@ -40,6 +41,7 @@ public class RangeAttributeTests
 	public void UnsupportedRangeUsages()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("WithType", true)

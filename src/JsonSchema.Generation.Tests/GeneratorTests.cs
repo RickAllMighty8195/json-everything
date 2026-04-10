@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Json.Pointer;
 using NUnit.Framework;
@@ -14,6 +14,7 @@ public class GeneratorTests
 	public void ArraySchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder().Type(SchemaValueType.String))
 			.Build();
@@ -27,6 +28,7 @@ public class GeneratorTests
 	public void BooleanSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Boolean)
 			.Build();
 
@@ -39,6 +41,7 @@ public class GeneratorTests
 	public void DateTimeSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.String)
 			.Format(Formats.DateTime)
 			.Build();
@@ -52,6 +55,7 @@ public class GeneratorTests
 	public void EnumDictionarySchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.PropertyNames(new JsonSchemaBuilder().Enum(Enum.GetNames(typeof(DayOfWeek))))
 			.AdditionalProperties(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
@@ -66,6 +70,7 @@ public class GeneratorTests
 	public void EnumSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Enum(Enum.GetNames(typeof(DayOfWeek)))
 			.Build();
 
@@ -78,6 +83,7 @@ public class GeneratorTests
 	public void GuidSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.String)
 			.Format(Formats.Uuid)
 			.Build();
@@ -91,6 +97,7 @@ public class GeneratorTests
 	public void IntegerSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Integer)
 			.Build();
 
@@ -103,6 +110,7 @@ public class GeneratorTests
 	public void JsonPointerSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.String)
 			.Format(Formats.JsonPointer)
 			.Build();
@@ -116,6 +124,7 @@ public class GeneratorTests
 	public void NumberSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Number)
 			.Build();
 
@@ -128,6 +137,7 @@ public class GeneratorTests
 	public void StringSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.String)
 			.Build();
 
@@ -140,6 +150,7 @@ public class GeneratorTests
 	public void UriSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.String)
 			.Format(Formats.Uri)
 			.Build();
@@ -153,6 +164,7 @@ public class GeneratorTests
 	public void NullableBooleanSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Boolean)
 			.Build();
 
@@ -165,6 +177,7 @@ public class GeneratorTests
 	public void NullableDateTimeSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.String)
 			.Format(Formats.DateTime)
 			.Build();
@@ -178,6 +191,7 @@ public class GeneratorTests
 	public void NullableEnumSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Enum(Enum.GetNames(typeof(DayOfWeek)))
 			.Build();
 
@@ -190,6 +204,7 @@ public class GeneratorTests
 	public void NullableGuidSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.String)
 			.Format(Formats.Uuid)
 			.Build();
@@ -203,6 +218,7 @@ public class GeneratorTests
 	public void NullableIntegerSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Integer)
 			.Build();
 
@@ -216,6 +232,7 @@ public class GeneratorTests
 	public void NullableNumberSchema()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Number)
 			.Build();
 

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
 
@@ -16,6 +16,7 @@ public class StringLengthAttributeTests
 	public void GenerateStringRange()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Simple", new JsonSchemaBuilder()
@@ -36,6 +37,7 @@ public class StringLengthAttributeTests
 	public void GenerateStringRangeMinimum()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("WithMin", new JsonSchemaBuilder()

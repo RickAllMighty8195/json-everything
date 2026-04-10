@@ -32,6 +32,7 @@ public class ClientTests
 	public void Issue85_RecursiveGeneration_PropertyAsListOfSelf()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				(nameof(TestMenu.Name), new JsonSchemaBuilder()
@@ -67,6 +68,7 @@ public class ClientTests
 	public void Issue87_RecursiveGeneration_SelfReferenceInDefs()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Defs(
 				("treeNodeMetaDataInClientTests", new JsonSchemaBuilder()
@@ -138,6 +140,7 @@ public class ClientTests
 	public void Issue272_UnhandledAttributeShouldBeIgnoredWhenOptimizing()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Property1", new JsonSchemaBuilder().Ref("#/$defs/guid")),
@@ -166,6 +169,7 @@ public class ClientTests
 	public void GenerateForPlanImpl()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("ObjectProp", new JsonSchemaBuilder().Type(SchemaValueType.Object)),
@@ -242,6 +246,7 @@ public class ClientTests
 	public void Issue325_NullableBleedingAcrossMembers()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Nullable", new JsonSchemaBuilder().Type(SchemaValueType.String | SchemaValueType.Null)),
@@ -313,6 +318,7 @@ public class ClientTests
 		var expected = JsonDocument.Parse(
 			"""
 			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
 			  "type": "object",
 			  "properties": {
 			    "AAA": {"type": "integer", "deprecated": true},
@@ -343,6 +349,7 @@ public class ClientTests
 		var expected = JsonDocument.Parse(
 			"""
 			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
 			  "type": "object",
 			  "properties": {
 			    "Value": {"type": "string"}
@@ -365,6 +372,7 @@ public class ClientTests
 		var expected = JsonNode.Parse(
 			"""
 			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
 			  "type": "object",
 			  "properties": {
 			    "Apr": {
@@ -488,6 +496,7 @@ public class ClientTests
 	public void Issue815_UsingCSharpRequiredKeyword()
 	{
 		JsonSchema expected = new JsonSchemaBuilder(new BuildOptions { SchemaRegistry = new() })
+			.Schema(MetaSchemas.Draft202012Id)
 			.Id(GeneratedSchemaUri)
 			.Type(SchemaValueType.Object)
 			.Properties(
@@ -504,6 +513,7 @@ public class ClientTests
 	public void Issue815_UsingRequiredAttribute()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Id(GeneratedSchemaUri)
 			.Type(SchemaValueType.Object)
 			.Properties(
@@ -613,6 +623,7 @@ public class ClientTests
 	public void Issue891_MultipleIndexers()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Foo", new JsonSchemaBuilder().Type(SchemaValueType.String))
@@ -643,6 +654,7 @@ public class ClientTests
 	public void Issue890_SupportEnumMemberName()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("EnumProp", new JsonSchemaBuilder().Enum("active", "inactive"))
@@ -708,6 +720,7 @@ public class ClientTests
 	public void Issue1018_JsonRequired()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Name", new JsonSchemaBuilder().Type(SchemaValueType.String)),

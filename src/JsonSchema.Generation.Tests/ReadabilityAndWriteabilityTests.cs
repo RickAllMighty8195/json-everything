@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 
 using static Json.Schema.Generation.Tests.AssertionExtensions;
 // ReSharper disable ClassNeverInstantiated.Local
@@ -16,6 +16,7 @@ public class ReadabilityAndWritabilityTests
 	public void ReadOnlyPropertyTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()
@@ -38,6 +39,7 @@ public class ReadabilityAndWritabilityTests
 	public void ReadOnlyPropertyWithReadOnlyAttributeFalseTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()
@@ -60,6 +62,7 @@ public class ReadabilityAndWritabilityTests
 	public void ReadWritePropertyWithReadOnlyAttributeTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()
@@ -83,6 +86,7 @@ public class ReadabilityAndWritabilityTests
 	public void ReadWritePropertyWithReadOnlyAttributeFalseTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()
@@ -108,6 +112,7 @@ public class ReadabilityAndWritabilityTests
 	public void WriteOnlyPropertyTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()
@@ -134,6 +139,7 @@ public class ReadabilityAndWritabilityTests
 	public void WriteOnlyPropertyWithWriteOnlyAttributeFalseTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()
@@ -156,6 +162,7 @@ public class ReadabilityAndWritabilityTests
 	public void ReadWritePropertyWithWriteOnlyAttributeTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()
@@ -178,6 +185,7 @@ public class ReadabilityAndWritabilityTests
 	public void ReadWritePropertyWithWriteOnlyAttributeFalseTest()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Prop", new JsonSchemaBuilder()

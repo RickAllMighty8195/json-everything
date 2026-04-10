@@ -386,6 +386,9 @@ internal static class SchemaCodeEmitter
 		
 		sb.Append("new JsonSchemaBuilder()");
 
+		sb.AppendLine();
+		sb.Append($"{indentStr}.Schema(\"https://json-schema.org/draft/2020-12/schema\")");
+
 		var id = type.FullyQualifiedName;
 		var idAttr = type.TypeAttributes.FirstOrDefault(a => a.AttributeName == "IdAttribute");
 		if (idAttr != null && idAttr.Parameters.TryGetValue("arg0", out var idValue) && idValue is string idStr)

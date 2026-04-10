@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
 using DAMaxLength = System.ComponentModel.DataAnnotations.MaxLengthAttribute;
 
@@ -16,6 +16,7 @@ public class MaxLengthAttributeTests
 	public void GenerateMaxLength()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Simple", new JsonSchemaBuilder()

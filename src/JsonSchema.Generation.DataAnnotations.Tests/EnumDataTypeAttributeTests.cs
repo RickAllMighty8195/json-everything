@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
@@ -17,6 +17,7 @@ public class EnumDataTypeAttributeTests
 	public void GenerateEnum()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Simple", new JsonSchemaBuilder()

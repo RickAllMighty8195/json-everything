@@ -13,6 +13,7 @@ public class ArrayGenerationTests
 	public void ListOfInt()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder()
 				.Type(SchemaValueType.Integer)
@@ -33,6 +34,7 @@ public class ArrayGenerationTests
 	public void ListOfIntWithMinItems()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("List", new JsonSchemaBuilder()
@@ -59,6 +61,7 @@ public class ArrayGenerationTests
 	public void ListOfIntWithMinValue()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("List", new JsonSchemaBuilder()
@@ -86,6 +89,7 @@ public class ArrayGenerationTests
 	public void ListOfIntWithMinValueWithBasicList()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("List", new JsonSchemaBuilder()
@@ -119,6 +123,7 @@ public class ArrayGenerationTests
 	public void ListOfAttributedEnum()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder()
 				.Enum("One", "Two")
@@ -140,6 +145,7 @@ public class ArrayGenerationTests
 	public void AttributedEnumIsRefactored()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Defs(
 				("enumTestInArrayGenerationTests", new JsonSchemaBuilder()
 					.Enum("One", "Two")

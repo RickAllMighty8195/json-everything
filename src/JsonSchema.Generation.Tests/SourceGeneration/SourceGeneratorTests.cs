@@ -11,6 +11,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SimplePerson",
 		  "type": "object",
 		  "properties": {
@@ -30,6 +31,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.CamelCasePerson",
 		  "type": "object",
 		  "properties": {
@@ -50,6 +52,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithNullable",
 		  "type": "object",
 		  "properties": {
@@ -70,6 +73,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithRequired",
 		  "type": "object",
 		  "properties": {
@@ -90,6 +94,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithEnum",
 		  "type": "object",
 		  "properties": {
@@ -111,6 +116,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithDescription",
 		  "type": "object",
 		  "properties": {
@@ -136,6 +142,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ProductWithCustomAttributes",
 		  "type": "object",
 		  "properties": {
@@ -165,6 +172,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithAddresses",
 		  "type": "object",
 		  "properties": {
@@ -197,6 +205,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "https://json-everything.test/schemas/person",
 		  "type": "object",
 		  "properties": {
@@ -216,6 +225,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithIdReference",
 		  "type": "object",
 		  "properties": {
@@ -240,6 +250,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithJsonRequired",
 		  "type": "object",
 		  "properties": {
@@ -260,6 +271,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithDefaults",
 		  "type": "object",
 		  "properties": {
@@ -280,6 +292,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithNoAdditionalProperties",
 		  "type": "object",
 		  "properties": {
@@ -300,6 +313,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithMultipleClosedGenerics",
 		  "type": "object",
 		  "properties": {
@@ -329,6 +343,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<int>",
 		  "type": "object",
 		  "properties": {
@@ -347,6 +362,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<string>",
 		  "type": "object",
 		  "properties": {
@@ -365,6 +381,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithOptionalWrapper",
 		  "type": "object",
 		  "properties": {
@@ -383,6 +400,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithOptionalObjectWrapper",
 		  "type": "object",
 		  "properties": {
@@ -417,6 +435,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SingleCondition",
 		  "type": "object",
 		  "properties": {
@@ -446,6 +465,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SingleConditionCamelCase",
 		  "type": "object",
 		  "properties": {
@@ -475,6 +495,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleConditionGroups",
 		  "type": "object",
 		  "properties": {
@@ -521,6 +542,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleTriggersInSameGroup",
 		  "type": "object",
 		  "properties": {
@@ -552,6 +574,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalWithMinimum",
 		  "type": "object",
 		  "properties": {
@@ -581,6 +604,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalWithMaximum",
 		  "type": "object",
 		  "properties": {
@@ -610,6 +634,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.EnumSwitch",
 		  "type": "object",
 		  "properties": {
@@ -657,6 +682,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalValidation",
 		  "type": "object",
 		  "properties": {
