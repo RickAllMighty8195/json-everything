@@ -1,26 +1,23 @@
 query GetSponsors {
   user(login:"gregsdennis") {
     ... on Sponsorable {
-      sponsors(first: 10) {
+      sponsorshipsAsMaintainer(first: 100, includePrivate: false, activeOnly: true) {
         totalCount
         nodes {
-          ... on User {
-            login
-            avatarUrl
-            websiteUrl
-          }
-          ... on Organization {
-            login
-            avatarUrl
-            websiteUrl
-          }
-          ... on Sponsorable {
-            sponsorshipForViewerAsSponsorable {
-              privacyLevel
-              tier {
-                monthlyPriceInDollars
-              }
+          sponsorEntity {
+            ... on User {
+              login
+              avatarUrl
+              websiteUrl
             }
+            ... on Organization {
+              login
+              avatarUrl
+              websiteUrl
+            }
+          }
+          tier {
+            monthlyPriceInDollars
           }
         }
       }

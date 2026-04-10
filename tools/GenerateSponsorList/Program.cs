@@ -37,35 +37,31 @@ if (filename is null)
 	var response = await client.GetSponsors.ExecuteAsync();
 
 	sponsorData = new List<SponsorData>();
-	foreach (var node in response.Data!.User!.Sponsors.Nodes!)
+	var seenSponsors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+	foreach (var node in response.Data!.User!.SponsorshipsAsMaintainer.Nodes!)
 	{
-		
 		string? name = null;
 		Uri? avatar = null;
 		Uri? website = null;
-		var value = 0;
-		var privacyLevel = SponsorshipPrivacy.Public;
+		var value = node!.Tier!.MonthlyPriceInDollars;
 		
-		if (node is IGetSponsors_User_Sponsors_Nodes_User { Login: not null } user)
+		if (node!.SponsorEntity is IGetSponsors_User_SponsorshipsAsMaintainer_Nodes_SponsorEntity_User { Login: not null } user)
 		{
 			name = user.Login;
 			avatar = user.AvatarUrl;
 			website = user.WebsiteUrl;
-			value = user.SponsorshipForViewerAsSponsorable!.Tier!.MonthlyPriceInDollars;
-			privacyLevel = user.SponsorshipForViewerAsSponsorable!.PrivacyLevel;
 		}
-		else if (node is IGetSponsors_User_Sponsors_Nodes_Organization { Login: not null } org)
+		else if (node.SponsorEntity is IGetSponsors_User_SponsorshipsAsMaintainer_Nodes_SponsorEntity_Organization { Login: not null } org)
 		{
 			name = org.Login;
 			avatar = org.AvatarUrl;
 			website = org.WebsiteUrl;
-			value = org.SponsorshipForViewerAsSponsorable!.Tier!.MonthlyPriceInDollars;
-			privacyLevel = org.SponsorshipForViewerAsSponsorable!.PrivacyLevel;
 		}
 
-		if (privacyLevel == SponsorshipPrivacy.Private) continue;
+		if (name is null || avatar is null) continue;
+		if (!seenSponsors.Add(name)) continue;
 
-		sponsorData.Add( new SponsorData (name!, avatar!, website!, GetBubbleSize(value)));
+		sponsorData.Add(new SponsorData(name, avatar, website!, GetBubbleSize(value)));
 	}
 }
 else
@@ -73,17 +69,21 @@ else
 	var responseContent = File.ReadAllText(filename);
 	var responseData = JsonNode.Parse(responseContent);
 	sponsorData = new List<SponsorData>();
-	foreach (var x in responseData!["data"]!["user"]!["sponsors"]!["nodes"]!.AsArray())
+	var seenSponsors = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+	foreach (var x in responseData!["data"]!["user"]!["sponsorshipsAsMaintainer"]!["nodes"]!.AsArray())
 	{
-		var name = x!["login"]!.GetValue<string>();
-		var avatar = new Uri(x["avatarUrl"]!.GetValue<string>());
-		var site = x["websiteUrl"]?.GetValue<string>();
-		var website = site == null ? null : new Uri(site);
-		var value = x["sponsorshipForViewerAsSponsorable"]!["tier"]!["monthlyPriceInDollars"]!.GetValue<int>();
-		var privacyLevelStr = x["sponsorshipForViewerAsSponsorable"]!["privacyLevel"]?.GetValue<string>();
-		var privacyLevel = Enum.TryParse<SponsorshipPrivacy>(privacyLevelStr, true, out var pl) ? pl : SponsorshipPrivacy.Public;
+		var sponsorEntity = x!["sponsorEntity"];
+		if (sponsorEntity is null) continue;
 
-		if (privacyLevel == SponsorshipPrivacy.Private) continue;
+		var name = sponsorEntity["login"]?.GetValue<string>();
+		var avatarString = sponsorEntity["avatarUrl"]?.GetValue<string>();
+		if (name is null || avatarString is null) continue;
+		if (!seenSponsors.Add(name)) continue;
+
+		var avatar = new Uri(avatarString);
+		var site = sponsorEntity["websiteUrl"]?.GetValue<string>();
+		var website = site == null ? null : new Uri(site);
+		var value = x["tier"]!["monthlyPriceInDollars"]!.GetValue<int>();
 
 		sponsorData.Add(new SponsorData(name!, avatar!, website!, GetBubbleSize(value)));
 	}
@@ -95,11 +95,7 @@ var options = new JsonSerializerOptions
 	PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
 	WriteIndented = true
 };
-var allSponsorsJson = JsonSerializer.Serialize(sponsorData, options);
-// Console.WriteLine(allSponsorsJson);
-
 var sponsorsWithBubbles = sponsorData.Where(x => x.BubbleSize != BubbleSize.None).ToList();
-Arrange(sponsorsWithBubbles);
 var featuredSponsorsJson = JsonSerializer.Serialize(sponsorsWithBubbles, options);
 // Console.WriteLine(featuredSponsorsJson);
 
@@ -115,96 +111,6 @@ static BubbleSize GetBubbleSize(int value)
 	return BubbleSize.Large;
 }
 
-static void Arrange(List<SponsorData> data)
-{
-
-	bool Overlaps(SponsorData item, double x, double y, HashSet<SponsorData> field) =>
-		field.Any(sd =>
-		{
-			const int padding = 10;
-			var fieldRadius = (int)sd.BubbleSize;
-			var itemRadius = (int)item.BubbleSize;
-			var requiredDistance = fieldRadius + padding + itemRadius;
-			var actualDistance = Math.Sqrt((sd.X!.Value - x) * (sd.X.Value - x) + (sd.Y!.Value - y) * (sd.Y.Value - y));
-
-			return actualDistance < requiredDistance;
-		});
-
-	var sorted = data.OrderByDescending(x => x.BubbleSize).ToList();
-	if (sorted.Count != 0)
-	{
-		sorted[0].X = 0;
-		sorted[0].Y = 0;
-	}
-	var toPosition = new Queue<SponsorData>(sorted.Skip(1));
-	var positioned = new HashSet<SponsorData>(sorted.Take(1));
-
-	while (toPosition.Count != 0)
-	{
-		var item = toPosition.Dequeue();
-		int radius = 1;
-		var done = false;
-		while (!done)
-		{
-			for (double angle = 0; angle < 2 * Math.PI; angle += Math.PI / 36)  // 5 degrees
-			{
-				var x = 2 * radius * Math.Cos(angle);
-				var y = radius * Math.Sin(angle);
-				if (!Overlaps(item, x, y, positioned))
-				{
-					item.X = (int) x;
-					item.Y = (int) y;
-					done = true;
-					break;
-				}
-			}
-
-			radius++;
-		}
-
-		positioned.Add(item);
-		Reposition(positioned);
-	}
-
-	Normalize(positioned);
-}
-
-static void Reposition(HashSet<SponsorData> field)
-{
-	var minX = field.Min(x => x.X - (int)x.BubbleSize);
-	var minY = field.Min(x => x.Y - (int)x.BubbleSize);
-	var maxX = field.Max(x => x.X + (int)x.BubbleSize);
-	var maxY = field.Max(x => x.Y + (int)x.BubbleSize);
-
-	var deltaX = (maxX + minX) / 2;
-	var deltaY = (maxY + minY) / 2;
-
-	foreach (var data in field)
-	{
-		data.X -= deltaX;
-		data.Y -= deltaY;
-	}
-}
-
-
-static void Normalize(HashSet<SponsorData> field)
-{
-	// currently the bubbles are arranged centered around the origin
-	// for the site, we need to move all of the bubbles into the positive Y
-
-	// additionally, the bubbles are drawn with a top-left origin instead of
-	// the current center origin, so we need to account for that as well
-
-	var minY = field.Min(x => x.Y - (int)x.BubbleSize);
-
-	foreach (var data in field)
-	{
-		var radius = (int)data.BubbleSize;
-		data.Y -= minY + radius;
-		data.X -= radius;
-	}
-}
-
 [JsonConverter(typeof(JsonStringEnumConverter<BubbleSize>))]
 public enum BubbleSize
 {
@@ -214,8 +120,4 @@ public enum BubbleSize
 	Large = 50
 }
 
-public record SponsorData(string Username, Uri AvatarUrl, Uri WebsiteUrl, BubbleSize BubbleSize)
-{
-	public int? X { get; set; }
-	public int? Y { get; set; }
-}
+public record SponsorData(string Username, Uri AvatarUrl, Uri WebsiteUrl, BubbleSize BubbleSize);

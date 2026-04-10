@@ -1,5 +1,6 @@
 ﻿@using JsonEverythingNet.Models
-<div class="bubble-field" style="height: @(Height)px">
+
+<div id="@_fieldId" class="bubble-field">
 	@foreach (var item in Data)
 	{
 		<SponsorBubble AvatarUrl="@item.AvatarUrl?.OriginalString"
@@ -13,12 +14,21 @@
 </div>
 
 @code {
+	[Inject]
+	private IJSRuntime JsRuntime { get; set; } = default!;
+
+	private readonly string _fieldId = $"sponsor-cloud-{Guid.NewGuid():N}";
+
 	[Parameter]
 	public IReadOnlyList<SponsorData> Data { get; set; } = [];
 
-	private int Height => Data.Count == 0
-		? 0
-		: (int)Math.Abs(Data.Max(x => x.Y + (int)x.BubbleSize) -
-						Data.Min(x => x.Y - (int)x.BubbleSize));
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (Data.Count == 0) return;
+
+		await JsRuntime.InvokeVoidAsync("sponsorCloudLayout.layout", _fieldId);
+
+		await base.OnAfterRenderAsync(firstRender);
+	}
 
 }
