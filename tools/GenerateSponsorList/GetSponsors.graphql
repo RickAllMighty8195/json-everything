@@ -16,6 +16,7 @@ query GetSponsors {
           }
           ... on Sponsorable {
             sponsorshipForViewerAsSponsorable {
+              privacyLevel
               tier {
                 monthlyPriceInDollars
               }

@@ -36,46 +36,57 @@ if (filename is null)
 	var client = services.GetRequiredService<IGitHubClient>();
 	var response = await client.GetSponsors.ExecuteAsync();
 
-	sponsorData = response.Data!.User!.Sponsors.Nodes!.Select(x =>
+	sponsorData = new List<SponsorData>();
+	foreach (var node in response.Data!.User!.Sponsors.Nodes!)
 	{
+		
 		string? name = null;
 		Uri? avatar = null;
 		Uri? website = null;
-		int value = 0;
-		if (x is IGetSponsors_User_Sponsors_Nodes_User { Login: not null } user)
+		var value = 0;
+		var privacyLevel = SponsorshipPrivacy.Public;
+		
+		if (node is IGetSponsors_User_Sponsors_Nodes_User { Login: not null } user)
 		{
 			name = user.Login;
 			avatar = user.AvatarUrl;
 			website = user.WebsiteUrl;
 			value = user.SponsorshipForViewerAsSponsorable!.Tier!.MonthlyPriceInDollars;
+			privacyLevel = user.SponsorshipForViewerAsSponsorable!.PrivacyLevel;
 		}
-		else if (x is IGetSponsors_User_Sponsors_Nodes_Organization { Login: not null } org)
+		else if (node is IGetSponsors_User_Sponsors_Nodes_Organization { Login: not null } org)
 		{
 			name = org.Login;
 			avatar = org.AvatarUrl;
 			website = org.WebsiteUrl;
 			value = org.SponsorshipForViewerAsSponsorable!.Tier!.MonthlyPriceInDollars;
+			privacyLevel = org.SponsorshipForViewerAsSponsorable!.PrivacyLevel;
 		}
 
-		return new SponsorData (name!, avatar!, website!, GetBubbleSize(value));
-	}).ToList();
+		if (privacyLevel == SponsorshipPrivacy.Private) continue;
+
+		sponsorData.Add( new SponsorData (name!, avatar!, website!, GetBubbleSize(value)));
+	}
 }
 else
 {
 	var responseContent = File.ReadAllText(filename);
 	var responseData = JsonNode.Parse(responseContent);
-	sponsorData = responseData!["data"]!["user"]!["sponsors"]!["nodes"]!.AsArray()
-		.Select(x =>
-		{
-			var name = x!["login"]!.GetValue<string>();
-			var avatar = new Uri(x["avatarUrl"]!.GetValue<string>());
-			var site = x["websiteUrl"]?.GetValue<string>();
-			var website = site == null ? null : new Uri(site);
-			var value = x["sponsorshipForViewerAsSponsorable"]!["tier"]!["monthlyPriceInDollars"]!.GetValue<int>();
+	sponsorData = new List<SponsorData>();
+	foreach (var x in responseData!["data"]!["user"]!["sponsors"]!["nodes"]!.AsArray())
+	{
+		var name = x!["login"]!.GetValue<string>();
+		var avatar = new Uri(x["avatarUrl"]!.GetValue<string>());
+		var site = x["websiteUrl"]?.GetValue<string>();
+		var website = site == null ? null : new Uri(site);
+		var value = x["sponsorshipForViewerAsSponsorable"]!["tier"]!["monthlyPriceInDollars"]!.GetValue<int>();
+		var privacyLevelStr = x["sponsorshipForViewerAsSponsorable"]!["privacyLevel"]?.GetValue<string>();
+		var privacyLevel = Enum.TryParse<SponsorshipPrivacy>(privacyLevelStr, true, out var pl) ? pl : SponsorshipPrivacy.Public;
 
-			return new SponsorData(name!, avatar!, website!, GetBubbleSize(value));
-		})
-		.ToList();
+		if (privacyLevel == SponsorshipPrivacy.Private) continue;
+
+		sponsorData.Add(new SponsorData(name!, avatar!, website!, GetBubbleSize(value)));
+	}
 }
 
 var options = new JsonSerializerOptions
