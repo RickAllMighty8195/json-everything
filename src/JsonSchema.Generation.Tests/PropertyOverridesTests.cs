@@ -19,6 +19,7 @@ internal class PropertyOverridesTests
 		var expected = JsonDocument.Parse(
 			"""
 			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
 			  "type": "object",
 			  "properties": {
 			    "MyProperty": {"type": ["null", "string"]}

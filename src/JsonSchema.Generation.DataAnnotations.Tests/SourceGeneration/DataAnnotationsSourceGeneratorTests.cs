@@ -11,6 +11,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithMaxLength",
 		  "type": "object",
 		  "properties": {
@@ -33,6 +34,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithMinLength",
 		  "type": "object",
 		  "properties": {
@@ -55,6 +57,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithStringLength",
 		  "type": "object",
 		  "properties": {
@@ -78,6 +81,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithRange",
 		  "type": "object",
 		  "properties": {
@@ -101,6 +105,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithRegex",
 		  "type": "object",
 		  "properties": {
@@ -122,6 +127,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithEmail",
 		  "type": "object",
 		  "properties": {
@@ -143,6 +149,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithUrl",
 		  "type": "object",
 		  "properties": {
@@ -165,6 +172,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithLength",
 		  "type": "object",
 		  "properties": {
@@ -187,6 +195,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithBase64",
 		  "type": "object",
 		  "properties": {
@@ -209,6 +218,7 @@ public class DataAnnotationsSourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.DataAnnotations.Tests.SourceGeneration.DataAnnotationsTestModels.PersonWithMultipleConstraints",
 		  "type": "object",
 		  "properties": {

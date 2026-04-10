@@ -19,7 +19,7 @@ public class IdAttribute : Attribute, IAttributeHandler
 	/// Creates a new <see cref="IdAttribute"/> instance.
 	/// </summary>
 	/// <param name="value">The value.</param>
-	public IdAttribute([StringSyntax(StringSyntaxAttribute.Regex)] string value)
+	public IdAttribute([StringSyntax(StringSyntaxAttribute.Uri)] string value)
 	{
 		if (!Uri.IsWellFormedUriString(value, UriKind.RelativeOrAbsolute))
 			throw new ArgumentException("[Id] attribute requires a valid URI", nameof(value));

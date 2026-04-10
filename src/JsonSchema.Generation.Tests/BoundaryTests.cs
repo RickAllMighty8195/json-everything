@@ -33,6 +33,7 @@ public class BoundaryTests
 		var expected = JsonDocument.Parse(
 			$$"""
 			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
 			  "type": "object",
 			  "properties": {
 			    "Value": {

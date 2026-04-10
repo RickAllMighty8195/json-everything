@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -24,6 +24,7 @@ public class ConditionalTests
 	public void SingleConditionGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Toggle", new JsonSchemaBuilder().Type(SchemaValueType.Boolean)),
@@ -116,6 +117,7 @@ public class ConditionalTests
 	public void MultipleConditionGroupsGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Toggle", new JsonSchemaBuilder().Type(SchemaValueType.Boolean)),
@@ -164,6 +166,7 @@ public class ConditionalTests
 	public void MultipleConditionsInTheSameGroupGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Toggle", new JsonSchemaBuilder().Type(SchemaValueType.Boolean)),
@@ -202,6 +205,7 @@ public class ConditionalTests
 	public void SingleConditionMultiplePropertiesGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Toggle", new JsonSchemaBuilder().Type(SchemaValueType.Boolean)),
@@ -239,6 +243,7 @@ public class ConditionalTests
 	public void EnumSwitchGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Day", new JsonSchemaBuilder()
@@ -280,6 +285,7 @@ public class ConditionalTests
 	public void UnusedGroupIsIgnored()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Value", new JsonSchemaBuilder().Type(SchemaValueType.String))
@@ -298,6 +304,7 @@ public class ConditionalTests
 	public void UnknownGroupIsIgnored()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Value", new JsonSchemaBuilder().Type(SchemaValueType.String))
@@ -336,6 +343,7 @@ public class ConditionalTests
 	public void SplitAgeRangesGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Name", new JsonSchemaBuilder().Type(SchemaValueType.String)),
@@ -424,6 +432,7 @@ public class ConditionalTests
 	public void NumberRangeConditionsGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Value", new JsonSchemaBuilder().Type(SchemaValueType.Integer)),
@@ -461,6 +470,7 @@ public class ConditionalTests
 	public void StringLengthRangeConditionsGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Value", new JsonSchemaBuilder().Type(SchemaValueType.String)),
@@ -498,6 +508,7 @@ public class ConditionalTests
 	public void ArrayLengthRangeConditionsGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Value", new JsonSchemaBuilder()
@@ -538,6 +549,7 @@ public class ConditionalTests
 	public void DictionaryLengthRangeConditionsGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Value", new JsonSchemaBuilder()

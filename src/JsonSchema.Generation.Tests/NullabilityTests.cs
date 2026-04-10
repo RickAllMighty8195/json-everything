@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -130,6 +130,7 @@ public class NullabilityTests
 		var expected = JsonDocument.Parse(
 			$$"""
 			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
 			  "type": "object",
 			  "properties": {
 			    "Property": {"type": {{typeValue}}}
@@ -203,6 +204,7 @@ public class NullabilityTests
 		var expected = JsonDocument.Parse(
 			$$"""
 			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
 			  "type": "object",
 			  "properties": {
 			    "Property": {"enum": [{{enumValues}}]}
@@ -227,6 +229,7 @@ public class NullabilityTests
 	public void TypeNullability(Type type, SchemaValueType valueType)
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(valueType)
 			.Build();
 
@@ -254,6 +257,8 @@ public class NullabilityTests
 			values.Add(null!);
 
 		var expected = new JsonSchemaBuilder()
+
+			.Schema(MetaSchemas.Draft202012Id)
 			.Enum(values)
 			.Build();
 
@@ -274,6 +279,7 @@ public class NullabilityTests
 	public void NullableIntAndNonNullableInt()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("NonNullable", new JsonSchemaBuilder().Type(Integer)),
@@ -281,7 +287,7 @@ public class NullabilityTests
 			);
 
 		var actual = new JsonSchemaBuilder()
-			.FromType<DifferingNullabilityValueType>(new SchemaGeneratorConfiguration())
+			.FromType<DifferingNullabilityValueType>()
 			.Build();
 
 		AssertEqual(expected, actual);
@@ -298,6 +304,7 @@ public class NullabilityTests
 	public void NullableIntAndNonNullableIntUsingAttribute()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("NonNullable", new JsonSchemaBuilder().Type(Integer)),
@@ -305,7 +312,7 @@ public class NullabilityTests
 			);
 
 		var actual = new JsonSchemaBuilder()
-			.FromType<DifferingNullabilityValueTypeUsingAttribute>(new SchemaGeneratorConfiguration())
+			.FromType<DifferingNullabilityValueTypeUsingAttribute>()
 			.Build();
 
 		AssertEqual(expected, actual);
@@ -325,6 +332,7 @@ public class NullabilityTests
 	public void NullableStringAndNonNullableString()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("NonNullable", new JsonSchemaBuilder().Type(String)),
@@ -334,7 +342,7 @@ public class NullabilityTests
 			);
 
 		var actual = new JsonSchemaBuilder()
-			.FromType<DifferingNullabilityReferenceType>(new SchemaGeneratorConfiguration())
+			.FromType<DifferingNullabilityReferenceType>()
 			.Build();
 
 		AssertEqual(expected, actual);
@@ -349,6 +357,7 @@ public class NullabilityTests
 	public void NullableStruct()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Property", new JsonSchemaBuilder()
@@ -374,6 +383,7 @@ public class NullabilityTests
 	public void NullableStructWithAnotherAttribute()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Property", new JsonSchemaBuilder()

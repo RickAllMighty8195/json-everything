@@ -213,6 +213,77 @@ public static class TestModels
 		public string City { get; set; } = string.Empty;
 	}
 
+	[GenerateJsonSchema]
+	[Id("https://json-everything.test/schemas/person")]
+	public class PersonWithId
+	{
+		public string Name { get; set; } = string.Empty;
+		public int Age { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	public class PersonWithIdReference
+	{
+		public string Name { get; set; } = string.Empty;
+		public PersonWithId? Person { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	public class PersonWithJsonRequired
+	{
+		public string Name { get; set; } = string.Empty;
+		[System.Text.Json.Serialization.JsonRequired]
+		public int Age { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	public class PersonWithDefaults
+	{
+		[Default("anonymous")]
+		public string Name { get; set; } = string.Empty;
+		[Default(0)]
+		public int Age { get; set; }
+		[Default(true)]
+		public bool IsActive { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[AdditionalProperties(false)]
+	public class PersonWithNoAdditionalProperties
+	{
+		public string Name { get; set; } = string.Empty;
+		public int Age { get; set; }
+	}
+
+	public class GenericHolder<T>
+	{
+		public T Value { get; set; } = default!;
+	}
+
+	public class Optional<T>
+	{
+		public T Value { get; set; } = default!;
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithMultipleClosedGenerics
+	{
+		public GenericHolder<int>? IntHolder { get; set; }
+		public GenericHolder<string>? StringHolder { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithOptionalWrapper
+	{
+		public Optional<int> Age { get; set; } = new();
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithOptionalObjectWrapper
+	{
+		public Optional<SimplePerson> Person { get; set; } = new();
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation

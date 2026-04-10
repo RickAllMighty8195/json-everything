@@ -1,4 +1,4 @@
-﻿using NUnit.Framework;
+using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
 using DAMinLength = System.ComponentModel.DataAnnotations.MinLengthAttribute;
 
@@ -16,6 +16,7 @@ public class MinLengthAttributeTests
 	public void GenerateMinLength()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Simple", new JsonSchemaBuilder()

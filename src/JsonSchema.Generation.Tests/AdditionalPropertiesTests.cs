@@ -14,6 +14,7 @@ public class AdditionalPropertiesTests
 	public void TrueIsAdded()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.AdditionalProperties(true);
 
@@ -32,6 +33,7 @@ public class AdditionalPropertiesTests
 	public void FalseIsAdded()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Foo", new JsonSchemaBuilder().Type(SchemaValueType.Integer)))
@@ -52,6 +54,7 @@ public class AdditionalPropertiesTests
 	public void TypeIsAdded()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Foo", new JsonSchemaBuilder().Type(SchemaValueType.Integer)))
@@ -77,6 +80,7 @@ public class AdditionalPropertiesTests
 	public void FalseIsAddedToProp()
 	{
 		var expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Foo", new JsonSchemaBuilder()

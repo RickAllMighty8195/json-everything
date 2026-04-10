@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
 
@@ -16,6 +16,7 @@ public class UrlAttributeTests
 	public void GenerateEmailFormat()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Simple", new JsonSchemaBuilder()

@@ -20,6 +20,7 @@ internal static class TestEnvironment
 	public static void Setup()
 	{
 		DataAnnotationsSupport.AddDataAnnotations();
+		SchemaGeneratorConfiguration.Default.DefaultDialect = MetaSchemas.Draft202012Id;
 	}
 }
 

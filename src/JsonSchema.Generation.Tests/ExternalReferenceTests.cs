@@ -89,6 +89,7 @@ public class ExternalReferenceTests
 	public void GeneratesRefForExternalReferenceUsingIdAttribute()
 	{
 		JsonSchema expected = new JsonSchemaBuilder(new BuildOptions { SchemaRegistry = new() })
+			.Schema(MetaSchemas.Draft202012Id)
 			.Id(GeneratedSchemaUri)
 			.Type(SchemaValueType.Object)
 			.Properties(

@@ -11,6 +11,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SimplePerson",
 		  "type": "object",
 		  "properties": {
@@ -30,6 +31,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.CamelCasePerson",
 		  "type": "object",
 		  "properties": {
@@ -50,6 +52,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithNullable",
 		  "type": "object",
 		  "properties": {
@@ -70,6 +73,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithRequired",
 		  "type": "object",
 		  "properties": {
@@ -90,6 +94,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithEnum",
 		  "type": "object",
 		  "properties": {
@@ -111,6 +116,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithDescription",
 		  "type": "object",
 		  "properties": {
@@ -136,6 +142,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ProductWithCustomAttributes",
 		  "type": "object",
 		  "properties": {
@@ -165,6 +172,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithAddresses",
 		  "type": "object",
 		  "properties": {
@@ -193,10 +201,241 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void PersonWithId_UsesCustomId()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "https://json-everything.test/schemas/person",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Age": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithId;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void PersonWithIdReference_UsesCustomIdInRef()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithIdReference",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Person": {
+		      "anyOf": [
+		        { "$ref": "https://json-everything.test/schemas/person" },
+		        { "type": "null" }
+		      ]
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithIdReference;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void PersonWithJsonRequired_MarksRequired()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithJsonRequired",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Age": { "type": "integer" }
+		  },
+		  "required": ["Age"]
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithJsonRequired;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void PersonWithDefaults_EmitsDefaultValues()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithDefaults",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string", "default": "anonymous" },
+		    "Age": { "type": "integer", "default": 0 },
+		    "IsActive": { "type": "boolean", "default": true }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithDefaults;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void PersonWithNoAdditionalProperties_EmitsAdditionalProperties()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.PersonWithNoAdditionalProperties",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Age": { "type": "integer" }
+		  },
+		  "additionalProperties": false
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_PersonWithNoAdditionalProperties;
+		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithMultipleClosedGenerics_UsesDistinctRefs()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithMultipleClosedGenerics",
+		  "type": "object",
+		  "properties": {
+		    "IntHolder": {
+		      "anyOf": [
+		        { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<int>" },
+		        { "type": "null" }
+		      ]
+		    },
+		    "StringHolder": {
+		      "anyOf": [
+		        { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<string>" },
+		        { "type": "null" }
+		      ]
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithMultipleClosedGenerics;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void GenericHolderInt_GeneratesSchema()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<int>",
+		  "type": "object",
+		  "properties": {
+		    "Value": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_GenericHolderOfInt32;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void GenericHolderString_GeneratesSchema()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.GenericHolder<string>",
+		  "type": "object",
+		  "properties": {
+		    "Value": { "type": "string" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_GenericHolderOfString;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithOptionalWrapper_UsesSchemaHandlerForWrappedType()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithOptionalWrapper",
+		  "type": "object",
+		  "properties": {
+		    "Age": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithOptionalWrapper;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithOptionalObjectWrapper_UsesRefForGeneratedType()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithOptionalObjectWrapper",
+		  "type": "object",
+		  "properties": {
+		    "Person": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SimplePerson" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithOptionalObjectWrapper;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void BuildForType_UsesSchemaHandlerForOpenGenericType()
+	{
+		var expectedJson = """
+		{
+		  "type": "string"
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = new JsonSchemaBuilder()
+			.BuildForType(typeof(TestModels.Optional<string>))
+			.Build();
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SingleCondition",
 		  "type": "object",
 		  "properties": {
@@ -226,6 +465,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SingleConditionCamelCase",
 		  "type": "object",
 		  "properties": {
@@ -255,6 +495,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleConditionGroups",
 		  "type": "object",
 		  "properties": {
@@ -301,6 +542,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleTriggersInSameGroup",
 		  "type": "object",
 		  "properties": {
@@ -332,6 +574,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalWithMinimum",
 		  "type": "object",
 		  "properties": {
@@ -361,6 +604,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalWithMaximum",
 		  "type": "object",
 		  "properties": {
@@ -390,6 +634,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.EnumSwitch",
 		  "type": "object",
 		  "properties": {
@@ -437,6 +682,7 @@ public class SourceGeneratorTests
 	{
 		var expectedJson = """
 		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConditionalValidation",
 		  "type": "object",
 		  "properties": {

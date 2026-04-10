@@ -52,6 +52,14 @@ internal sealed class ApplyParameterInfo
 	public required string TypeName { get; init; }
 }
 
+internal sealed class SchemaHandlerInfo
+{
+	public required string HandlerTypeName { get; init; }
+	public required string TargetTypeName { get; init; }
+	public required bool IsOpenGenericTarget { get; init; }
+	public required bool ReturnsBuilder { get; init; }
+}
+
 internal enum TypeKind
 {
 	Unknown,

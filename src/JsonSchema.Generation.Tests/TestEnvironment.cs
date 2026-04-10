@@ -4,9 +4,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Json.Schema.Generation.Tests.Serialization;
 using Json.Schema.Generation.Tests.SourceGeneration;
+using NUnit.Framework;
 
 namespace Json.Schema.Generation.Tests;
 
+[SetUpFixture]
 internal static class TestEnvironment
 {
 	public static readonly JsonSerializerOptions SerializerOptions =
@@ -16,6 +18,12 @@ internal static class TestEnvironment
 			WriteIndented = true,
 			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
 		};
+
+	[OneTimeSetUp]
+	public static void Setup()
+	{
+		SchemaGeneratorConfiguration.Default.DefaultDialect = MetaSchemas.Draft202012Id;
+	}
 }
 
 [JsonSerializable(typeof(Point))]

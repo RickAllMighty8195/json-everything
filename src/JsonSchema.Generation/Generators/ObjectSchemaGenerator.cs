@@ -114,6 +114,7 @@ internal class ObjectSchemaGenerator : ISchemaGenerator
 #if NET7_0_OR_GREATER
 			    || unconditionalAttributes.OfType<System.Runtime.CompilerServices.RequiredMemberAttribute>().Any()
 #endif
+			    || unconditionalAttributes.OfType<JsonRequiredAttribute>().Any()
 			   )
 				required.Add(name);
 

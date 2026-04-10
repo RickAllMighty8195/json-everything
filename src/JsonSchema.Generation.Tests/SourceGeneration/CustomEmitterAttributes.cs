@@ -35,6 +35,21 @@ public class CustomFormatAttribute : Attribute, IAttributeHandler<CustomFormatAt
 	}
 }
 
+[SchemaHandler(typeof(TestModels.Optional<>))]
+public static class OptionalSchemaHandler
+{
+	public static JsonSchemaBuilder Apply(JsonSchemaBuilder builder, Type type)
+	{
+		if (!type.IsGenericType) return builder;
+		if (type.IsGenericTypeDefinition) return builder;
+
+		var genericArguments = type.GetGenericArguments();
+		if (genericArguments.Length != 1) return builder;
+
+		return builder.BuildForType(genericArguments[0]);
+	}
+}
+
 /// <summary>
 /// Another example showing a numeric constraint attribute.
 /// </summary>
@@ -86,3 +101,4 @@ public class RangeAttribute : Attribute, IAttributeHandler<RangeAttribute>
 		// Runtime implementation not needed for source generation
 	}
 }
+

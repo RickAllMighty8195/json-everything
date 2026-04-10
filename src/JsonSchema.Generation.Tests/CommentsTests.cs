@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Json.More;
 using NUnit.Framework;
 using TestHelpers;

@@ -205,7 +205,7 @@ internal static class TypeAnalyzer
 			}
 
 			if (!isRequired)
-				isRequired = HasAttribute(member, "System.ComponentModel.DataAnnotations.RequiredAttribute");
+				isRequired = HasAttribute(member, "JsonRequiredAttribute");
 
 			if (!isRequired && member is IPropertySymbol propertySymbol)
 				isRequired = propertySymbol.IsRequired;
@@ -672,10 +672,57 @@ internal static class TypeAnalyzer
 
 	private static string ToKebabCase(string name) => ToSnakeCase(name).Replace('_', '-');
 
-	private static string GetSchemaPropertyName(INamedTypeSymbol typeSymbol) =>
-		typeSymbol.ContainingType != null
-			? $"{GetSchemaPropertyName(typeSymbol.ContainingType)}_{typeSymbol.Name}"
-			: typeSymbol.Name;
+	private static string GetSchemaPropertyName(INamedTypeSymbol typeSymbol)
+	{
+		var currentName = typeSymbol.Name;
+
+		if (typeSymbol.IsGenericType && typeSymbol.TypeArguments.Length > 0)
+		{
+			var typeArgNames = typeSymbol.TypeArguments
+				.Select(GetTypeArgumentPropertyName);
+			currentName = $"{currentName}Of{string.Join("And", typeArgNames)}";
+		}
+
+		return typeSymbol.ContainingType != null
+			? $"{GetSchemaPropertyName(typeSymbol.ContainingType)}_{currentName}"
+			: currentName;
+	}
+
+	private static string GetTypeArgumentPropertyName(ITypeSymbol typeSymbol)
+	{
+		var unwrapped = UnwrapNullable(typeSymbol);
+
+		if (unwrapped is INamedTypeSymbol namedType)
+			return GetSchemaPropertyName(namedType);
+
+		if (unwrapped is IArrayTypeSymbol arrayType)
+			return $"{GetTypeArgumentPropertyName(arrayType.ElementType)}Array";
+
+		return SanitizeSchemaPropertyName(unwrapped.Name);
+	}
+
+	private static string SanitizeSchemaPropertyName(string name)
+	{
+		var sb = new System.Text.StringBuilder(name.Length);
+		var lastWasUnderscore = false;
+
+		foreach (var ch in name)
+		{
+			if (char.IsLetterOrDigit(ch) || ch == '_')
+			{
+				sb.Append(ch);
+				lastWasUnderscore = false;
+				continue;
+			}
+
+			if (lastWasUnderscore) continue;
+
+			sb.Append('_');
+			lastWasUnderscore = true;
+		}
+
+		return sb.ToString().Trim('_');
+	}
 
 	private static bool IsNullableType(ITypeSymbol typeSymbol) =>
 		typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ||

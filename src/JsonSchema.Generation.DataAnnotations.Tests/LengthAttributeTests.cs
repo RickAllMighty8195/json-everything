@@ -1,4 +1,4 @@
-﻿#if NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 
 using System.ComponentModel.DataAnnotations;
 using NUnit.Framework;
@@ -19,6 +19,7 @@ public class LengthAttributeTests
 	public void GenerateStringRange()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Simple", new JsonSchemaBuilder()

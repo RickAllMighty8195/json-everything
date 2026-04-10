@@ -29,6 +29,15 @@ public class SchemaGeneratorConfiguration
 	public static SchemaGeneratorConfiguration Current { get; internal set; }
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
 
+	/// <summary>
+	/// Gets the default configuration instance for the schema generator.
+	/// </summary>
+	/// <remarks>
+	/// Use this property to access a pre-configured, standard set of options for schema generation. This
+	/// instance is intended for general use when custom configuration is not required.
+	/// </remarks>
+	public static SchemaGeneratorConfiguration Default { get; } = new();
+
 	internal DocXmlReader XmlReader { get; }
 
 	/// <summary>
@@ -75,6 +84,16 @@ public class SchemaGeneratorConfiguration
 	/// Provides custom naming functionality.
 	/// </summary>
 	public ITypeNameGenerator? TypeNameGenerator { get; set; }
+
+	/// <summary>
+	/// Gets or sets the default dialect included in generated schemas.
+	/// </summary>
+	/// <remarks>
+	/// For compatibility, this property defaults to null, which does not add a `$schema`
+	/// keyword.  In future major versions, this will be set and `$schema` will be
+	/// included by default.
+	/// </remarks>
+	public Uri? DefaultDialect { get; set; }
 
 	/// <summary>
 	/// Creates a new <see cref="SchemaGeneratorConfiguration"/>.

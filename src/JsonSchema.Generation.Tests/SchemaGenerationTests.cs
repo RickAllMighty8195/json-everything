@@ -43,7 +43,7 @@ public class SchemaGenerationTests
 	[TestCaseSource(nameof(SimpleTypeCases))]
 	public void CheckSimpleTypes(Type dotnetType, SchemaValueType schemaType)
 	{
-		JsonSchema expected = new JsonSchemaBuilder().Type(schemaType);
+		JsonSchema expected = new JsonSchemaBuilder().Schema(MetaSchemas.Draft202012Id).Type(schemaType);
 
 		JsonSchema actual = new JsonSchemaBuilder().FromType(dotnetType);
 
@@ -53,7 +53,7 @@ public class SchemaGenerationTests
 	[Test]
 	public void IntArray()
 	{
-		JsonSchema expected = new JsonSchemaBuilder().Type(SchemaValueType.Array)
+		JsonSchema expected = new JsonSchemaBuilder().Schema(MetaSchemas.Draft202012Id).Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder().Type(SchemaValueType.Integer));
 
 		JsonSchema actual = new JsonSchemaBuilder().FromType<int[]>();
@@ -64,7 +64,7 @@ public class SchemaGenerationTests
 	[Test]
 	public void NullableIntArray()
 	{
-		JsonSchema expected = new JsonSchemaBuilder().Type(SchemaValueType.Array)
+		JsonSchema expected = new JsonSchemaBuilder().Schema(MetaSchemas.Draft202012Id).Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder().Type(SchemaValueType.Integer));
 
 		JsonSchema actual = new JsonSchemaBuilder().FromType<int?[]>();
@@ -77,6 +77,7 @@ public class SchemaGenerationTests
 	public void IEnumerableOfListOfStrings()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Array)
 			.Items(new JsonSchemaBuilder()
 				.Type(SchemaValueType.Array)
@@ -91,7 +92,7 @@ public class SchemaGenerationTests
 	[Test]
 	public void GeneralArrayOfThings()
 	{
-		JsonSchema expected = new JsonSchemaBuilder().Type(SchemaValueType.Array);
+		JsonSchema expected = new JsonSchemaBuilder().Schema(MetaSchemas.Draft202012Id).Type(SchemaValueType.Array);
 
 		JsonSchema actual = new JsonSchemaBuilder().FromType<Array>();
 
@@ -102,6 +103,7 @@ public class SchemaGenerationTests
 	public void StringDictionaryOfInt()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.AdditionalProperties(new JsonSchemaBuilder().Type(SchemaValueType.Integer));
 
@@ -113,7 +115,7 @@ public class SchemaGenerationTests
 	[Test]
 	public void EmptyObject()
 	{
-		JsonSchema expected = new JsonSchemaBuilder();
+		JsonSchema expected = new JsonSchemaBuilder().Schema(MetaSchemas.Draft202012Id);
 
 		JsonSchema actual = new JsonSchemaBuilder().FromType<object>();
 
@@ -258,6 +260,7 @@ public class SchemaGenerationTests
 	public void GeneratorForObject()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("_value", new JsonSchemaBuilder().Type(SchemaValueType.Integer)),
@@ -355,6 +358,7 @@ public class SchemaGenerationTests
 	public void InitializedTypeGeneration()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("FortySix", new JsonSchemaBuilder()
@@ -382,6 +386,7 @@ public class SchemaGenerationTests
 	public void RecursiveDefinition()
 	{
 		JsonSchema expected = new JsonSchemaBuilder()
+			.Schema(MetaSchemas.Draft202012Id)
 			.Type(SchemaValueType.Object)
 			.Properties(
 				("Value", new JsonSchemaBuilder().Type(SchemaValueType.Integer)),

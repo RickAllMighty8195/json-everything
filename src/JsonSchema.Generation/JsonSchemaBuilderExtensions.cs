@@ -36,10 +36,13 @@ public static class JsonSchemaBuilderExtensions
 		Type type,
 		SchemaGeneratorConfiguration? configuration = null)
 	{
-		SchemaGeneratorConfiguration.Current = configuration ?? new SchemaGeneratorConfiguration();
+		SchemaGeneratorConfiguration.Current = configuration ?? SchemaGeneratorConfiguration.Default;
 
 		SchemaGenerationContextCache.Clear();
 		var context = SchemaGenerationContextCache.GetRoot(type);
+
+		if (SchemaGeneratorConfiguration.Current.DefaultDialect is not null)
+			builder.Schema(SchemaGeneratorConfiguration.Current.DefaultDialect);
 
 		context.Apply(builder);
 

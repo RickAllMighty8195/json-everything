@@ -19,6 +19,7 @@ namespace Json.Schema.Generation.SourceGeneration;
 public class JsonSchemaSourceGenerator : IIncrementalGenerator
 {
 	private const string _generateJsonSchemaAttributeName = "Json.Schema.Generation.Serialization.GenerateJsonSchemaAttribute";
+	private const string _schemaHandlerAttributeName = "Json.Schema.Generation.SchemaHandlerAttribute";
 
 	/// <summary>
 	/// Initializes the incremental generator.
@@ -84,6 +85,8 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 		if (analyzedTypes.Count == 0) return;
 
+		var schemaHandlers = DiscoverSchemaHandlers(compilation);
+
 		// Analyze all encountered types that aren't already analyzed
 		var allTypeInfos = new List<TypeInfo>(analyzedTypes);
 		foreach (var typeSymbol in allEncounteredTypes)
@@ -108,7 +111,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			// Detect user-defined GeneratedJsonSchemas class
 			var classDeclaration = DetectGeneratedJsonSchemasClass(compilation, namespaceName, context.ReportDiagnostic);
 
-			var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(typesInNamespace, namespaceName, classDeclaration);
+			var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(typesInNamespace, namespaceName, classDeclaration, schemaHandlers);
 
 			var safeName = string.IsNullOrEmpty(namespaceName) 
 				? "GeneratedJsonSchemas" 
@@ -117,6 +120,56 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 			context.AddSource(fileName, SourceText.From(generatedCode, Encoding.UTF8));
 		}
+	}
+
+	private static List<SchemaHandlerInfo> DiscoverSchemaHandlers(Compilation compilation)
+	{
+		var results = new List<SchemaHandlerInfo>();
+		var systemType = compilation.GetTypeByMetadataName("System.Type");
+		CollectSchemaHandlers(compilation.Assembly.GlobalNamespace, results, systemType);
+		return results;
+	}
+
+	private static void CollectSchemaHandlers(INamespaceSymbol namespaceSymbol, List<SchemaHandlerInfo> results, INamedTypeSymbol? systemType)
+	{
+		foreach (var type in namespaceSymbol.GetTypeMembers())
+			CollectSchemaHandlers(type, results, systemType);
+
+		foreach (var nested in namespaceSymbol.GetNamespaceMembers())
+			CollectSchemaHandlers(nested, results, systemType);
+	}
+
+	private static void CollectSchemaHandlers(INamedTypeSymbol typeSymbol, List<SchemaHandlerInfo> results, INamedTypeSymbol? systemType)
+	{
+		foreach (var attr in typeSymbol.GetAttributes())
+		{
+			if (attr.AttributeClass?.ToDisplayString() != _schemaHandlerAttributeName) continue;
+			if (attr.ConstructorArguments.Length == 0) continue;
+			if (attr.ConstructorArguments[0].Value is not INamedTypeSymbol targetTypeSymbol) continue;
+
+			var applyMethod = typeSymbol.GetMembers("Apply")
+				.OfType<IMethodSymbol>()
+				.FirstOrDefault(m => m is { IsStatic: true } &&
+				                     m.Parameters.Length == 2 &&
+				                     m.Parameters[0].Type.Name == "JsonSchemaBuilder" &&
+				                     SymbolEqualityComparer.Default.Equals(m.Parameters[1].Type, systemType) &&
+				                     (m.ReturnsVoid || m.ReturnType.Name == "JsonSchemaBuilder"));
+
+			if (applyMethod == null) continue;
+
+			var isOpenGenericTarget = targetTypeSymbol.IsUnboundGenericType;
+
+			results.Add(new SchemaHandlerInfo
+			{
+				HandlerTypeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+				TargetTypeName = targetTypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
+				IsOpenGenericTarget = isOpenGenericTarget,
+				ReturnsBuilder = !applyMethod.ReturnsVoid
+			});
+		}
+
+		foreach (var nested in typeSymbol.GetTypeMembers())
+			CollectSchemaHandlers(nested, results, systemType);
 	}
 
 	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic)
