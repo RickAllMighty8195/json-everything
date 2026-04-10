@@ -45,7 +45,7 @@ jobs:
           dotnet build tools/GenerateSponsorList/GenerateSponsorList.csproj -c Release
           echo "Running GenerateSponsorList..."
           cd tools/GenerateSponsorList/bin/Release/net9.0
-          dotnet GenerateSponsorList.dll > /dev/null
+          dotnet GenerateSponsorList.dll
           echo "Copying sponsor-data.json to website..."
           cp sponsor-data.json $GITHUB_WORKSPACE/json-everything.net/wwwroot/data/
           echo "Sponsor data generation complete."

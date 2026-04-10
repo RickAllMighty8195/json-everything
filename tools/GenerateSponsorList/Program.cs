@@ -97,7 +97,7 @@ var options = new JsonSerializerOptions
 };
 var sponsorsWithBubbles = sponsorData.Where(x => x.BubbleSize != BubbleSize.None).ToList();
 var featuredSponsorsJson = JsonSerializer.Serialize(sponsorsWithBubbles, options);
-// Console.WriteLine(featuredSponsorsJson);
+Console.WriteLine(featuredSponsorsJson);
 
 File.WriteAllText("sponsor-data.json", featuredSponsorsJson);
 
