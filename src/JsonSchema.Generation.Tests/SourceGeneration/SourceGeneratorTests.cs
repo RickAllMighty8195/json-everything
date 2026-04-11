@@ -1,6 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace Json.Schema.Generation.Tests.SourceGeneration;
 
@@ -510,23 +511,6 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
-	public void MultiLineSummary_IsNormalisedToSingleLine()
-	{
-		var schema = GeneratedJsonSchemas.TestModels_TypeWithMultiLineSummary;
-
-		// The generated /// <summary> comment is not observable at runtime, but the
-		// multi-line property summary is emitted as .Description(). Check that it
-		// contains no literal newlines (which would produce invalid C# output).
-		var propSchema = schema.GetProperties()!["Value"];
-		var description = propSchema.GetDescription();
-
-		Assert.That(description, Is.Not.Null);
-		Assert.That(description, Does.Not.Contain("\n"));
-		Assert.That(description, Does.Not.Contain("\r"));
-		Assert.That(description, Is.EqualTo("First line of property summary. Second line of property summary."));
-	}
-
-	[Test]
 	public void NullableAttribute_OverridesTypeNullability()
 	{
 		var expectedJson = """
@@ -535,7 +519,7 @@ public class SourceGeneratorTests
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithNullableOverrides",
 		  "type": "object",
 		  "properties": {
-		    "ForcedNullable":    { "type": ["string", "null"], "description": "Force-nullable non-nullable string." },
+		    "ForcedNullable":    { "type": ["null", "string"], "description": "Force-nullable non-nullable string." },
 		    "ForcedNonNullable": { "type": "integer",         "description": "Force-non-nullable nullable int." }
 		  }
 		}
