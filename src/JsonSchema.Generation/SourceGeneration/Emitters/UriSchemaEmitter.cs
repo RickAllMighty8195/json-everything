@@ -14,6 +14,6 @@ internal class UriSchemaEmitter : ISchemaEmitter
 		else
 			sb.Append($"{indent}.Type(SchemaValueType.String)");
 		sb.AppendLine();
-		sb.Append($"{indent}.Format(Formats.Uri)");
+		sb.Append($"{indent}.Format(global::Json.Schema.Formats.Uri)");
 	}
 }

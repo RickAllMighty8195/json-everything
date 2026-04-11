@@ -14,6 +14,6 @@ internal class DateTimeSchemaEmitter : ISchemaEmitter
 		else
 			sb.Append($"{indent}.Type(SchemaValueType.String)");
 		sb.AppendLine();
-		sb.Append($"{indent}.Format(Formats.DateTime)");
+		sb.Append($"{indent}.Format(global::Json.Schema.Formats.DateTime)");
 	}
 }

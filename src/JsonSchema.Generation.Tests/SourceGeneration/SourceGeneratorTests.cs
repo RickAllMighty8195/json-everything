@@ -431,6 +431,42 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void BuildForType_UsesSchemaForGeneratedTypeInAnotherNamespace()
+	{
+		var expectedJson = """
+		{
+		  "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.AlternateNamespace.AlternateModels.CrossNamespacePerson"
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = new JsonSchemaBuilder()
+			.BuildForType(typeof(AlternateNamespace.AlternateModels.CrossNamespacePerson))
+			.Build();
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void CentralGeneratedSchemasClass_ContainsSchemasFromAnotherNamespace()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.AlternateNamespace.AlternateModels.CrossNamespacePerson",
+		  "type": "object",
+		  "properties": {
+		    "Name": { "type": "string" },
+		    "Age": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.AlternateModels_CrossNamespacePerson;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """

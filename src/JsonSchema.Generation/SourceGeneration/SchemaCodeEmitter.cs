@@ -269,9 +269,9 @@ internal static class SchemaCodeEmitter
 		sb.AppendLine("\t\t	var t when t == typeof(byte) || t == typeof(sbyte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong) => builder.Type(SchemaValueType.Integer),");
 		sb.AppendLine("\t\t	var t when t == typeof(float) || t == typeof(double) || t == typeof(decimal) => builder.Type(SchemaValueType.Number),");
 		sb.AppendLine("\t\t	var t when t == typeof(string) => builder.Type(SchemaValueType.String),");
-		sb.AppendLine("\t\t	var t when t == typeof(DateTime) || t == typeof(DateTimeOffset) => builder.Type(SchemaValueType.String).Format(Formats.DateTime),");
-		sb.AppendLine("\t\t	var t when t == typeof(Guid) => builder.Type(SchemaValueType.String).Format(Formats.Uuid),");
-		sb.AppendLine("\t\t	var t when t == typeof(Uri) => builder.Type(SchemaValueType.String).Format(Formats.Uri),");
+		sb.AppendLine("\t\t	var t when t == typeof(DateTime) || t == typeof(DateTimeOffset) => builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.DateTime),");
+		sb.AppendLine("\t\t	var t when t == typeof(Guid) => builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uuid),");
+		sb.AppendLine("\t\t	var t when t == typeof(Uri) => builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uri),");
 		sb.AppendLine("\t\t	_ => builder");
 		sb.AppendLine("\t\t};");
 		sb.AppendLine("\t}");

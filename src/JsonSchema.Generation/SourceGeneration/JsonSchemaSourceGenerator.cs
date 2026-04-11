@@ -26,12 +26,17 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 	/// </summary>
 	public void Initialize(IncrementalGeneratorInitializationContext context)
 	{
-		// Check if source generation is disabled via MSBuild property
-		var isDisabled = context.AnalyzerConfigOptionsProvider
+		var generationOptions = context.AnalyzerConfigOptionsProvider
 			.Select(static (provider, _) =>
 			{
 				provider.GlobalOptions.TryGetValue("build_property.DisableJsonSchemaSourceGeneration", out var value);
-				return value?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+				provider.GlobalOptions.TryGetValue("build_property.RootNamespace", out var rootNamespace);
+
+				return new GenerationOptions
+				{
+					IsDisabled = value?.Equals("true", StringComparison.OrdinalIgnoreCase) == true,
+					RootNamespace = rootNamespace ?? string.Empty
+				};
 			});
 
 		var typesWithAttribute = context.SyntaxProvider
@@ -41,16 +46,16 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 				static (ctx, _) => GetTypeToGenerate(ctx))
 			.Where(static type => type is not null);
 
-		var compilationAndTypesAndDisabled = context.CompilationProvider
+		var compilationAndTypesAndOptions = context.CompilationProvider
 			.Combine(typesWithAttribute.Collect())
-			.Combine(isDisabled);
+			.Combine(generationOptions);
 
-		context.RegisterSourceOutput(compilationAndTypesAndDisabled, static (spc, source) =>
+		context.RegisterSourceOutput(compilationAndTypesAndOptions, static (spc, source) =>
 		{
-			var isDisabled = source.Right;
-			if (isDisabled) return;
+			var generationOptions = source.Right;
+			if (generationOptions.IsDisabled) return;
 
-			Execute(source.Left.Left, source.Left.Right, spc);
+			Execute(source.Left.Left, source.Left.Right, generationOptions.RootNamespace, spc);
 		});
 	}
 
@@ -64,7 +69,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		return new TypeToGenerate(typeSymbol, attributeData);
 	}
 
-	private static void Execute(Compilation compilation, ImmutableArray<TypeToGenerate?> types, SourceProductionContext context)
+	private static void Execute(Compilation compilation, ImmutableArray<TypeToGenerate?> types, string rootNamespace, SourceProductionContext context)
 	{
 		if (types.IsDefaultOrEmpty) return;
 
@@ -101,25 +106,11 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			}
 		}
 
-		var typesByNamespace = allTypeInfos.GroupBy(t => GetNamespace(t.TypeSymbol));
+		var targetNamespace = rootNamespace;
+		var classDeclaration = DetectGeneratedJsonSchemasClass(compilation, targetNamespace, context.ReportDiagnostic);
+		var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(allTypeInfos, targetNamespace, classDeclaration, schemaHandlers);
 
-		foreach (var group in typesByNamespace)
-		{
-			var namespaceName = group.Key;
-			var typesInNamespace = group.ToList();
-
-			// Detect user-defined GeneratedJsonSchemas class
-			var classDeclaration = DetectGeneratedJsonSchemasClass(compilation, namespaceName, context.ReportDiagnostic);
-
-			var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(typesInNamespace, namespaceName, classDeclaration, schemaHandlers);
-
-			var safeName = string.IsNullOrEmpty(namespaceName) 
-				? "GeneratedJsonSchemas" 
-				: namespaceName.Replace(".", "_");
-			var fileName = $"{safeName}.g.cs";
-
-			context.AddSource(fileName, SourceText.From(generatedCode, Encoding.UTF8));
-		}
+		context.AddSource("GeneratedJsonSchemas.g.cs", SourceText.From(generatedCode, Encoding.UTF8));
 	}
 
 	private static List<SchemaHandlerInfo> DiscoverSchemaHandlers(Compilation compilation)
@@ -217,24 +208,6 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		}
 	}
 
-	private static string GetNamespace(ISymbol symbol)
-	{
-		if (symbol.ContainingNamespace == null || symbol.ContainingNamespace.IsGlobalNamespace)
-			return string.Empty;
-
-		var namespaces = new List<string>();
-		var currentNamespace = symbol.ContainingNamespace;
-
-		while (currentNamespace is { IsGlobalNamespace: false })
-		{
-			namespaces.Add(currentNamespace.Name);
-			currentNamespace = currentNamespace.ContainingNamespace;
-		}
-
-		namespaces.Reverse();
-		return string.Join(".", namespaces);
-	}
-
 	private static ClassDeclarationInfo DetectGeneratedJsonSchemasClass(
 		Compilation compilation, 
 		string namespaceName,
@@ -314,5 +287,11 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			TypeSymbol = typeSymbol;
 			AttributeData = attributeData;
 		}
+	}
+
+	private sealed class GenerationOptions
+	{
+		public required bool IsDisabled { get; init; }
+		public required string RootNamespace { get; init; }
 	}
 }
