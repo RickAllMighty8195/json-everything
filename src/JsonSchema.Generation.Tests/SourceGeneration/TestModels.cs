@@ -284,6 +284,12 @@ public static class TestModels
 		public Optional<SimplePerson> Person { get; set; } = new();
 	}
 
+	[GenerateJsonSchema]
+	public class ConflictModel
+	{
+		public string Value { get; set; } = string.Empty;
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation

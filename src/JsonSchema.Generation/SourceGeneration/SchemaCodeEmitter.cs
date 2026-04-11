@@ -289,7 +289,7 @@ internal static class SchemaCodeEmitter
 
 		foreach (var type in types)
 		{
-			sb.AppendLine($"\t\tregistry.Register({type.SchemaPropertyName});");
+			sb.AppendLine($"\t\tregistry.Register({GetPropertyName(type)});");
 		}
 
 		sb.AppendLine("\t}");
@@ -355,6 +355,8 @@ internal static class SchemaCodeEmitter
 		return types.FirstOrDefault(t => SymbolEqualityComparer.Default.Equals(t.TypeSymbol, named));
 	}
 
+	private static string GetPropertyName(TypeInfo type) => type.ResolvedPropertyName ?? type.SchemaPropertyName;
+
 	private static void EmitSchemaProperty(StringBuilder sb, TypeInfo type, Dictionary<string, string> typeIds, List<SchemaHandlerInfo> schemaHandlers)
 	{
 		if (!string.IsNullOrWhiteSpace(type.XmlDocSummary))
@@ -370,7 +372,7 @@ internal static class SchemaCodeEmitter
 			sb.AppendLine("\t/// </summary>");
 		}
 
-		sb.Append($"\tpublic static readonly JsonSchema {type.SchemaPropertyName} = ");
+		sb.Append($"\tpublic static readonly JsonSchema {GetPropertyName(type)} = ");
 		EmitSchemaBuilder(sb, type, 2, typeIds, schemaHandlers);
 		sb.AppendLine(".Build();");
 		sb.AppendLine();
@@ -704,7 +706,7 @@ internal static class SchemaCodeEmitter
 			sb.AppendLine($"\t\tValidatingJsonConverter.RegisterConverter(");
 			sb.AppendLine($"\t\t\ttypeof({type.FullyQualifiedName}),");
 			sb.AppendLine($"\t\t\tnew ValidatingJsonConverter<{type.FullyQualifiedName}>(");
-			sb.AppendLine($"\t\t\t\tGeneratedJsonSchemas.{type.SchemaPropertyName},");
+				sb.AppendLine($"\t\t\t\tGeneratedJsonSchemas.{GetPropertyName(type)},");
 			sb.AppendLine($"\t\t\t\tValidatingJsonConverter.DefaultOptionsFactory));");
 		}
 
