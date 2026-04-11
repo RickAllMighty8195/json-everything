@@ -690,15 +690,22 @@ internal static class TypeAnalyzer
 
 	private static string GetTypeArgumentPropertyName(ITypeSymbol typeSymbol)
 	{
+		var isNullable = typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ||
+		                 typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
 		var unwrapped = UnwrapNullable(typeSymbol);
 
+		string name;
 		if (unwrapped is INamedTypeSymbol namedType)
-			return GetSchemaPropertyName(namedType);
+			name = GetSchemaPropertyName(namedType);
+		else if (unwrapped is IArrayTypeSymbol arrayType)
+			name = $"{GetTypeArgumentPropertyName(arrayType.ElementType)}Array";
+		else
+			name = SanitizeSchemaPropertyName(unwrapped.Name);
 
-		if (unwrapped is IArrayTypeSymbol arrayType)
-			return $"{GetTypeArgumentPropertyName(arrayType.ElementType)}Array";
+		if (isNullable)
+			name += "Nullable";
 
-		return SanitizeSchemaPropertyName(unwrapped.Name);
+		return name;
 	}
 
 	private static string SanitizeSchemaPropertyName(string name)

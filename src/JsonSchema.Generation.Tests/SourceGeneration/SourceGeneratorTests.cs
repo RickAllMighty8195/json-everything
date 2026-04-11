@@ -503,6 +503,13 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void NullableGenericArguments_GenerateDistinctSchemaMembers()
+	{
+		Assert.That(GeneratedJsonSchemas.TestModels_OptionalOfGuid, Is.Not.Null);
+		Assert.That(GeneratedJsonSchemas.TestModels_OptionalOfGuidNullable, Is.Not.Null);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """

@@ -291,6 +291,22 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 				type.ResolvedPropertyName = prefix + type.SchemaPropertyName;
 			}
 		}
+
+		var usedNames = new HashSet<string>(StringComparer.Ordinal);
+		foreach (var type in types.OrderBy(t => t.FullyQualifiedName, StringComparer.Ordinal))
+		{
+			var baseName = type.ResolvedPropertyName ?? type.SchemaPropertyName;
+			var candidate = baseName;
+			var index = 2;
+
+			while (!usedNames.Add(candidate))
+			{
+				candidate = $"{baseName}_{index}";
+				index++;
+			}
+
+			type.ResolvedPropertyName = candidate == type.SchemaPropertyName ? null : candidate;
+		}
 	}
 
 	private static string GetRelativeNamespace(ITypeSymbol typeSymbol, string rootNamespace)

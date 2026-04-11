@@ -285,6 +285,13 @@ public static class TestModels
 	}
 
 	[GenerateJsonSchema]
+	public class ModelWithNullableOptionalGuid
+	{
+		public Optional<Guid> ValueA { get; set; } = new();
+		public Optional<Guid?> ValueB { get; set; } = new();
+	}
+
+	[GenerateJsonSchema]
 	public class ConflictModel
 	{
 		public string Value { get; set; } = string.Empty;
