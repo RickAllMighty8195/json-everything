@@ -106,6 +106,8 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			}
 		}
 
+		ResolvePropertyNameConflicts(allTypeInfos, rootNamespace);
+
 		var targetNamespace = rootNamespace;
 		var classDeclaration = DetectGeneratedJsonSchemasClass(compilation, targetNamespace, context.ReportDiagnostic);
 		var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(allTypeInfos, targetNamespace, classDeclaration, schemaHandlers);
@@ -275,6 +277,42 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		}
 
 		return current;
+	}
+
+	private static void ResolvePropertyNameConflicts(List<TypeInfo> types, string rootNamespace)
+	{
+		var groups = types.GroupBy(t => t.SchemaPropertyName).Where(g => g.Count() > 1);
+		foreach (var group in groups)
+		{
+			foreach (var type in group)
+			{
+				var relNs = GetRelativeNamespace(type.TypeSymbol, rootNamespace);
+				var prefix = string.IsNullOrEmpty(relNs) ? string.Empty : relNs + "_";
+				type.ResolvedPropertyName = prefix + type.SchemaPropertyName;
+			}
+		}
+	}
+
+	private static string GetRelativeNamespace(ITypeSymbol typeSymbol, string rootNamespace)
+	{
+		var ns = GetContainingNamespace(typeSymbol);
+		if (!string.IsNullOrEmpty(rootNamespace) && ns.StartsWith(rootNamespace))
+			ns = ns.Length > rootNamespace.Length ? ns[(rootNamespace.Length + 1)..] : string.Empty;
+		return ns.Replace(".", "_");
+	}
+
+	private static string GetContainingNamespace(ITypeSymbol typeSymbol)
+	{
+		var ns = typeSymbol.ContainingNamespace;
+		if (ns == null || ns.IsGlobalNamespace) return string.Empty;
+		var parts = new List<string>();
+		while (ns is { IsGlobalNamespace: false })
+		{
+			parts.Add(ns.Name);
+			ns = ns.ContainingNamespace;
+		}
+		parts.Reverse();
+		return string.Join(".", parts);
 	}
 
 	private sealed class TypeToGenerate

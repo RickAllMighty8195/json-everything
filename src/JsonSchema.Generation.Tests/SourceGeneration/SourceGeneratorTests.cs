@@ -467,6 +467,42 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void ConflictingNames_AreDisambiguatedWithNamespacePrefix()
+	{
+		// Both TestModels.ConflictModel classes produce the same raw SchemaPropertyName
+		// ("TestModels_ConflictModel"). The generator must prefix each with its
+		// relative namespace so both can coexist in GeneratedJsonSchemas.
+		var expectedMain = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ConflictModel",
+		  "type": "object",
+		  "properties": {
+		    "Value": { "type": "string" }
+		  }
+		}
+		""";
+		var expectedAlt = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.AlternateNamespace.TestModels.ConflictModel",
+		  "type": "object",
+		  "properties": {
+		    "Count": { "type": "integer" }
+		  }
+		}
+		""";
+
+		var registry = new SchemaRegistry();
+		AssertEqual(
+			JsonSchema.FromText(expectedMain, new BuildOptions { SchemaRegistry = registry }),
+			GeneratedJsonSchemas.SourceGeneration_TestModels_ConflictModel);
+		AssertEqual(
+			JsonSchema.FromText(expectedAlt, new BuildOptions { SchemaRegistry = registry }),
+			GeneratedJsonSchemas.SourceGeneration_AlternateNamespace_TestModels_ConflictModel);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """
