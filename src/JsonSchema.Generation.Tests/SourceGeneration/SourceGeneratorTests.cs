@@ -510,6 +510,43 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void MultiLineSummary_IsNormalisedToSingleLine()
+	{
+		var schema = GeneratedJsonSchemas.TestModels_TypeWithMultiLineSummary;
+
+		// The generated /// <summary> comment is not observable at runtime, but the
+		// multi-line property summary is emitted as .Description(). Check that it
+		// contains no literal newlines (which would produce invalid C# output).
+		var propSchema = schema.GetProperties()!["Value"];
+		var description = propSchema.GetDescription();
+
+		Assert.That(description, Is.Not.Null);
+		Assert.That(description, Does.Not.Contain("\n"));
+		Assert.That(description, Does.Not.Contain("\r"));
+		Assert.That(description, Is.EqualTo("First line of property summary. Second line of property summary."));
+	}
+
+	[Test]
+	public void NullableAttribute_OverridesTypeNullability()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithNullableOverrides",
+		  "type": "object",
+		  "properties": {
+		    "ForcedNullable":    { "type": ["string", "null"], "description": "Force-nullable non-nullable string." },
+		    "ForcedNonNullable": { "type": "integer",         "description": "Force-non-nullable nullable int." }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithNullableOverrides;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void SingleCondition_GeneratesIfThen()
 	{
 		var expectedJson = """

@@ -297,6 +297,32 @@ public static class TestModels
 		public string Value { get; set; } = string.Empty;
 	}
 
+	/// <summary>
+	/// First line of summary.
+	/// Second line of summary.
+	/// </summary>
+	[GenerateJsonSchema]
+	public class TypeWithMultiLineSummary
+	{
+		/// <summary>
+		/// First line of property summary.
+		/// Second line of property summary.
+		/// </summary>
+		public string Value { get; set; } = string.Empty;
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithNullableOverrides
+	{
+		/// <summary>Force-nullable non-nullable string.</summary>
+		[Nullable(true)]
+		public string ForcedNullable { get; set; } = string.Empty;
+
+		/// <summary>Force-non-nullable nullable int.</summary>
+		[Nullable(false)]
+		public int? ForcedNonNullable { get; set; }
+	}
+
 	[GenerateJsonSchema(StrictConditionals = true)]
 	[If(nameof(IsActive), true, 0)]
 	public class StrictConditionalValidation

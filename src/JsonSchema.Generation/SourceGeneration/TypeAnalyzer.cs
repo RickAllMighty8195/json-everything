@@ -210,7 +210,8 @@ internal static class TypeAnalyzer
 			if (!isRequired && member is IPropertySymbol propertySymbol)
 				isRequired = propertySymbol.IsRequired;
 
-			var isNullable = IsNullableType(memberType);
+			var memberAttributes = member.GetAttributes();
+			var isNullable = GetNullableAttributeOverride(memberAttributes) ?? IsNullableType(memberType);
 
 			var propertyInfo = new PropertyInfo
 			{
@@ -224,7 +225,7 @@ internal static class TypeAnalyzer
 				XmlDocSummary = GetXmlDocSummary(member)
 			};
 
-			ExtractAttributes(compilation, member.GetAttributes(), propertyInfo.Attributes);
+			ExtractAttributes(compilation, memberAttributes, propertyInfo.Attributes);
 
 			typeInfo.Properties.Add(propertyInfo);
 		}
@@ -731,6 +732,23 @@ internal static class TypeAnalyzer
 		return sb.ToString().Trim('_');
 	}
 
+	/// Returns the value of [Nullable(bool)] if the attribute is present; null otherwise.
+	/// Only recognises Json.Schema.Generation.NullableAttribute to avoid picking up the
+	/// compiler-generated System.Runtime.CompilerServices.NullableAttribute.
+	private static bool? GetNullableAttributeOverride(IEnumerable<AttributeData> attributes)
+	{
+		var attr = attributes.FirstOrDefault(a =>
+			a.AttributeClass?.Name == "NullableAttribute" &&
+			a.AttributeClass.ContainingNamespace?.ToDisplayString() == "Json.Schema.Generation");
+
+		if (attr == null) return null;
+
+		// [Nullable] with no argument defaults to true
+		if (attr.ConstructorArguments.Length == 0) return true;
+
+		return attr.ConstructorArguments[0].Value is bool value ? value : true;
+	}
+
 	private static bool IsNullableType(ITypeSymbol typeSymbol) =>
 		typeSymbol.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T ||
 		typeSymbol.NullableAnnotation == NullableAnnotation.Annotated;
@@ -755,7 +773,16 @@ internal static class TypeAnalyzer
 		if (summaryStart >= 0 && summaryEnd > summaryStart)
 		{
 			var summaryText = xml.Substring(summaryStart + 9, summaryEnd - summaryStart - 9);
-			return summaryText.Trim();
+
+			// Normalise multi-line summaries: trim each line, discard blank lines,
+			// then join into a single space-separated string.
+			var lines = summaryText
+				.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+				.Select(l => l.Trim())
+				.Where(l => l.Length > 0);
+
+			var joined = string.Join(" ", lines);
+			return joined.Length > 0 ? joined : null;
 		}
 
 		return null;
