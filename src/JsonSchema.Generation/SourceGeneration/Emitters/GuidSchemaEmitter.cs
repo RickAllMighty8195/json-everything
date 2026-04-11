@@ -14,6 +14,6 @@ internal class GuidSchemaEmitter : ISchemaEmitter
 		else
 			sb.Append($"{indent}.Type(SchemaValueType.String)");
 		sb.AppendLine();
-		sb.Append($"{indent}.Format(Formats.Uuid)");
+		sb.Append($"{indent}.Format(global::Json.Schema.Formats.Uuid)");
 	}
 }
