@@ -50,21 +50,21 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
-	public void SecondaryTypeOfCamelCaseModel_UsesCamelCase()
+	public void NestedTypeOfCamelCaseModel_UsesCamelCase()
 	{
 		var expectedJson = """
 		{
 		  "$schema": "https://json-schema.org/draft/2020-12/schema",
-		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SecondaryType",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.NestedType",
 		  "type": "object",
 		  "properties": {
-		    "candidateId": { "type": "string" },
-		    "sourceSystem": { "type": "string" }
+		    "externalId": { "type": "string" },
+		    "displayName": { "type": "string" }
 		  }
 		}
 		""";
 		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
-		var actual = GeneratedJsonSchemas.TestModels_SecondaryType;
+		var actual = GeneratedJsonSchemas.TestModels_NestedType;
 
 		AssertEqual(expected, actual);
 	}

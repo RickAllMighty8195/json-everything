@@ -24,15 +24,15 @@ public static class TestModels
 	}
 
 	[GenerateJsonSchema(PropertyNaming = NamingConvention.CamelCase)]
-	public class CamelCaseWithSecondaryType
+	public class CamelCaseWithNestedType
 	{
-		public SecondaryType Secondary { get; set; } = new();
+		public NestedType Nested { get; set; } = new();
 	}
 
-	public class SecondaryType
+	public class NestedType
 	{
-		public string CandidateId { get; set; } = string.Empty;
-		public string SourceSystem { get; set; } = string.Empty;
+		public string ExternalId { get; set; } = string.Empty;
+		public string DisplayName { get; set; } = string.Empty;
 	}
 
 	[GenerateJsonSchema]

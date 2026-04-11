@@ -90,13 +90,15 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 		var analyzedTypes = new List<TypeInfo>();
 		var allEncounteredTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
+		var discoveredTypeOptions = new Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)>(SymbolEqualityComparer.Default);
 		foreach (var type in validTypes)
 		{
 			var typeInfo = TypeAnalyzer.Analyze(compilation, type.TypeSymbol, type.AttributeData, context.ReportDiagnostic, options.DefaultPropertyNaming, options.DefaultPropertyOrder);
 			if (typeInfo != null) 
 			{
 				analyzedTypes.Add(typeInfo);
-				CollectAllTypes(compilation, typeInfo, allEncounteredTypes, context.ReportDiagnostic, options.DefaultPropertyNaming, options.DefaultPropertyOrder);
+				RegisterTypeOptions(discoveredTypeOptions, typeInfo.TypeSymbol, typeInfo.PropertyNaming, typeInfo.PropertyOrder);
+				CollectAllTypes(compilation, typeInfo, allEncounteredTypes, context.ReportDiagnostic, discoveredTypeOptions, typeInfo.PropertyNaming, typeInfo.PropertyOrder);
 			}
 		}
 
@@ -112,7 +114,15 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 			if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
 			{
-				var typeInfo = TypeAnalyzer.Analyze(compilation, namedTypeSymbol, null, context.ReportDiagnostic, options.DefaultPropertyNaming, options.DefaultPropertyOrder);
+				var naming = options.DefaultPropertyNaming;
+				var order = options.DefaultPropertyOrder;
+				if (discoveredTypeOptions.TryGetValue(namedTypeSymbol, out var discovered))
+				{
+					naming = discovered.Naming;
+					order = discovered.Order;
+				}
+
+				var typeInfo = TypeAnalyzer.Analyze(compilation, namedTypeSymbol, null, context.ReportDiagnostic, naming, order);
 				if (typeInfo != null)
 					allTypeInfos.Add(typeInfo);
 			}
@@ -177,17 +187,17 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			CollectSchemaHandlers(nested, results, systemType);
 	}
 
-	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, NamingConvention defaultPropertyNaming, PropertyOrder defaultPropertyOrder)
+	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, NamingConvention naming, PropertyOrder order)
 	{
-		CollectTypeRecursive(compilation, typeInfo.TypeSymbol, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
+		CollectTypeRecursive(compilation, typeInfo.TypeSymbol, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 
 		foreach (var prop in typeInfo.Properties)
 		{
-			CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
+			CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 		}
 	}
 
-	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, NamingConvention defaultPropertyNaming, PropertyOrder defaultPropertyOrder)
+	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, NamingConvention naming, PropertyOrder order)
 	{
 		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
 		var typeKind = SchemaCodeEmitter.DetermineTypeKind(unwrapped);
@@ -201,25 +211,34 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		{
 			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
 			if (elementType != null)
-				CollectTypeRecursive(compilation, elementType, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
+				CollectTypeRecursive(compilation, elementType, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 			return;
 		}
 
 		if (typeKind == TypeKind.Object && unwrapped is INamedTypeSymbol namedType)
 		{
+			RegisterTypeOptions(discoveredTypeOptions, namedType, naming, order);
+
 			if (allTypes.Add(namedType))
 			{
 				// Analyze the type to collect its properties' types
-				var tempTypeInfo = TypeAnalyzer.Analyze(compilation, namedType, null, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
+				var tempTypeInfo = TypeAnalyzer.Analyze(compilation, namedType, null, reportDiagnostic, naming, order);
 				if (tempTypeInfo != null)
 				{
 					foreach (var prop in tempTypeInfo.Properties)
 					{
-						CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
+						CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 					}
 				}
 			}
 		}
+	}
+
+	private static void RegisterTypeOptions(Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, ITypeSymbol typeSymbol, NamingConvention naming, PropertyOrder order)
+	{
+		if (discoveredTypeOptions.ContainsKey(typeSymbol)) return;
+
+		discoveredTypeOptions[typeSymbol] = (naming, order);
 	}
 
 	private static ClassDeclarationInfo DetectGeneratedJsonSchemasClass(
