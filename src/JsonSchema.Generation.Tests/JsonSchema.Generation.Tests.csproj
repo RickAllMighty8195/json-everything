@@ -30,4 +30,9 @@
 		<ProjectReference Include="..\TestHelpers\TestHelpers.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<CompilerVisibleProperty Include="JsonSchemaDefaultPropertyNaming" />
+		<CompilerVisibleProperty Include="JsonSchemaDefaultPropertyOrder" />
+	</ItemGroup>
+
 </Project>

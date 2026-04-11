@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using NUnit.Framework;
 using static Json.Schema.Generation.Tests.AssertionExtensions;
@@ -45,6 +46,26 @@ public class SourceGeneratorTests
 		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_CamelCasePerson;
 		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void SecondaryTypeOfCamelCaseModel_UsesCamelCase()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.SecondaryType",
+		  "type": "object",
+		  "properties": {
+		    "candidateId": { "type": "string" },
+		    "sourceSystem": { "type": "string" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_SecondaryType;
+
 		AssertEqual(expected, actual);
 	}
 
@@ -113,6 +134,30 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void ModelWithNullableEnumArray_AllowsNull()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithNullableEnumArray",
+		  "type": "object",
+		  "properties": {
+		    "styles": {
+		      "type": ["null", "array"],
+		      "items": {
+		        "enum": ["Confident", "Passionate", "Engaging", "Practical", "Humorous"]
+		      }
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithNullableEnumArray;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void PersonWithDescription_HasDescriptions()
 	{
 		var expectedJson = """
@@ -165,6 +210,33 @@ public class SourceGeneratorTests
 		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_ProductWithCustomAttributes;
 		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithGuidArrayAndMinItems_EmitsArrayOfUuid()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithGuidArrayAndMinItems",
+		  "type": "object",
+		  "properties": {
+		    "recipientIds": {
+		      "type": "array",
+		      "items": {
+		        "type": "string",
+		        "format": "uuid"
+		      },
+		      "minItems": 1
+		    }
+		  },
+		  "required": ["recipientIds"]
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithGuidArrayAndMinItems;
+
 		AssertEqual(expected, actual);
 	}
 
@@ -432,6 +504,23 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void BuildForType_NullableGuid_EmitsNullableStringUuid()
+	{
+		var expectedJson = """
+		{
+		  "type": ["null", "string"],
+		  "format": "uuid"
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = new JsonSchemaBuilder()
+			.BuildForType(typeof(Guid?))
+			.Build();
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void BuildForType_UsesSchemaForGeneratedTypeInAnotherNamespace()
 	{
 		var expectedJson = """
@@ -526,6 +615,25 @@ public class SourceGeneratorTests
 		""";
 		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_ModelWithNullableOverrides;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void DuplicateMappedPropertyNames_DoNotBreakSchemaGeneration()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithDuplicateSchemaPropertyNames",
+		  "type": "object",
+		  "properties": {
+		    "foo": { "type": "integer" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithDuplicateSchemaPropertyNames;
 
 		AssertEqual(expected, actual);
 	}
@@ -666,6 +774,100 @@ public class SourceGeneratorTests
 		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
 		var actual = GeneratedJsonSchemas.TestModels_MultipleTriggersInSameGroup;
 		
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void MultipleIfsSamePropertyAndGroup_CombinesToSinglePropertyTrigger()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleIfsSamePropertyAndGroup",
+		  "type": "object",
+		  "properties": {
+		    "Status": {
+		      "enum": ["Active", "Inactive", "Pending"]
+		    },
+		    "Note": {
+		      "type": ["null", "string"]
+		    }
+		  },
+		  "required": ["Status"],
+		  "if": {
+		    "properties": {
+		      "Status": {
+		        "enum": ["Active", "Pending"]
+		      }
+		    },
+		    "required": ["Status"]
+		  },
+		  "then": {
+		    "required": ["Note"]
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_MultipleIfsSamePropertyAndGroup;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void MultipleIfsSamePropertyAcrossGroups_GeneratesWithoutDuplicateIfProperties()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleIfsSamePropertyAcrossGroups",
+		  "type": "object",
+		  "properties": {
+		    "Status": {
+		      "enum": ["Active", "Inactive", "Pending"]
+		    },
+		    "JobListingId": {
+		      "type": ["null", "string"],
+		      "format": "uuid"
+		    },
+		    "OrgId": {
+		      "type": ["null", "string"],
+		      "format": "uuid"
+		    }
+		  },
+		  "required": ["Status"],
+		  "allOf": [
+		    {
+		      "if": {
+		        "properties": {
+		          "Status": {
+		            "enum": ["Active", "Pending"]
+		          }
+		        },
+		        "required": ["Status"]
+		      },
+		      "then": {
+		        "required": ["JobListingId"]
+		      }
+		    },
+		    {
+		      "if": {
+		        "properties": {
+		          "Status": {
+		            "const": "Inactive"
+		          }
+		        },
+		        "required": ["Status"]
+		      },
+		      "then": {
+		        "required": ["OrgId"]
+		      }
+		    }
+		  ]
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_MultipleIfsSamePropertyAcrossGroups;
+
 		AssertEqual(expected, actual);
 	}
 

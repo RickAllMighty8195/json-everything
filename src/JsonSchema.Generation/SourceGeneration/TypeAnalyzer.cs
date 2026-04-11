@@ -9,7 +9,7 @@ namespace Json.Schema.Generation.SourceGeneration;
 
 internal static class TypeAnalyzer
 {
-	public static TypeInfo? Analyze(Compilation compilation, INamedTypeSymbol typeSymbol, AttributeData? attributeData, Action<Diagnostic> reportDiagnostic)
+	public static TypeInfo? Analyze(Compilation compilation, INamedTypeSymbol typeSymbol, AttributeData? attributeData, Action<Diagnostic> reportDiagnostic, NamingConvention defaultPropertyNaming = NamingConvention.AsDeclared, PropertyOrder defaultPropertyOrder = PropertyOrder.AsDeclared)
 	{
 		if (typeSymbol is { IsGenericType: true, IsUnboundGenericType: false })
 		{
@@ -27,8 +27,8 @@ internal static class TypeAnalyzer
 			}
 		}
 
-		var propertyNaming = NamingConvention.AsDeclared;
-		var propertyOrder = PropertyOrder.AsDeclared;
+		var propertyNaming = defaultPropertyNaming;
+		var propertyOrder = defaultPropertyOrder;
 		var strictConditionals = false;
 
 		if (attributeData != null)
@@ -136,6 +136,7 @@ internal static class TypeAnalyzer
 	private static void AnalyzeObjectType(Compilation compilation, TypeInfo typeInfo, Action<Diagnostic> reportDiagnostic)
 	{
 		var typeSymbol = typeInfo.TypeSymbol;
+		var encounteredSchemaNames = new HashSet<string>(StringComparer.Ordinal);
 
 		var members = typeSymbol.GetMembers()
 			.Where(m => m is { IsStatic: false, Kind: SymbolKind.Property or SymbolKind.Field })
@@ -182,6 +183,15 @@ internal static class TypeAnalyzer
 			else continue;
 
 			var schemaName = GetPropertySchemaName(member, typeInfo.PropertyNaming);
+			if (!encounteredSchemaNames.Add(schemaName))
+			{
+				reportDiagnostic(Diagnostic.Create(
+					Diagnostics.DuplicateSchemaPropertyName,
+					member.Locations.FirstOrDefault(),
+					typeSymbol.ToDisplayString(),
+					schemaName));
+				continue;
+			}
 
 			var isRequired = false;
 			var requiredAttrs = member.GetAttributes().Where(a => a.AttributeClass?.Name == "RequiredAttribute").ToList();

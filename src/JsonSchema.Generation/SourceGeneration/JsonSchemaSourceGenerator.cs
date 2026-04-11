@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using Json.Schema.Generation.Serialization;
 using Json.Schema.Generation.SourceGeneration.Emitters;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -29,13 +30,24 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		var generationOptions = context.AnalyzerConfigOptionsProvider
 			.Select(static (provider, _) =>
 			{
-				provider.GlobalOptions.TryGetValue("build_property.DisableJsonSchemaSourceGeneration", out var value);
+				provider.GlobalOptions.TryGetValue("build_property.DisableJsonSchemaSourceGeneration", out var disabled);
 				provider.GlobalOptions.TryGetValue("build_property.RootNamespace", out var rootNamespace);
+				provider.GlobalOptions.TryGetValue("build_property.JsonSchemaDefaultPropertyNaming", out var namingRaw);
+				provider.GlobalOptions.TryGetValue("build_property.JsonSchemaDefaultPropertyOrder", out var orderRaw);
+
+				var defaultNaming = Enum.TryParse<NamingConvention>(namingRaw, ignoreCase: true, out var parsedNaming)
+					? parsedNaming
+					: NamingConvention.AsDeclared;
+				var defaultOrder = Enum.TryParse<PropertyOrder>(orderRaw, ignoreCase: true, out var parsedOrder)
+					? parsedOrder
+					: PropertyOrder.AsDeclared;
 
 				return new GenerationOptions
 				{
-					IsDisabled = value?.Equals("true", StringComparison.OrdinalIgnoreCase) == true,
-					RootNamespace = rootNamespace ?? string.Empty
+					IsDisabled = disabled?.Equals("true", StringComparison.OrdinalIgnoreCase) == true,
+					RootNamespace = rootNamespace ?? string.Empty,
+					DefaultPropertyNaming = defaultNaming,
+					DefaultPropertyOrder = defaultOrder
 				};
 			});
 
@@ -55,7 +67,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			var generationOptions = source.Right;
 			if (generationOptions.IsDisabled) return;
 
-			Execute(source.Left.Left, source.Left.Right, generationOptions.RootNamespace, spc);
+			Execute(source.Left.Left, source.Left.Right, generationOptions, spc);
 		});
 	}
 
@@ -69,7 +81,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		return new TypeToGenerate(typeSymbol, attributeData);
 	}
 
-	private static void Execute(Compilation compilation, ImmutableArray<TypeToGenerate?> types, string rootNamespace, SourceProductionContext context)
+	private static void Execute(Compilation compilation, ImmutableArray<TypeToGenerate?> types, GenerationOptions options, SourceProductionContext context)
 	{
 		if (types.IsDefaultOrEmpty) return;
 
@@ -80,11 +92,11 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		var allEncounteredTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
 		foreach (var type in validTypes)
 		{
-			var typeInfo = TypeAnalyzer.Analyze(compilation, type.TypeSymbol, type.AttributeData, context.ReportDiagnostic);
+			var typeInfo = TypeAnalyzer.Analyze(compilation, type.TypeSymbol, type.AttributeData, context.ReportDiagnostic, options.DefaultPropertyNaming, options.DefaultPropertyOrder);
 			if (typeInfo != null) 
 			{
 				analyzedTypes.Add(typeInfo);
-				CollectAllTypes(compilation, typeInfo, allEncounteredTypes, context.ReportDiagnostic);
+				CollectAllTypes(compilation, typeInfo, allEncounteredTypes, context.ReportDiagnostic, options.DefaultPropertyNaming, options.DefaultPropertyOrder);
 			}
 		}
 
@@ -100,15 +112,15 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 			if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
 			{
-				var typeInfo = TypeAnalyzer.Analyze(compilation, namedTypeSymbol, null, context.ReportDiagnostic);
+				var typeInfo = TypeAnalyzer.Analyze(compilation, namedTypeSymbol, null, context.ReportDiagnostic, options.DefaultPropertyNaming, options.DefaultPropertyOrder);
 				if (typeInfo != null)
 					allTypeInfos.Add(typeInfo);
 			}
 		}
 
-		ResolvePropertyNameConflicts(allTypeInfos, rootNamespace);
+		ResolvePropertyNameConflicts(allTypeInfos, options.RootNamespace);
 
-		var targetNamespace = rootNamespace;
+		var targetNamespace = options.RootNamespace;
 		var classDeclaration = DetectGeneratedJsonSchemasClass(compilation, targetNamespace, context.ReportDiagnostic);
 		var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(allTypeInfos, targetNamespace, classDeclaration, schemaHandlers);
 
@@ -165,17 +177,17 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			CollectSchemaHandlers(nested, results, systemType);
 	}
 
-	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic)
+	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, NamingConvention defaultPropertyNaming, PropertyOrder defaultPropertyOrder)
 	{
-		CollectTypeRecursive(compilation, typeInfo.TypeSymbol, allTypes, reportDiagnostic);
+		CollectTypeRecursive(compilation, typeInfo.TypeSymbol, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
 
 		foreach (var prop in typeInfo.Properties)
 		{
-			CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic);
+			CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
 		}
 	}
 
-	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic)
+	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, NamingConvention defaultPropertyNaming, PropertyOrder defaultPropertyOrder)
 	{
 		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
 		var typeKind = SchemaCodeEmitter.DetermineTypeKind(unwrapped);
@@ -189,7 +201,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		{
 			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
 			if (elementType != null)
-				CollectTypeRecursive(compilation, elementType, allTypes, reportDiagnostic);
+				CollectTypeRecursive(compilation, elementType, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
 			return;
 		}
 
@@ -198,12 +210,12 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			if (allTypes.Add(namedType))
 			{
 				// Analyze the type to collect its properties' types
-				var tempTypeInfo = TypeAnalyzer.Analyze(compilation, namedType, null, reportDiagnostic);
+				var tempTypeInfo = TypeAnalyzer.Analyze(compilation, namedType, null, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
 				if (tempTypeInfo != null)
 				{
 					foreach (var prop in tempTypeInfo.Properties)
 					{
-						CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic);
+						CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, defaultPropertyNaming, defaultPropertyOrder);
 					}
 				}
 			}
@@ -347,5 +359,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 	{
 		public required bool IsDisabled { get; init; }
 		public required string RootNamespace { get; init; }
+		public required NamingConvention DefaultPropertyNaming { get; init; }
+		public required PropertyOrder DefaultPropertyOrder { get; init; }
 	}
 }

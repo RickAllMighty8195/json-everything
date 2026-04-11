@@ -55,6 +55,32 @@ internal static class SchemaCodeEmitter
 
 			return;
 		}
+
+		if (typeKind == TypeKind.Array)
+		{
+			sb.AppendLine();
+			if (isNullable)
+				sb.Append($"{indent}.Type(SchemaValueType.Array, SchemaValueType.Null)");
+			else
+				sb.Append($"{indent}.Type(SchemaValueType.Array)");
+
+			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
+			if (elementType != null)
+			{
+				sb.AppendLine();
+				sb.Append($"{indent}.Items(");
+				sb.Append("new JsonSchemaBuilder()");
+
+				EmitSchemaForType(sb, elementType, false, indent + "\t", context);
+
+				if (itemAttributes is { Count: > 0 })
+					EmitAttributes(sb, itemAttributes, indent + "\t");
+
+				sb.Append(")");
+			}
+
+			return;
+		}
 		
 		if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
 		{
@@ -223,6 +249,7 @@ internal static class SchemaCodeEmitter
 	{
 		sb.AppendLine("\tpublic static JsonSchemaBuilder BuildForType(this JsonSchemaBuilder builder, Type type)");
 		sb.AppendLine("\t{");
+		sb.AppendLine("\t\tvar isNullable = Nullable.GetUnderlyingType(type) != null;");
 		sb.AppendLine("\t\tvar unwrapped = Nullable.GetUnderlyingType(type) ?? type;");
 
 		foreach (var handler in schemaHandlers)
@@ -265,14 +292,14 @@ internal static class SchemaCodeEmitter
 			sb.AppendLine($"\t\t\tvar t when t == typeof({typeName}) => builder.Ref(\"{schemaId}\"),");
 		}
 
-		sb.AppendLine("\t\t	var t when t == typeof(bool) => builder.Type(SchemaValueType.Boolean),");
-		sb.AppendLine("\t\t	var t when t == typeof(byte) || t == typeof(sbyte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong) => builder.Type(SchemaValueType.Integer),");
-		sb.AppendLine("\t\t	var t when t == typeof(float) || t == typeof(double) || t == typeof(decimal) => builder.Type(SchemaValueType.Number),");
-		sb.AppendLine("\t\t	var t when t == typeof(string) => builder.Type(SchemaValueType.String),");
-		sb.AppendLine("\t\t	var t when t == typeof(DateTime) || t == typeof(DateTimeOffset) => builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.DateTime),");
-		sb.AppendLine("\t\t	var t when t == typeof(Guid) => builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uuid),");
-		sb.AppendLine("\t\t	var t when t == typeof(Uri) => builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uri),");
-		sb.AppendLine("\t\t	_ => builder");
+		sb.AppendLine("\t\t\tvar t when t == typeof(bool) => isNullable ? builder.Type(SchemaValueType.Boolean, SchemaValueType.Null) : builder.Type(SchemaValueType.Boolean),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(byte) || t == typeof(sbyte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong) => isNullable ? builder.Type(SchemaValueType.Integer, SchemaValueType.Null) : builder.Type(SchemaValueType.Integer),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(float) || t == typeof(double) || t == typeof(decimal) => isNullable ? builder.Type(SchemaValueType.Number, SchemaValueType.Null) : builder.Type(SchemaValueType.Number),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(string) => builder.Type(SchemaValueType.String),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(DateTime) || t == typeof(DateTimeOffset) => isNullable ? builder.Type(SchemaValueType.String, SchemaValueType.Null).Format(global::Json.Schema.Formats.DateTime) : builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.DateTime),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(Guid) => isNullable ? builder.Type(SchemaValueType.String, SchemaValueType.Null).Format(global::Json.Schema.Formats.Uuid) : builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uuid),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(Uri) => isNullable ? builder.Type(SchemaValueType.String, SchemaValueType.Null).Format(global::Json.Schema.Formats.Uri) : builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uri),");
+		sb.AppendLine("\t\t\t_ => builder");
 		sb.AppendLine("\t\t};");
 		sb.AppendLine("\t}");
 		sb.AppendLine();

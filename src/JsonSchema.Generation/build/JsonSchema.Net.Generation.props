@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="DisableJsonSchemaSourceGeneration" />
+    <CompilerVisibleProperty Include="JsonSchemaDefaultPropertyNaming" />
+    <CompilerVisibleProperty Include="JsonSchemaDefaultPropertyOrder" />
+  </ItemGroup>
+</Project>
