@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 #pragma warning disable IL2026
 #pragma warning disable IL3050
@@ -55,6 +56,8 @@ public class ValidatingJsonModelBinder : IModelBinder
 
             if (string.IsNullOrEmpty(body)) return;
 
+            var logger = bindingContext.HttpContext.RequestServices.GetService<ILogger<ValidatingJsonModelBinder>>();
+
             try
             {
                 var options = bindingContext.HttpContext.RequestServices.GetRequiredService<IOptions<JsonOptions>>().Value.JsonSerializerOptions;
@@ -66,7 +69,10 @@ public class ValidatingJsonModelBinder : IModelBinder
                 if (jsonException.Data.Contains("validation") && 
                     jsonException.Data["validation"] is EvaluationResults { IsValid: false } validationResults)
                 {
-                    var errors = ExtractValidationErrors(validationResults);
+	                var resultsLog = JsonSerializer.Serialize(validationResults);
+	                logger?.LogDebug(resultsLog);
+
+	                var errors = ExtractValidationErrors(validationResults);
                     if (errors.Count != 0)
                     {
                         foreach (var error in errors)

@@ -5,5 +5,3 @@
 
 Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
-JSGEN001 | JsonSchemaGeneration | Error | Open generic types are not supported
-JSGEN002 | JsonSchemaGeneration | Error | GeneratedJsonSchemas class must be partial

@@ -23,6 +23,18 @@ public static class TestModels
 		public int Age { get; set; }
 	}
 
+	[GenerateJsonSchema(PropertyNaming = NamingConvention.CamelCase)]
+	public class CamelCaseWithNestedType
+	{
+		public NestedType Nested { get; set; } = new();
+	}
+
+	public class NestedType
+	{
+		public string ExternalId { get; set; } = string.Empty;
+		public string DisplayName { get; set; } = string.Empty;
+	}
+
 	[GenerateJsonSchema]
 	public class PersonWithNullable
 	{
@@ -45,11 +57,26 @@ public static class TestModels
 		Pending
 	}
 
+	public enum ContentStyle
+	{
+		Confident,
+		Passionate,
+		Engaging,
+		Practical,
+		Humorous
+	}
+
 	[GenerateJsonSchema]
 	public class PersonWithEnum
 	{
 		public string Name { get; set; } = string.Empty;
 		public Status Status { get; set; }
+	}
+
+	[GenerateJsonSchema(PropertyNaming = NamingConvention.CamelCase)]
+	public class ModelWithNullableEnumArray
+	{
+		public ContentStyle[]? Styles { get; set; }
 	}
 
 	[GenerateJsonSchema]
@@ -78,6 +105,14 @@ public static class TestModels
 		public int DiscountPercentage { get; set; }
 
 		public string? Description { get; set; }
+	}
+
+	[GenerateJsonSchema(PropertyNaming = NamingConvention.CamelCase)]
+	public class ModelWithGuidArrayAndMinItems
+	{
+		[Required]
+		[MinItems(1)]
+		public Guid[] RecipientIds { get; set; } = [];
 	}
 
 	public class Address
@@ -150,6 +185,34 @@ public static class TestModels
 
 		[Required(ConditionGroup = 0)]
 		public string? SpecialField { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[If(nameof(Status), nameof(TestModels.Status.Active), "state-note")]
+	[If(nameof(Status), nameof(TestModels.Status.Pending), "state-note")]
+	public class MultipleIfsSamePropertyAndGroup
+	{
+		[Required]
+		public Status Status { get; set; }
+
+		[Required(ConditionGroup = "state-note")]
+		public string? Note { get; set; }
+	}
+
+	[GenerateJsonSchema]
+	[If(nameof(Status), nameof(TestModels.Status.Active), "job-required")]
+	[If(nameof(Status), nameof(TestModels.Status.Pending), "job-required")]
+	[If(nameof(Status), nameof(TestModels.Status.Inactive), "org-required")]
+	public class MultipleIfsSamePropertyAcrossGroups
+	{
+		[Required]
+		public Status Status { get; set; }
+
+		[Required(ConditionGroup = "job-required")]
+		public Guid? JobListingId { get; set; }
+
+		[Required(ConditionGroup = "org-required")]
+		public Guid? OrgId { get; set; }
 	}
 
 	[GenerateJsonSchema]
@@ -321,6 +384,13 @@ public static class TestModels
 		/// <summary>Force-non-nullable nullable int.</summary>
 		[Nullable(false)]
 		public int? ForcedNonNullable { get; set; }
+	}
+
+	[GenerateJsonSchema(PropertyNaming = NamingConvention.CamelCase)]
+	public class ModelWithDuplicateSchemaPropertyNames
+	{
+		public int Foo { get; set; }
+		public int foo { get; set; }
 	}
 
 	[GenerateJsonSchema(StrictConditionals = true)]

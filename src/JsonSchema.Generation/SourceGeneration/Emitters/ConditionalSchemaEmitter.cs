@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -48,18 +49,22 @@ internal static class ConditionalSchemaEmitter
 
 		if (conditional.Triggers.Count > 0)
 		{
+			var triggerGroups = conditional.Triggers
+				.GroupBy(t => t.PropertySchemaName)
+				.ToList();
+
 			sb.AppendLine();
 			sb.Append($"{indent}\t.Properties(");
 			sb.AppendLine();
 			
-			for (int i = 0; i < conditional.Triggers.Count; i++)
+			for (int i = 0; i < triggerGroups.Count; i++)
 			{
-				var trigger = conditional.Triggers[i];
-				sb.Append($"{indent}\t\t(\"{CodeEmitterHelpers.EscapeString(trigger.PropertySchemaName)}\", ");
-				EmitTriggerSchema(sb, trigger);
+				var triggerGroup = triggerGroups[i];
+				sb.Append($"{indent}\t\t(\"{CodeEmitterHelpers.EscapeString(triggerGroup.Key)}\", ");
+				EmitTriggerSchema(sb, triggerGroup.ToList());
 				sb.Append(")");
 				
-				if (i < conditional.Triggers.Count - 1)
+				if (i < triggerGroups.Count - 1)
 					sb.Append(",");
 				sb.AppendLine();
 			}
@@ -68,11 +73,11 @@ internal static class ConditionalSchemaEmitter
 			
 			sb.AppendLine();
 			sb.Append($"{indent}\t.Required(");
-			for (int i = 0; i < conditional.Triggers.Count; i++)
+			for (int i = 0; i < triggerGroups.Count; i++)
 			{
 				if (i > 0)
 					sb.Append(", ");
-				sb.Append($"\"{CodeEmitterHelpers.EscapeString(conditional.Triggers[i].PropertySchemaName)}\"");
+				sb.Append($"\"{CodeEmitterHelpers.EscapeString(triggerGroups[i].Key)}\"");
 			}
 			sb.Append(")");
 		}
@@ -81,24 +86,35 @@ internal static class ConditionalSchemaEmitter
 		sb.Append($"{indent})");
 	}
 
-	private static void EmitTriggerSchema(StringBuilder sb, ConditionalTrigger trigger)
+	private static void EmitTriggerSchema(StringBuilder sb, IReadOnlyList<ConditionalTrigger> triggers)
 	{
-		switch (trigger.Type)
+		sb.Append("new JsonSchemaBuilder()");
+
+		var equalityValues = triggers
+			.Where(t => t.Type is ConditionalTriggerType.Equality or ConditionalTriggerType.Enum)
+			.Select(t => t.ExpectedValue)
+			.Where(v => v != null)
+			.Distinct()
+			.ToList();
+
+		if (equalityValues.Count == 1)
+			sb.Append($".Const({equalityValues[0]})");
+		else if (equalityValues.Count > 1)
+			sb.Append($".Enum({string.Join(", ", equalityValues)})");
+
+		foreach (var trigger in triggers.Where(t => t.Type is ConditionalTriggerType.Minimum or ConditionalTriggerType.Maximum))
 		{
-			case ConditionalTriggerType.Equality:
-				sb.Append($"new JsonSchemaBuilder().Const({trigger.ExpectedValue})");
-				break;
-			case ConditionalTriggerType.Minimum:
-				var minKeyword = trigger.IsExclusive ? "ExclusiveMinimum" : "Minimum";
-				sb.Append($"new JsonSchemaBuilder().{minKeyword}({trigger.NumericValue})");
-				break;
-			case ConditionalTriggerType.Maximum:
-				var maxKeyword = trigger.IsExclusive ? "ExclusiveMaximum" : "Maximum";
-				sb.Append($"new JsonSchemaBuilder().{maxKeyword}({trigger.NumericValue})");
-				break;
-			case ConditionalTriggerType.Enum:
-				sb.Append($"new JsonSchemaBuilder().Const({trigger.ExpectedValue})");
-				break;
+			switch (trigger.Type)
+			{
+				case ConditionalTriggerType.Minimum:
+					var minKeyword = trigger.IsExclusive ? "ExclusiveMinimum" : "Minimum";
+					sb.Append($".{minKeyword}({trigger.NumericValue})");
+					break;
+				case ConditionalTriggerType.Maximum:
+					var maxKeyword = trigger.IsExclusive ? "ExclusiveMaximum" : "Maximum";
+					sb.Append($".{maxKeyword}({trigger.NumericValue})");
+					break;
+			}
 		}
 	}
 

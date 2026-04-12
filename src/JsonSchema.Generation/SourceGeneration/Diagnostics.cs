@@ -21,4 +21,12 @@ internal static class Diagnostics
 		category: _category,
 		defaultSeverity: DiagnosticSeverity.Error,
 		isEnabledByDefault: true);
+
+	public static readonly DiagnosticDescriptor DuplicateSchemaPropertyName = new(
+		id: "JSGEN003",
+		title: "Duplicate schema property name",
+		messageFormat: "Type '{0}' contains multiple members that map to schema property name '{1}'. Only the first member is emitted.",
+		category: _category,
+		defaultSeverity: DiagnosticSeverity.Warning,
+		isEnabledByDefault: true);
 }
