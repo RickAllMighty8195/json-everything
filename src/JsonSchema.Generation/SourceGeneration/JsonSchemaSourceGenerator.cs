@@ -21,6 +21,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 {
 	private const string _generateJsonSchemaAttributeName = "Json.Schema.Generation.Serialization.GenerateJsonSchemaAttribute";
 	private const string _schemaHandlerAttributeName = "Json.Schema.Generation.SchemaHandlerAttribute";
+	private const string _idAttributeName = "Json.Schema.Generation.Serialization.IdAttribute";
 
 	/// <summary>
 	/// Initializes the incremental generator.
@@ -88,6 +89,9 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		var validTypes = types.Where(t => t != null).Select(t => t!).ToList();
 		if (validTypes.Count == 0) return;
 
+		var selfGeneratingAssemblies = FindSelfGeneratingAssemblies(compilation);
+		var externallyCoveredAssemblies = FindExternallyCoveredAssemblies(selfGeneratingAssemblies);
+		var foreignTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
 		var analyzedTypes = new List<TypeInfo>();
 		var allEncounteredTypes = new HashSet<ITypeSymbol>(SymbolEqualityComparer.Default);
 		var discoveredTypeOptions = new Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)>(SymbolEqualityComparer.Default);
@@ -98,7 +102,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			{
 				analyzedTypes.Add(typeInfo);
 				RegisterTypeOptions(discoveredTypeOptions, typeInfo.TypeSymbol, typeInfo.PropertyNaming, typeInfo.PropertyOrder);
-				CollectAllTypes(compilation, typeInfo, allEncounteredTypes, context.ReportDiagnostic, discoveredTypeOptions, typeInfo.PropertyNaming, typeInfo.PropertyOrder);
+				CollectAllTypes(compilation, typeInfo, allEncounteredTypes, selfGeneratingAssemblies, externallyCoveredAssemblies, foreignTypes, context.ReportDiagnostic, discoveredTypeOptions, typeInfo.PropertyNaming, typeInfo.PropertyOrder);
 			}
 		}
 
@@ -130,9 +134,13 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 		ResolvePropertyNameConflicts(allTypeInfos, options.RootNamespace);
 
+		var foreignTypeEntries = new List<(string TypeName, string SchemaId)>();
+		foreach (var ft in foreignTypes)
+			foreignTypeEntries.Add((ft.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), GetForeignSchemaId(ft)));
+
 		var targetNamespace = options.RootNamespace;
 		var classDeclaration = DetectGeneratedJsonSchemasClass(compilation, targetNamespace, context.ReportDiagnostic);
-		var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(allTypeInfos, targetNamespace, classDeclaration, schemaHandlers);
+		var generatedCode = SchemaCodeEmitter.EmitGeneratedClass(allTypeInfos, targetNamespace, classDeclaration, schemaHandlers, foreignTypeEntries);
 
 		context.AddSource("GeneratedJsonSchemas.g.cs", SourceText.From(generatedCode, Encoding.UTF8));
 	}
@@ -187,17 +195,17 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			CollectSchemaHandlers(nested, results, systemType);
 	}
 
-	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, NamingConvention naming, PropertyOrder order)
+	private static void CollectAllTypes(Compilation compilation, TypeInfo typeInfo, HashSet<ITypeSymbol> allTypes, HashSet<IAssemblySymbol> selfGeneratingAssemblies, HashSet<IAssemblySymbol> externallyCoveredAssemblies, HashSet<ITypeSymbol> foreignTypes, Action<Diagnostic> reportDiagnostic, Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, NamingConvention naming, PropertyOrder order)
 	{
-		CollectTypeRecursive(compilation, typeInfo.TypeSymbol, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
+		CollectTypeRecursive(compilation, typeInfo.TypeSymbol, allTypes, selfGeneratingAssemblies, externallyCoveredAssemblies, foreignTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 
 		foreach (var prop in typeInfo.Properties)
 		{
-			CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
+			CollectTypeRecursive(compilation, prop.Type, allTypes, selfGeneratingAssemblies, externallyCoveredAssemblies, foreignTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 		}
 	}
 
-	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, NamingConvention naming, PropertyOrder order)
+	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, HashSet<IAssemblySymbol> selfGeneratingAssemblies, HashSet<IAssemblySymbol> externallyCoveredAssemblies, HashSet<ITypeSymbol> foreignTypes, Action<Diagnostic> reportDiagnostic, Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, NamingConvention naming, PropertyOrder order)
 	{
 		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
 		if (IsBuiltInJsonDomType(unwrapped)) return;
@@ -211,7 +219,9 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 
 		if (typeKind == TypeKind.Enum && unwrapped is INamedTypeSymbol enumType)
 		{
-			if (allTypes.Add(enumType))
+			if (selfGeneratingAssemblies.Contains(enumType.ContainingAssembly) || externallyCoveredAssemblies.Contains(enumType.ContainingAssembly))
+				foreignTypes.Add(enumType);
+			else if (allTypes.Add(enumType))
 				RegisterTypeOptions(discoveredTypeOptions, enumType, naming, order);
 			return;
 		}
@@ -220,20 +230,30 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		{
 			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
 			if (elementType != null)
-				CollectTypeRecursive(compilation, elementType, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
+				CollectTypeRecursive(compilation, elementType, allTypes, selfGeneratingAssemblies, externallyCoveredAssemblies, foreignTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 			return;
 		}
 
 		if (typeKind == TypeKind.Dictionary)
 		{
+			var keyType = CodeEmitterHelpers.GetDictionaryKeyType(unwrapped);
+			if (keyType != null)
+				CollectTypeRecursive(compilation, keyType, allTypes, selfGeneratingAssemblies, externallyCoveredAssemblies, foreignTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
+
 			var valueType = CodeEmitterHelpers.GetDictionaryValueType(unwrapped);
 			if (valueType != null)
-				CollectTypeRecursive(compilation, valueType, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
+				CollectTypeRecursive(compilation, valueType, allTypes, selfGeneratingAssemblies, externallyCoveredAssemblies, foreignTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 			return;
 		}
 
 		if (typeKind == TypeKind.Object && unwrapped is INamedTypeSymbol namedType)
 		{
+			if (selfGeneratingAssemblies.Contains(namedType.ContainingAssembly) || externallyCoveredAssemblies.Contains(namedType.ContainingAssembly))
+			{
+				foreignTypes.Add(namedType);
+				return;
+			}
+
 			RegisterTypeOptions(discoveredTypeOptions, namedType, naming, order);
 
 			if (allTypes.Add(namedType))
@@ -244,7 +264,7 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 				{
 					foreach (var prop in tempTypeInfo.Properties)
 					{
-						CollectTypeRecursive(compilation, prop.Type, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
+						CollectTypeRecursive(compilation, prop.Type, allTypes, selfGeneratingAssemblies, externallyCoveredAssemblies, foreignTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 					}
 				}
 			}
@@ -268,6 +288,83 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		if (discoveredTypeOptions.ContainsKey(typeSymbol)) return;
 
 		discoveredTypeOptions[typeSymbol] = (naming, order);
+	}
+
+	private static HashSet<IAssemblySymbol> FindSelfGeneratingAssemblies(Compilation compilation)
+	{
+		var result = new HashSet<IAssemblySymbol>(SymbolEqualityComparer.Default);
+		foreach (var reference in compilation.References)
+		{
+			if (compilation.GetAssemblyOrModuleSymbol(reference) is IAssemblySymbol assembly)
+			{
+				if (HasGeneratedJsonSchemasClass(assembly.GlobalNamespace) || ReferencesSchemaGenerationPackage(assembly))
+					result.Add(assembly);
+			}
+		}
+		return result;
+	}
+
+	private static HashSet<IAssemblySymbol> FindExternallyCoveredAssemblies(HashSet<IAssemblySymbol> selfGeneratingAssemblies)
+	{
+		var result = new HashSet<IAssemblySymbol>(SymbolEqualityComparer.Default);
+		foreach (var assembly in selfGeneratingAssemblies)
+		{
+			foreach (var module in assembly.Modules)
+			{
+				foreach (var referencedAssembly in module.ReferencedAssemblySymbols)
+				{
+					if (IsFrameworkAssembly(referencedAssembly.Name)) continue;
+					result.Add(referencedAssembly);
+				}
+			}
+		}
+
+		return result;
+	}
+
+	private static bool IsFrameworkAssembly(string assemblyName)
+	{
+		return assemblyName.StartsWith("System", StringComparison.Ordinal) ||
+		       assemblyName.StartsWith("Microsoft", StringComparison.Ordinal) ||
+		       assemblyName is "mscorlib" or "netstandard";
+	}
+
+	private static bool ReferencesSchemaGenerationPackage(IAssemblySymbol assembly)
+	{
+		foreach (var module in assembly.Modules)
+		{
+			foreach (var referencedAssembly in module.ReferencedAssemblySymbols)
+			{
+				if (referencedAssembly.Name is "JsonSchema.Net.Generation" or "Json.Schema.Generation")
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	private static bool HasGeneratedJsonSchemasClass(INamespaceSymbol ns)
+	{
+		if (ns.GetTypeMembers("GeneratedJsonSchemas").Length > 0)
+			return true;
+
+		foreach (var nested in ns.GetNamespaceMembers())
+		{
+			if (HasGeneratedJsonSchemasClass(nested))
+				return true;
+		}
+
+		return false;
+	}
+
+	private static string GetForeignSchemaId(ITypeSymbol typeSymbol)
+	{
+		var idAttr = typeSymbol.GetAttributes()
+			.FirstOrDefault(a => a.AttributeClass?.ToDisplayString() == _idAttributeName);
+		if (idAttr != null && idAttr.ConstructorArguments.Length > 0 &&
+		    idAttr.ConstructorArguments[0].Value is string idStr)
+			return idStr;
+		return typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 	}
 
 	private static ClassDeclarationInfo DetectGeneratedJsonSchemasClass(

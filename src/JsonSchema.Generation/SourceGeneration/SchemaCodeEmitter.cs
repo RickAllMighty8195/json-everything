@@ -215,7 +215,7 @@ internal static class SchemaCodeEmitter
 		return TypeKind.Object;
 	}
 
-	public static string EmitGeneratedClass(List<TypeInfo> types, string namespaceName, ClassDeclarationInfo classDeclaration, List<SchemaHandlerInfo> schemaHandlers)
+	public static string EmitGeneratedClass(List<TypeInfo> types, string namespaceName, ClassDeclarationInfo classDeclaration, List<SchemaHandlerInfo> schemaHandlers, IReadOnlyList<(string TypeName, string SchemaId)> foreignTypeEntries)
 	{
 		var sb = new StringBuilder();
 
@@ -264,12 +264,15 @@ internal static class SchemaCodeEmitter
 			typeIds[typeKey] = GetSchemaId(type);
 		}
 
+		foreach (var (typeName, schemaId) in foreignTypeEntries)
+			typeIds[typeName] = schemaId;
+
 		foreach (var type in orderedTypes)
 		{
 			EmitSchemaProperty(sb, type, typeIds, schemaHandlers);
 		}
 
-		EmitBuildForTypeMethod(sb, orderedTypes, schemaHandlers);
+		EmitBuildForTypeMethod(sb, orderedTypes, schemaHandlers, foreignTypeEntries);
 
 		EmitRegisterSchemasMethod(sb, orderedTypes);
 
@@ -291,7 +294,7 @@ internal static class SchemaCodeEmitter
 		return id;
 	}
 
-	private static void EmitBuildForTypeMethod(StringBuilder sb, List<TypeInfo> types, List<SchemaHandlerInfo> schemaHandlers)
+	private static void EmitBuildForTypeMethod(StringBuilder sb, List<TypeInfo> types, List<SchemaHandlerInfo> schemaHandlers, IReadOnlyList<(string TypeName, string SchemaId)> foreignTypeEntries)
 	{
 		sb.AppendLine("\tpublic static JsonSchemaBuilder BuildForType(this JsonSchemaBuilder builder, Type type)");
 		sb.AppendLine("\t{");
@@ -337,6 +340,9 @@ internal static class SchemaCodeEmitter
 			var schemaId = GetSchemaId(type);
 			sb.AppendLine($"\t\t\tvar t when t == typeof({typeName}) => builder.Ref(\"{schemaId}\"),");
 		}
+
+		foreach (var (typeName, schemaId) in foreignTypeEntries)
+			sb.AppendLine($"\t\t\tvar t when t == typeof({typeName}) => builder.Ref(\"{schemaId}\"),");
 
 		sb.AppendLine("\t\t\tvar t when t == typeof(bool) => isNullable ? builder.Type(SchemaValueType.Boolean, SchemaValueType.Null) : builder.Type(SchemaValueType.Boolean),");
 		sb.AppendLine("\t\t\tvar t when t == typeof(byte) || t == typeof(sbyte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong) => isNullable ? builder.Type(SchemaValueType.Integer, SchemaValueType.Null) : builder.Type(SchemaValueType.Integer),");
@@ -777,6 +783,10 @@ internal static class SchemaCodeEmitter
 
 		if (typeKind == TypeKind.Dictionary)
 		{
+			var keyType = CodeEmitterHelpers.GetDictionaryKeyType(unwrapped);
+			if (keyType != null)
+				CollectPropertyTypes(keyType, context);
+
 			var valueType = CodeEmitterHelpers.GetDictionaryValueType(unwrapped);
 			if (valueType != null)
 				CollectPropertyTypes(valueType, context);

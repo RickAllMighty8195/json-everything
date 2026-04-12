@@ -16,7 +16,7 @@ internal class DictionarySchemaEmitter : ISchemaEmitter
 
 		var keyType = CodeEmitterHelpers.GetDictionaryKeyType(type.TypeSymbol);
 		if (keyType != null)
-			EmitPropertyNames(sb, keyType, indent);
+			EmitPropertyNames(sb, keyType, indent, context);
 
 		var valueType = CodeEmitterHelpers.GetDictionaryValueType(type.TypeSymbol);
 		if (valueType == null) return;
@@ -31,12 +31,20 @@ internal class DictionarySchemaEmitter : ISchemaEmitter
 		sb.Append(")");
 	}
 
-	private static void EmitPropertyNames(StringBuilder sb, ITypeSymbol keyType, string indent)
+	private static void EmitPropertyNames(StringBuilder sb, ITypeSymbol keyType, string indent, SchemaEmissionContext context)
 	{
 		var unwrappedKeyType = CodeEmitterHelpers.UnwrapNullable(keyType);
 
 		if (unwrappedKeyType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Enum && unwrappedKeyType is INamedTypeSymbol enumType)
 		{
+			var refUri = context.GetRefUri(enumType);
+			if (!string.IsNullOrEmpty(refUri))
+			{
+				sb.AppendLine();
+				sb.Append($"{indent}.PropertyNames(new JsonSchemaBuilder().Ref(\"{refUri}\"))");
+				return;
+			}
+
 			var enumValues = new List<string>();
 			foreach (var member in enumType.GetMembers().OfType<IFieldSymbol>())
 			{
