@@ -685,7 +685,7 @@ public class SourceGeneratorTests
 		  "properties": {
 		    "Flags": {
 		      "type": "object",
-		      "propertyNames": { "enum": ["Active", "Inactive", "Pending"] },
+		      "propertyNames": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" },
 		      "additionalProperties": { "type": "boolean" }
 		    }
 		  }
