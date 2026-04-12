@@ -121,9 +121,7 @@ public class SourceGeneratorTests
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
-		    "Status": {
-		      "enum": ["Active", "Inactive", "Pending"]
-		    }
+		    "Status": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" }
 		  }
 		}
 		""";
@@ -145,7 +143,7 @@ public class SourceGeneratorTests
 		    "styles": {
 		      "type": ["null", "array"],
 		      "items": {
-		        "enum": ["Confident", "Passionate", "Engaging", "Practical", "Humorous"]
+		        "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ContentStyle"
 		      }
 		    }
 		  }
@@ -600,6 +598,129 @@ public class SourceGeneratorTests
 	}
 
 	[Test]
+	public void GeneratedSchemaForHandledWrapper_UsesHandlerOutput()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Optional<int>",
+		  "type": "integer"
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_OptionalOfInt32;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithBuiltInJsonTypes_UsesExpectedSchemas()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithBuiltInJsonTypes",
+		  "type": "object",
+		  "properties": {
+		    "Document": {},
+		    "Element": {},
+		    "Node": {},
+		    "Value": {},
+		    "Object": { "type": "object" },
+		    "Array": { "type": "array" }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithBuiltInJsonTypes;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void BuildForType_MapsBuiltInJsonTypes()
+	{
+		var anySchema = JsonSchema.FromText("{}", new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var objectSchema = JsonSchema.FromText("""{ "type": "object" }""", new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var arraySchema = JsonSchema.FromText("""{ "type": "array" }""", new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+
+		AssertEqual(anySchema, new JsonSchemaBuilder().BuildForType(typeof(System.Text.Json.JsonDocument)).Build());
+		AssertEqual(anySchema, new JsonSchemaBuilder().BuildForType(typeof(System.Text.Json.JsonElement)).Build());
+		AssertEqual(anySchema, new JsonSchemaBuilder().BuildForType(typeof(System.Text.Json.Nodes.JsonNode)).Build());
+		AssertEqual(anySchema, new JsonSchemaBuilder().BuildForType(typeof(System.Text.Json.Nodes.JsonValue)).Build());
+		AssertEqual(objectSchema, new JsonSchemaBuilder().BuildForType(typeof(System.Text.Json.Nodes.JsonObject)).Build());
+		AssertEqual(arraySchema, new JsonSchemaBuilder().BuildForType(typeof(System.Text.Json.Nodes.JsonArray)).Build());
+	}
+
+	[Test]
+	public void ModelWithStringKeyDictionary_UsesAdditionalProperties()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithStringKeyDictionary",
+		  "type": "object",
+		  "properties": {
+		    "Data": {
+		      "type": "object",
+		      "additionalProperties": { "type": "integer" }
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithStringKeyDictionary;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithEnumKeyDictionary_UsesPropertyNamesAndAdditionalProperties()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithEnumKeyDictionary",
+		  "type": "object",
+		  "properties": {
+		    "Flags": {
+		      "type": "object",
+		      "propertyNames": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" },
+		      "additionalProperties": { "type": "boolean" }
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithEnumKeyDictionary;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
+	public void ModelWithGuidKeyDictionary_UsesGuidPropertyNamesAndAdditionalProperties()
+	{
+		var expectedJson = """
+		{
+		  "$schema": "https://json-schema.org/draft/2020-12/schema",
+		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ModelWithGuidKeyDictionary",
+		  "type": "object",
+		  "properties": {
+		    "Data": {
+		      "type": "object",
+		      "propertyNames": { "type": "string", "format": "uuid" },
+		      "additionalProperties": { "type": "integer" }
+		    }
+		  }
+		}
+		""";
+		var expected = JsonSchema.FromText(expectedJson, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+		var actual = GeneratedJsonSchemas.TestModels_ModelWithGuidKeyDictionary;
+
+		AssertEqual(expected, actual);
+	}
+
+	[Test]
 	public void NullableAttribute_OverridesTypeNullability()
 	{
 		var expectedJson = """
@@ -786,9 +907,7 @@ public class SourceGeneratorTests
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleIfsSamePropertyAndGroup",
 		  "type": "object",
 		  "properties": {
-		    "Status": {
-		      "enum": ["Active", "Inactive", "Pending"]
-		    },
+		    "Status": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" },
 		    "Note": {
 		      "type": ["null", "string"]
 		    }
@@ -822,9 +941,7 @@ public class SourceGeneratorTests
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleIfsSamePropertyAcrossGroups",
 		  "type": "object",
 		  "properties": {
-		    "Status": {
-		      "enum": ["Active", "Inactive", "Pending"]
-		    },
+		    "Status": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" },
 		    "JobListingId": {
 		      "type": ["null", "string"],
 		      "format": "uuid"
@@ -940,9 +1057,7 @@ public class SourceGeneratorTests
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.EnumSwitch",
 		  "type": "object",
 		  "properties": {
-		    "Day": {
-		      "enum": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-		    },
+		    "Day": { "$ref": "global::System.DayOfWeek" },
 		    "MondayField": { "type": ["null", "string"] },
 		    "TuesdayField": { "type": ["null", "string"] }
 		  },

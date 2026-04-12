@@ -93,6 +93,12 @@ internal static class TypeAnalyzer
 
 		switch (typeString)
 		{
+			case "System.Text.Json.JsonDocument" or "System.Text.Json.JsonElement" or "System.Text.Json.Nodes.JsonNode" or "System.Text.Json.Nodes.JsonValue":
+				return TypeKind.Any;
+			case "System.Text.Json.Nodes.JsonObject":
+				return TypeKind.Object;
+			case "System.Text.Json.Nodes.JsonArray":
+				return TypeKind.Array;
 			case "bool" or "System.Boolean":
 				return TypeKind.Boolean;
 			case "byte" or "sbyte" or "short" or "ushort" or "int" or "uint" or "long" or "ulong" or
@@ -114,6 +120,7 @@ internal static class TypeAnalyzer
 		if (unwrappedType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Enum) return TypeKind.Enum;
 		if (unwrappedType is IArrayTypeSymbol) return TypeKind.Array;
 		if (unwrappedType is INamedTypeSymbol namedType && IsCollectionType(namedType)) return TypeKind.Array;
+		if (CodeEmitterHelpers.IsDictionaryType(unwrappedType)) return TypeKind.Dictionary;
 
 		return TypeKind.Object;
 	}

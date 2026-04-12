@@ -12,6 +12,7 @@ internal static class SchemaEmitterRegistry
 	/// </summary>
 	internal static readonly IReadOnlyList<ISchemaEmitter> Emitters = new List<ISchemaEmitter>
 	{
+		new AnySchemaEmitter(),
 		new BooleanSchemaEmitter(),
 		new IntegerSchemaEmitter(),
 		new NumberSchemaEmitter(),
@@ -20,6 +21,7 @@ internal static class SchemaEmitterRegistry
 		new GuidSchemaEmitter(),
 		new UriSchemaEmitter(),
 		new EnumSchemaEmitter(),
+		new DictionarySchemaEmitter(),
 		new ArraySchemaEmitter(),
 		new ObjectSchemaEmitter(),
 	};

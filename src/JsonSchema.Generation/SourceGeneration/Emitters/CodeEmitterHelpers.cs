@@ -64,6 +64,52 @@ internal static class CodeEmitterHelpers
 			"System.Collections.Generic.IReadOnlyCollection<T>";
 	}
 
+	public static bool IsDictionaryType(ITypeSymbol typeSymbol)
+	{
+		if (typeSymbol is not INamedTypeSymbol { IsGenericType: true } namedType) return false;
+
+		var typeString = namedType.ConstructedFrom
+			.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+			.Replace(" ", string.Empty);
+
+		return typeString is
+			"global::System.Collections.Generic.IDictionary<TKey,TValue>" or
+			"global::System.Collections.Generic.Dictionary<TKey,TValue>" or
+			"global::System.Collections.Concurrent.ConcurrentDictionary<TKey,TValue>";
+	}
+
+	public static bool IsStringKeyDictionaryType(ITypeSymbol typeSymbol)
+	{
+		if (!IsDictionaryType(typeSymbol)) return false;
+		if (typeSymbol is not INamedTypeSymbol namedType) return false;
+
+		return namedType.TypeArguments[0].SpecialType == SpecialType.System_String;
+	}
+
+	public static bool IsEnumKeyDictionaryType(ITypeSymbol typeSymbol)
+	{
+		if (!IsDictionaryType(typeSymbol)) return false;
+		if (typeSymbol is not INamedTypeSymbol namedType) return false;
+
+		return namedType.TypeArguments[0].TypeKind == Microsoft.CodeAnalysis.TypeKind.Enum;
+	}
+
+	public static ITypeSymbol? GetDictionaryValueType(ITypeSymbol typeSymbol)
+	{
+		if (!IsDictionaryType(typeSymbol)) return null;
+		if (typeSymbol is not INamedTypeSymbol namedType) return null;
+
+		return namedType.TypeArguments[1];
+	}
+
+	public static ITypeSymbol? GetDictionaryKeyType(ITypeSymbol typeSymbol)
+	{
+		if (!IsDictionaryType(typeSymbol)) return null;
+		if (typeSymbol is not INamedTypeSymbol namedType) return null;
+
+		return namedType.TypeArguments[0];
+	}
+
 	public static ITypeSymbol? GetElementType(ITypeSymbol typeSymbol)
 	{
 		switch (typeSymbol)

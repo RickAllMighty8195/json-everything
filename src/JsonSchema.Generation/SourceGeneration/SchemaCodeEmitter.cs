@@ -14,8 +14,7 @@ internal static class SchemaCodeEmitter
 	{
 		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
 		var typeKind = DetermineTypeKind(unwrapped);
-		if (typeKind == TypeKind.Object && context != null && 
-		    (context.RootType == null || !SymbolEqualityComparer.Default.Equals(unwrapped, CodeEmitterHelpers.UnwrapNullable(context.RootType))))
+		if (typeKind == TypeKind.Object && context != null)
 		{
 			if (context.HasSchemaHandler(unwrapped))
 			{
@@ -37,7 +36,20 @@ internal static class SchemaCodeEmitter
 				return;
 			}
 
+			if (context.RootType != null && SymbolEqualityComparer.Default.Equals(unwrapped, CodeEmitterHelpers.UnwrapNullable(context.RootType)))
+				return;
+
 			var refUri = context.GetRefUri(unwrapped);
+			if (string.IsNullOrEmpty(refUri))
+			{
+				sb.AppendLine();
+				if (isNullable)
+					sb.Append($"{indent}.Type(SchemaValueType.Object, SchemaValueType.Null)");
+				else
+					sb.Append($"{indent}.Type(SchemaValueType.Object)");
+				return;
+			}
+
 			sb.AppendLine();
 			
 			if (isNullable)
@@ -80,6 +92,33 @@ internal static class SchemaCodeEmitter
 			}
 
 			return;
+		}
+
+		if (typeKind == TypeKind.Enum && context != null)
+		{
+			if (context.RootType != null && SymbolEqualityComparer.Default.Equals(unwrapped, CodeEmitterHelpers.UnwrapNullable(context.RootType)))
+				return;
+
+			var refUri = context.GetRefUri(unwrapped);
+			if (!string.IsNullOrEmpty(refUri))
+			{
+				sb.AppendLine();
+
+				if (isNullable)
+				{
+					sb.Append($"{indent}.AnyOf(");
+					sb.AppendLine();
+					sb.Append($"{indent}\tnew JsonSchemaBuilder().Ref(\"{refUri}\"),");
+					sb.AppendLine();
+					sb.Append($"{indent}\tnew JsonSchemaBuilder().Type(SchemaValueType.Null)");
+					sb.AppendLine();
+					sb.Append($"{indent})");
+				}
+				else
+					sb.Append($"{indent}.Ref(\"{refUri}\")");
+
+				return;
+			}
 		}
 		
 		if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
@@ -155,6 +194,12 @@ internal static class SchemaCodeEmitter
 		
 		switch (typeString)
 		{
+			case "global::System.Text.Json.JsonDocument" or "global::System.Text.Json.JsonElement" or "global::System.Text.Json.Nodes.JsonNode" or "global::System.Text.Json.Nodes.JsonValue":
+				return TypeKind.Any;
+			case "global::System.Text.Json.Nodes.JsonObject":
+				return TypeKind.Object;
+			case "global::System.Text.Json.Nodes.JsonArray":
+				return TypeKind.Array;
 			case "global::System.DateTime" or "global::System.DateTimeOffset":
 				return TypeKind.DateTime;
 			case "global::System.Guid":
@@ -165,11 +210,12 @@ internal static class SchemaCodeEmitter
 
 		if (unwrappedType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Enum) return TypeKind.Enum;
 		if (unwrappedType is IArrayTypeSymbol || CodeEmitterHelpers.IsCollectionType(unwrappedType)) return TypeKind.Array;
+		if (CodeEmitterHelpers.IsDictionaryType(unwrappedType)) return TypeKind.Dictionary;
 
 		return TypeKind.Object;
 	}
 
-	public static string EmitGeneratedClass(List<TypeInfo> types, string namespaceName, ClassDeclarationInfo classDeclaration, List<SchemaHandlerInfo> schemaHandlers)
+	public static string EmitGeneratedClass(List<TypeInfo> types, string namespaceName, ClassDeclarationInfo classDeclaration, List<SchemaHandlerInfo> schemaHandlers, IReadOnlyList<(string TypeName, string SchemaId)> foreignTypeEntries)
 	{
 		var sb = new StringBuilder();
 
@@ -218,12 +264,15 @@ internal static class SchemaCodeEmitter
 			typeIds[typeKey] = GetSchemaId(type);
 		}
 
+		foreach (var (typeName, schemaId) in foreignTypeEntries)
+			typeIds[typeName] = schemaId;
+
 		foreach (var type in orderedTypes)
 		{
 			EmitSchemaProperty(sb, type, typeIds, schemaHandlers);
 		}
 
-		EmitBuildForTypeMethod(sb, orderedTypes, schemaHandlers);
+		EmitBuildForTypeMethod(sb, orderedTypes, schemaHandlers, foreignTypeEntries);
 
 		EmitRegisterSchemasMethod(sb, orderedTypes);
 
@@ -245,7 +294,7 @@ internal static class SchemaCodeEmitter
 		return id;
 	}
 
-	private static void EmitBuildForTypeMethod(StringBuilder sb, List<TypeInfo> types, List<SchemaHandlerInfo> schemaHandlers)
+	private static void EmitBuildForTypeMethod(StringBuilder sb, List<TypeInfo> types, List<SchemaHandlerInfo> schemaHandlers, IReadOnlyList<(string TypeName, string SchemaId)> foreignTypeEntries)
 	{
 		sb.AppendLine("\tpublic static JsonSchemaBuilder BuildForType(this JsonSchemaBuilder builder, Type type)");
 		sb.AppendLine("\t{");
@@ -292,6 +341,9 @@ internal static class SchemaCodeEmitter
 			sb.AppendLine($"\t\t\tvar t when t == typeof({typeName}) => builder.Ref(\"{schemaId}\"),");
 		}
 
+		foreach (var (typeName, schemaId) in foreignTypeEntries)
+			sb.AppendLine($"\t\t\tvar t when t == typeof({typeName}) => builder.Ref(\"{schemaId}\"),");
+
 		sb.AppendLine("\t\t\tvar t when t == typeof(bool) => isNullable ? builder.Type(SchemaValueType.Boolean, SchemaValueType.Null) : builder.Type(SchemaValueType.Boolean),");
 		sb.AppendLine("\t\t\tvar t when t == typeof(byte) || t == typeof(sbyte) || t == typeof(short) || t == typeof(ushort) || t == typeof(int) || t == typeof(uint) || t == typeof(long) || t == typeof(ulong) => isNullable ? builder.Type(SchemaValueType.Integer, SchemaValueType.Null) : builder.Type(SchemaValueType.Integer),");
 		sb.AppendLine("\t\t\tvar t when t == typeof(float) || t == typeof(double) || t == typeof(decimal) => isNullable ? builder.Type(SchemaValueType.Number, SchemaValueType.Null) : builder.Type(SchemaValueType.Number),");
@@ -299,6 +351,9 @@ internal static class SchemaCodeEmitter
 		sb.AppendLine("\t\t\tvar t when t == typeof(DateTime) || t == typeof(DateTimeOffset) => isNullable ? builder.Type(SchemaValueType.String, SchemaValueType.Null).Format(global::Json.Schema.Formats.DateTime) : builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.DateTime),");
 		sb.AppendLine("\t\t\tvar t when t == typeof(Guid) => isNullable ? builder.Type(SchemaValueType.String, SchemaValueType.Null).Format(global::Json.Schema.Formats.Uuid) : builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uuid),");
 		sb.AppendLine("\t\t\tvar t when t == typeof(Uri) => isNullable ? builder.Type(SchemaValueType.String, SchemaValueType.Null).Format(global::Json.Schema.Formats.Uri) : builder.Type(SchemaValueType.String).Format(global::Json.Schema.Formats.Uri),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(System.Text.Json.JsonDocument) || t == typeof(System.Text.Json.JsonElement) || t == typeof(System.Text.Json.Nodes.JsonNode) || t == typeof(System.Text.Json.Nodes.JsonValue) => builder,");
+		sb.AppendLine("\t\t\tvar t when t == typeof(System.Text.Json.Nodes.JsonObject) => isNullable ? builder.Type(SchemaValueType.Object, SchemaValueType.Null) : builder.Type(SchemaValueType.Object),");
+		sb.AppendLine("\t\t\tvar t when t == typeof(System.Text.Json.Nodes.JsonArray) => isNullable ? builder.Type(SchemaValueType.Array, SchemaValueType.Null) : builder.Type(SchemaValueType.Array),");
 		sb.AppendLine("\t\t\t_ => builder");
 		sb.AppendLine("\t\t};");
 		sb.AppendLine("\t}");
@@ -426,6 +481,14 @@ internal static class SchemaCodeEmitter
 		}
 		sb.AppendLine();
 		sb.Append($"{indentStr}.Id(\"{id}\")");
+
+		if (context.HasSchemaHandler(type.TypeSymbol))
+		{
+			sb.AppendLine();
+			sb.Append($"{indentStr}.BuildForType(typeof({type.TypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}))");
+			EmitAttributes(sb, type.TypeAttributes, indentStr);
+			return;
+		}
 
 		var emitter = SchemaEmitterRegistry.Emitters.FirstOrDefault(e => e.Handles(type));
 		if (emitter != null)
@@ -690,17 +753,43 @@ internal static class SchemaCodeEmitter
 	private static void CollectPropertyTypes(ITypeSymbol typeSymbol, SchemaEmissionContext context)
 	{
 		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
+		if (IsBuiltInJsonDomType(unwrapped)) return;
 		
 		var typeKind = DetermineTypeKind(unwrapped);
 		if (typeKind is TypeKind.Boolean or TypeKind.Integer or TypeKind.Number or 
-		    TypeKind.String or TypeKind.DateTime or TypeKind.Guid or TypeKind.Uri or TypeKind.Enum)
+		    TypeKind.String or TypeKind.DateTime or TypeKind.Guid or TypeKind.Uri or TypeKind.Any)
 			return;
+
+		if (typeKind == TypeKind.Enum)
+		{
+			var typeKey = SchemaEmissionContext.GetTypeKey(unwrapped);
+			if (!context.TypeReferences.ContainsKey(typeKey))
+			{
+				var defName = SchemaEmissionContext.GetDefinitionName(unwrapped);
+				context.TypeReferences[typeKey] = (defName, unwrapped);
+			}
+
+			return;
+		}
 		
 		if (typeKind == TypeKind.Array)
 		{
 			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
 			if (elementType != null) 
 				CollectPropertyTypes(elementType, context);
+
+			return;
+		}
+
+		if (typeKind == TypeKind.Dictionary)
+		{
+			var keyType = CodeEmitterHelpers.GetDictionaryKeyType(unwrapped);
+			if (keyType != null)
+				CollectPropertyTypes(keyType, context);
+
+			var valueType = CodeEmitterHelpers.GetDictionaryValueType(unwrapped);
+			if (valueType != null)
+				CollectPropertyTypes(valueType, context);
 
 			return;
 		}
@@ -714,6 +803,18 @@ internal static class SchemaCodeEmitter
 				context.TypeReferences[typeKey] = (defName, unwrapped);
 			}
 		}
+	}
+
+	private static bool IsBuiltInJsonDomType(ITypeSymbol typeSymbol)
+	{
+		var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		return typeName is
+			"global::System.Text.Json.JsonDocument" or
+			"global::System.Text.Json.JsonElement" or
+			"global::System.Text.Json.Nodes.JsonNode" or
+			"global::System.Text.Json.Nodes.JsonValue" or
+			"global::System.Text.Json.Nodes.JsonObject" or
+			"global::System.Text.Json.Nodes.JsonArray";
 	}
 
 	private static void EmitRegistrationClass(StringBuilder sb, List<TypeInfo> types)
