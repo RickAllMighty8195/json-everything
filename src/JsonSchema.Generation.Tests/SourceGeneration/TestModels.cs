@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Json.Schema.Generation.Serialization;
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -352,6 +354,35 @@ public static class TestModels
 	{
 		public Optional<Guid> ValueA { get; set; } = new();
 		public Optional<Guid?> ValueB { get; set; } = new();
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithBuiltInJsonTypes
+	{
+		public JsonDocument Document { get; set; } = null!;
+		public JsonElement Element { get; set; }
+		public JsonNode Node { get; set; } = null!;
+		public JsonValue Value { get; set; } = JsonValue.Create(0)!;
+		public JsonObject Object { get; set; } = new();
+		public JsonArray Array { get; set; } = [];
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithStringKeyDictionary
+	{
+		public Dictionary<string, int> Data { get; set; } = [];
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithEnumKeyDictionary
+	{
+		public Dictionary<Status, bool> Flags { get; set; } = [];
+	}
+
+	[GenerateJsonSchema]
+	public class ModelWithGuidKeyDictionary
+	{
+		public Dictionary<Guid, int> Data { get; set; } = [];
 	}
 
 	[GenerateJsonSchema]

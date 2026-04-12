@@ -64,6 +64,8 @@ internal sealed class SchemaHandlerInfo
 internal enum TypeKind
 {
 	Unknown,
+	Any,
+	Dictionary,
 	Boolean,
 	Integer,
 	Number,

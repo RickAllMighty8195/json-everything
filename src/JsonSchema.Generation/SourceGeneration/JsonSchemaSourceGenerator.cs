@@ -200,6 +200,8 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 	private static void CollectTypeRecursive(Compilation compilation, ITypeSymbol typeSymbol, HashSet<ITypeSymbol> allTypes, Action<Diagnostic> reportDiagnostic, Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, NamingConvention naming, PropertyOrder order)
 	{
 		var unwrapped = CodeEmitterHelpers.UnwrapNullable(typeSymbol);
+		if (IsBuiltInJsonDomType(unwrapped)) return;
+
 		var typeKind = SchemaCodeEmitter.DetermineTypeKind(unwrapped);
 		if (typeKind is TypeKind.Boolean or TypeKind.Integer or 
 		    TypeKind.Number or TypeKind.String or 
@@ -212,6 +214,14 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 			var elementType = CodeEmitterHelpers.GetElementType(unwrapped);
 			if (elementType != null)
 				CollectTypeRecursive(compilation, elementType, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
+			return;
+		}
+
+		if (typeKind == TypeKind.Dictionary)
+		{
+			var valueType = CodeEmitterHelpers.GetDictionaryValueType(unwrapped);
+			if (valueType != null)
+				CollectTypeRecursive(compilation, valueType, allTypes, reportDiagnostic, discoveredTypeOptions, naming, order);
 			return;
 		}
 
@@ -232,6 +242,18 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 				}
 			}
 		}
+	}
+
+	private static bool IsBuiltInJsonDomType(ITypeSymbol typeSymbol)
+	{
+		var typeName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+		return typeName is
+			"global::System.Text.Json.JsonDocument" or
+			"global::System.Text.Json.JsonElement" or
+			"global::System.Text.Json.Nodes.JsonNode" or
+			"global::System.Text.Json.Nodes.JsonValue" or
+			"global::System.Text.Json.Nodes.JsonObject" or
+			"global::System.Text.Json.Nodes.JsonArray";
 	}
 
 	private static void RegisterTypeOptions(Dictionary<ITypeSymbol, (NamingConvention Naming, PropertyOrder Order)> discoveredTypeOptions, ITypeSymbol typeSymbol, NamingConvention naming, PropertyOrder order)
