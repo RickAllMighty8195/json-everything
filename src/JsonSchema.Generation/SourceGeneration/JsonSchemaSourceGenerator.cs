@@ -206,8 +206,15 @@ public class JsonSchemaSourceGenerator : IIncrementalGenerator
 		if (typeKind is TypeKind.Boolean or TypeKind.Integer or 
 		    TypeKind.Number or TypeKind.String or 
 		    TypeKind.DateTime or TypeKind.Guid or 
-		    TypeKind.Uri or TypeKind.Enum)
+		    TypeKind.Uri)
 			return;
+
+		if (typeKind == TypeKind.Enum && unwrapped is INamedTypeSymbol enumType)
+		{
+			if (allTypes.Add(enumType))
+				RegisterTypeOptions(discoveredTypeOptions, enumType, naming, order);
+			return;
+		}
 
 		if (typeKind == TypeKind.Array)
 		{

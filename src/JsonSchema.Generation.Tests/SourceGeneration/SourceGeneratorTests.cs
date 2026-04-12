@@ -121,9 +121,7 @@ public class SourceGeneratorTests
 		  "type": "object",
 		  "properties": {
 		    "Name": { "type": "string" },
-		    "Status": {
-		      "enum": ["Active", "Inactive", "Pending"]
-		    }
+		    "Status": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" }
 		  }
 		}
 		""";
@@ -145,7 +143,7 @@ public class SourceGeneratorTests
 		    "styles": {
 		      "type": ["null", "array"],
 		      "items": {
-		        "enum": ["Confident", "Passionate", "Engaging", "Practical", "Humorous"]
+		        "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.ContentStyle"
 		      }
 		    }
 		  }
@@ -909,9 +907,7 @@ public class SourceGeneratorTests
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleIfsSamePropertyAndGroup",
 		  "type": "object",
 		  "properties": {
-		    "Status": {
-		      "enum": ["Active", "Inactive", "Pending"]
-		    },
+		    "Status": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" },
 		    "Note": {
 		      "type": ["null", "string"]
 		    }
@@ -945,9 +941,7 @@ public class SourceGeneratorTests
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.MultipleIfsSamePropertyAcrossGroups",
 		  "type": "object",
 		  "properties": {
-		    "Status": {
-		      "enum": ["Active", "Inactive", "Pending"]
-		    },
+		    "Status": { "$ref": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.Status" },
 		    "JobListingId": {
 		      "type": ["null", "string"],
 		      "format": "uuid"
@@ -1063,9 +1057,7 @@ public class SourceGeneratorTests
 		  "$id": "global::Json.Schema.Generation.Tests.SourceGeneration.TestModels.EnumSwitch",
 		  "type": "object",
 		  "properties": {
-		    "Day": {
-		      "enum": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-		    },
+		    "Day": { "$ref": "global::System.DayOfWeek" },
 		    "MondayField": { "type": ["null", "string"] },
 		    "TuesdayField": { "type": ["null", "string"] }
 		  },

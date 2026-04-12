@@ -93,6 +93,33 @@ internal static class SchemaCodeEmitter
 
 			return;
 		}
+
+		if (typeKind == TypeKind.Enum && context != null)
+		{
+			if (context.RootType != null && SymbolEqualityComparer.Default.Equals(unwrapped, CodeEmitterHelpers.UnwrapNullable(context.RootType)))
+				return;
+
+			var refUri = context.GetRefUri(unwrapped);
+			if (!string.IsNullOrEmpty(refUri))
+			{
+				sb.AppendLine();
+
+				if (isNullable)
+				{
+					sb.Append($"{indent}.AnyOf(");
+					sb.AppendLine();
+					sb.Append($"{indent}\tnew JsonSchemaBuilder().Ref(\"{refUri}\"),");
+					sb.AppendLine();
+					sb.Append($"{indent}\tnew JsonSchemaBuilder().Type(SchemaValueType.Null)");
+					sb.AppendLine();
+					sb.Append($"{indent})");
+				}
+				else
+					sb.Append($"{indent}.Ref(\"{refUri}\")");
+
+				return;
+			}
+		}
 		
 		if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
 		{
@@ -724,8 +751,20 @@ internal static class SchemaCodeEmitter
 		
 		var typeKind = DetermineTypeKind(unwrapped);
 		if (typeKind is TypeKind.Boolean or TypeKind.Integer or TypeKind.Number or 
-		    TypeKind.String or TypeKind.DateTime or TypeKind.Guid or TypeKind.Uri or TypeKind.Enum or TypeKind.Any)
+		    TypeKind.String or TypeKind.DateTime or TypeKind.Guid or TypeKind.Uri or TypeKind.Any)
 			return;
+
+		if (typeKind == TypeKind.Enum)
+		{
+			var typeKey = SchemaEmissionContext.GetTypeKey(unwrapped);
+			if (!context.TypeReferences.ContainsKey(typeKey))
+			{
+				var defName = SchemaEmissionContext.GetDefinitionName(unwrapped);
+				context.TypeReferences[typeKey] = (defName, unwrapped);
+			}
+
+			return;
+		}
 		
 		if (typeKind == TypeKind.Array)
 		{
