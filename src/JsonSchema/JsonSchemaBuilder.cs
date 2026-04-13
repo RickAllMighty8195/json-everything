@@ -152,6 +152,13 @@ public class JsonSchemaBuilder
 		return JsonSchema.Build(root, options ?? _buildOptions, baseUri);
 	}
 
+	internal JsonSchema BuildWithoutRegistering(BuildOptions? options = null)
+	{
+		var root = JsonSerializer.SerializeToElement(Keywords, JsonSchemaSerializerContext.Default.JsonNode);
+
+		return JsonSchema.BuildWithoutRegistering(root, options ?? _buildOptions);
+	}
+
 	/// <summary>
 	/// For convenience, implicitly calls <see cref="Build(BuildOptions, Uri)"/>.
 	/// </summary>

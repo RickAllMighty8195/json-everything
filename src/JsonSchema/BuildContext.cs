@@ -40,11 +40,14 @@ public struct BuildContext
 	public JsonPointer PathFromResourceRoot { get; set; } = JsonPointer.Empty;
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
-	internal BuildContext(BuildOptions options, Uri baseUri)
+	internal bool Register { get; set; }
+
+	internal BuildContext(BuildOptions options, Uri baseUri, bool register)
 	{
 		Options = options;
 		BaseUri = baseUri;
 		Dialect = Options.Dialect;
+		Register = register;
 	}
 
 	/// <summary>
