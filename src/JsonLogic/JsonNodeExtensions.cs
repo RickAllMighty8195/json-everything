@@ -132,8 +132,6 @@ public static class JsonNodeExtensions
 	/// </remarks>
 	public static bool LooseEquals(this JsonNode? a, JsonNode? b)
 	{
-		static string CoerceArrayToString(JsonArray array) => string.Join(",", array.Select(e => e.AsJsonString()));
-
 		if (a is null && b is null) return true;
 		if (a is null || b is null) return false;
 
@@ -143,7 +141,7 @@ public static class JsonNodeExtensions
 		if (a is JsonArray && b is JsonArray) return a.IsEquivalentTo(b);
 		if (a is JsonArray aArr)
 		{
-			var aStr = CoerceArrayToString(aArr);
+			var aStr = Stringify(aArr);
 			var bVal = (JsonValue)b;
 			if (bVal.TryGetValue(out string? bStr)) return aStr == bStr;
 			var bNum = bVal.GetNumber();
@@ -152,7 +150,7 @@ public static class JsonNodeExtensions
 		}
 		if (b is JsonArray bArr)
 		{
-			var bStr = CoerceArrayToString(bArr);
+			var bStr = Stringify(bArr);
 			var aVal = (JsonValue)a;
 			if (aVal.TryGetValue(out string? aStr)) return bStr == aStr;
 			var aNum = aVal.GetNumber();

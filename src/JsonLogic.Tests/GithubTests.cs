@@ -268,4 +268,17 @@ public class GithubTests
 
 		JsonAssert.IsFalse(result);
 	}
+
+	[Test]
+	public void Issue1019_ArrayCoercion()
+	{
+		var rule = JsonNode.Parse("""{"==":[{"var":"features.group1"}, "feat1"]}""");
+		var data = JsonNode.Parse("""{"features":{"group1":["feat1"]}}""");
+
+		var result = Apply(rule, data);
+
+		TestConsole.WriteLine(result.AsJsonString());
+
+		JsonAssert.IsTrue(result);
+	}
 }
