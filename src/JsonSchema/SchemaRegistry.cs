@@ -1,7 +1,13 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Json.More;
+using Json.Schema.Keywords;
+using Json.Schema.Keywords.Draft201909;
 
 namespace Json.Schema;
 
@@ -254,5 +260,82 @@ public class SchemaRegistry
 		{
 			_registered[registration.Key] = registration.Value;
 		}
+	}
+
+	/// <summary>
+	/// Creates a bundled JSON Schema document that includes the root schema and all referenced schemas as definitions.
+	/// </summary>
+	/// <remarks>
+	/// The bundled schema will contain all referenced schemas under the `$defs` property, allowing for
+	/// self-contained schema validation. If any referenced schema cannot be resolved, a <see cref="RefResolutionException"/>
+	/// will be thrown.
+	/// </remarks>
+	/// <param name="rootUri">The URI of the root JSON Schema to bundle. This schema and all schemas it references will be included in the
+	/// bundle.</param>
+	/// <param name="bundleUri">The URI to assign as the $id of the resulting bundled schema document.</param>
+	/// <param name="options">The options to use when building the bundled schema, such as validation or parsing settings.</param>
+	/// <returns>A new JsonSchema instance representing the bundled schema document, or null if the root schema cannot be found.</returns>
+	/// <exception cref="NotSupportedException">Thrown for unsupported reference types.  Only `$ref` is supported.</exception>
+	/// <exception cref="RefResolutionException">Thrown if a reference cannot be resolved.</exception>
+	public JsonSchema? CreateBundle(Uri rootUri, Uri bundleUri, BuildOptions? options = null)
+	{
+		options ??= new BuildOptions
+		{
+			SchemaRegistry = this
+		};
+
+		var document = Get(rootUri);
+		if (document is not JsonSchema root) return null;
+
+		var toCheck = new Queue<JsonSchema>();
+		toCheck.Enqueue(root);
+		var checkedSchemas = new HashSet<JsonSchema>();
+		var defs = new JsonObject { [rootUri.ToString()] = root.Root.Source.AsNode() };
+		while (toCheck.Count != 0)
+		{
+			var currentSchema = toCheck.Dequeue();
+			if (!checkedSchemas.Add(currentSchema)) continue;
+
+			var nodes = new Queue<JsonSchemaNode>();
+			nodes.Enqueue(currentSchema.Root);
+			while (nodes.Count != 0)
+			{
+				var currentNode = nodes.Dequeue();
+
+				foreach (var keyword in currentNode.Keywords)
+				{
+					if (keyword.Handler is RefKeyword)
+					{
+						var reference = (Uri)keyword.Value!;
+						var resolvedDocument = Get(reference);
+						if (resolvedDocument is JsonSchema resolved)
+						{
+							toCheck.Enqueue(resolved);
+							defs[reference.ToString()] ??= resolved.Root.Source.AsNode();
+						}
+						else throw new RefResolutionException(reference);
+					}
+					else if (keyword.Handler is DynamicRefKeyword or Keywords.Draft202012.DynamicRefKeyword or RecursiveRefKeyword)
+						throw new NotSupportedException("Dynamic and recursive references are unsupported for bundles.");
+					else
+					{
+						foreach (var subschema in keyword.Subschemas)
+						{
+							nodes.Enqueue(subschema);
+						}
+					}
+				}
+			}
+		}
+
+		var bundleBuilder = new JsonSchemaBuilder(options)
+			.Schema(MetaSchemas.Draft202012Id)
+			.Id(bundleUri)
+			.Ref(rootUri);
+		bundleBuilder.Add("$defs", defs);
+
+		return options.SchemaRegistry == this
+			? bundleBuilder.BuildWithoutRegistering(options)
+			: bundleBuilder.Build(options);
 	}
 }

@@ -123,8 +123,18 @@ public class JsonSchema : IBaseDocument
 	/// langword="true"/> or <see langword="false"/>), or a constructed schema for object-based definitions.</returns>
 	public static JsonSchema Build(JsonElement root, BuildOptions? options = null, Uri? baseUri = null)
 	{
+		return BuildImpl(root, options, baseUri, true);
+	}
+
+	internal static JsonSchema BuildWithoutRegistering(JsonElement root, BuildOptions? options)
+	{
+		return BuildImpl(root, options, null, false);
+	}
+
+	private static JsonSchema BuildImpl(JsonElement root, BuildOptions? options, Uri? baseUri, bool register)
+	{
 		options ??= BuildOptions.Default;
-		var context = new BuildContext(options, baseUri ?? GenerateBaseUri())
+		var context = new BuildContext(options, baseUri ?? GenerateBaseUri(), register)
 		{
 			LocalSchema = root
 		};
@@ -138,7 +148,8 @@ public class JsonSchema : IBaseDocument
 		{
 			BaseUri = node.BaseUri
 		};
-		context.Options.SchemaRegistry.Register(schema);
+		if (register)
+			context.Options.SchemaRegistry.Register(schema);
 		context.BaseUri = node.BaseUri;
 
 		schema._resolved = TryResolveReferences(node, context);
@@ -242,7 +253,8 @@ public class JsonSchema : IBaseDocument
 			{
 				BaseUri = embeddedResource.BaseUri
 			};
-			context.Options.SchemaRegistry.Register(schema);
+			if (context.Register)
+				context.Options.SchemaRegistry.Register(schema);
 		}
 
 		var node = new JsonSchemaNode
@@ -350,7 +362,7 @@ public class JsonSchema : IBaseDocument
 	{
 		if (!_resolved)
 		{
-			var buildContext = new BuildContext(_buildOptions, BaseUri)
+			var buildContext = new BuildContext(_buildOptions, BaseUri, true)
 			{
 				LocalSchema = Root.Source
 			};
