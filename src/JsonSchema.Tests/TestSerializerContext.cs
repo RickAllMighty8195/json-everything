@@ -10,6 +10,7 @@ namespace Json.Schema.Tests;
 [JsonSerializable(typeof(System.Drawing.Point))]
 [JsonSerializable(typeof(DeserializationTests.Foo))]
 [JsonSerializable(typeof(DeserializationTests.FooWithSchema))]
+[JsonSerializable(typeof(Dictionary<DeserializationTests.ValidatedEnum, string>))]
 [JsonSerializable(typeof(JsonSchema))]
 [JsonSerializable(typeof(EvaluationResults))]
 [JsonSerializable(typeof(GithubTests.Model791))]

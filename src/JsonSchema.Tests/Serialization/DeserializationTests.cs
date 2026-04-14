@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Drawing;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using Json.More;
 using Json.Schema.Serialization;
 using NUnit.Framework;
 using TestHelpers;
@@ -53,6 +56,19 @@ public class DeserializationTests
 				("Y", new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			)
 			.AdditionalProperties(false);
+
+	public static readonly JsonSchema ValidatedEnumSchema =
+		new JsonSchemaBuilder()
+			.Enum("One", "Two", "Three");
+
+	[JsonSchema(typeof(DeserializationTests), nameof(ValidatedEnumSchema))]
+	[JsonConverter(typeof(EnumStringConverter<ValidatedEnum>))]
+	public enum ValidatedEnum
+	{
+		One,
+		Two,
+		Three
+	}
 
 	private static readonly JsonSerializerOptions _options = new()
 	{
@@ -408,6 +424,29 @@ public class DeserializationTests
 		{
 			Assert.That(result, Is.Not.Null, "Each concurrent deserialization should produce a non-null schema.");
 		}
+	}
+
+	[Test]
+	public void EnumKeyedDictionaryRoundTrip()
+	{
+		var dictionary = new Dictionary<ValidatedEnum, string>
+		{
+			[ValidatedEnum.One] = "1",
+			[ValidatedEnum.Two] = "2",
+			[ValidatedEnum.Three] = "3"
+		};
+		var options = new JsonSerializerOptions
+		{
+			TypeInfoResolverChain = { TestSerializerContext.Default },
+			WriteIndented = true,
+			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+			Converters = { new ValidatingJsonConverter { EvaluationOptions = { OutputFormat = OutputFormat.List } } }
+		};
+
+		var serialized = JsonSerializer.Serialize(dictionary, options);
+		var deserialized = JsonSerializer.Deserialize<Dictionary<ValidatedEnum, string>>(serialized, options);
+
+		Assert.That(deserialized, Is.EquivalentTo(dictionary));
 	}
 
 	/// <summary>
