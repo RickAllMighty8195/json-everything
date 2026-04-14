@@ -7,7 +7,7 @@ namespace Json.Schema.Serialization;
 /// <summary>
 /// Identifies a <see cref="JsonSchema"/> to use when deserializing a type.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Enum)]
 public class JsonSchemaAttribute : Attribute
 {
 	internal JsonSchema Schema { get; }
