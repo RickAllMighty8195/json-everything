@@ -152,6 +152,40 @@ internal class RefTests
 	}
 
 	[Test]
+	public void RecursiveMutualRef()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = JsonSchema.FromText(
+			"""
+			{
+			  "$ref": "#/$defs/a",
+			  "$defs": {
+			    "a": {
+			      "type": ["object", "null"],
+			      "properties": {
+			        "value": { "type": "integer" },
+			        "next": { "$ref": "#/$defs/b" }
+			      },
+			      "required": ["value", "next"],
+			      "additionalProperties": false
+			    },
+			    "b": {
+			      "type": ["object", "null"],
+			      "properties": {
+			        "value": { "type": "integer" },
+			        "next": { "$ref": "#/$defs/a" }
+			      },
+			      "required": ["value", "next"],
+			      "additionalProperties": false
+			    }
+			  }
+			}
+			""", buildOptions);
+
+		Run(schema);
+	}
+
+	[Test]
 	public void DynamicRefResolvesByEntryPoint()
 	{
 		var buildOptions = new BuildOptions
@@ -168,6 +202,10 @@ internal class RefTests
 			  "$defs": {
 			    "node": {
 			      "$dynamicRef": "#nodeType"
+			    },
+			    "default": {
+			      "$dynamicAnchor": "nodeType",
+			      "not": true
 			    }
 			  },
 			  "$ref": "#/$defs/node"

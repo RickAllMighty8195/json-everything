@@ -5,6 +5,7 @@ using Bogus;
 using Json.Pointer;
 using Json.Schema.DataGeneration.Generators;
 using Json.Schema.DataGeneration.Requirements;
+using Json.Schema.Keywords;
 
 namespace Json.Schema.DataGeneration;
 
@@ -144,11 +145,50 @@ public static class JsonSchemaExtensions
 	internal static RequirementsContext GetRequirements(this JsonSchemaNode schema, RequirementsContext? context = null)
 	{
 		context ??= new RequirementsContext { RemainingRefDepth = RequirementsContext.RecursiveRefHardStop };
-		foreach (var gatherer in _requirementsGatherers)
+
+		var enteredResource = context.EnterDynamicResource(schema.BaseUri);
+		if (enteredResource)
+			CaptureDynamicAnchors(context, schema, schema.BaseUri);
+
+		try
 		{
-			gatherer.AddRequirements(context, schema);
+			foreach (var gatherer in _requirementsGatherers)
+			{
+				gatherer.AddRequirements(context, schema);
+			}
+		}
+		finally
+		{
+			if (enteredResource)
+				context.ExitDynamicResource();
 		}
 
 		return context;
+	}
+
+	private static void CaptureDynamicAnchors(RequirementsContext context, JsonSchemaNode resourceRoot, Uri resourceUri)
+	{
+		var toCheck = new Queue<JsonSchemaNode>();
+		toCheck.Enqueue(resourceRoot);
+
+		var checkedNodes = new HashSet<JsonSchemaNode>();
+		while (toCheck.Count != 0)
+		{
+			var current = toCheck.Dequeue();
+			if (!checkedNodes.Add(current)) continue;
+			if (current.BaseUri != resourceUri) continue;
+
+			var dynamicAnchorKeyword = current.GetKeyword<DynamicAnchorKeyword>();
+			if (dynamicAnchorKeyword?.Value is string anchor)
+				context.CaptureDynamicAnchor(anchor, current);
+
+			foreach (var keyword in current.Keywords)
+			{
+				foreach (var subschema in keyword.Subschemas)
+				{
+					toCheck.Enqueue(subschema);
+				}
+			}
+		}
 	}
 }
