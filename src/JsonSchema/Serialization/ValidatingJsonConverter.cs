@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Json.More;
 
@@ -191,6 +192,17 @@ public class ValidatingJsonConverter<T> : WeaklyTypedJsonConverter<T>, IValidati
 		};
 	}
 
+	/// <summary>Reads a dictionary key from a JSON property name.</summary>
+	/// <param name="reader">The <see cref="T:System.Text.Json.Utf8JsonReader" /> to read from.</param>
+	/// <param name="typeToConvert">The type to convert.</param>
+	/// <param name="options">The options to use when reading the value.</param>
+	/// <returns>The value that was converted.</returns>
+	public override T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	{
+		var newOptions = _optionsFactory(options);
+		return JsonSerializer.Deserialize<T>($"\"{reader.GetString()}\"", newOptions)!;
+	}
+
 	/// <summary>
 	/// Writes the JSON representation of the object.
 	/// </summary>
@@ -204,5 +216,20 @@ public class ValidatingJsonConverter<T> : WeaklyTypedJsonConverter<T>, IValidati
 		var newOptions = _optionsFactory(options);
 
 		newOptions.Write(writer, value, typeof(T));
+	}
+
+	/// <summary>Writes a dictionary key as a JSON property name.</summary>
+	/// <param name="writer">The <see cref="T:System.Text.Json.Utf8JsonWriter" /> to write to.</param>
+	/// <param name="value">The value to convert. The value of <see cref="P:System.Text.Json.Serialization.JsonConverter`1.HandleNull" /> determines if the converter handles <see langword="null" /> values.</param>
+	/// <param name="options">The options to use when writing the value.</param>
+	public override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
+	{
+		var newOptions = _optionsFactory(options);
+		var serialized = JsonSerializer.SerializeToNode(value, newOptions);
+		if (serialized is not JsonValue jsonValue || !jsonValue.TryGetValue(out string? key))
+			throw new JsonException($"The value {value} cannot be used as a JSON key because it does not serialize to a string.");
+
+		writer.WritePropertyName(key);
+		
 	}
 }
