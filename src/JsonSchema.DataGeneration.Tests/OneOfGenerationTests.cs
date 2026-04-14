@@ -16,7 +16,7 @@ internal class OneOfGenerationTests
 				new JsonSchemaBuilder().Type(SchemaValueType.String)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -34,6 +34,6 @@ internal class OneOfGenerationTests
 			.Minimum(0)
 			.Maximum(50);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

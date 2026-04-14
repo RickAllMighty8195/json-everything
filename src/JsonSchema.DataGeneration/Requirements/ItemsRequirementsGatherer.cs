@@ -8,7 +8,7 @@ namespace Json.Schema.DataGeneration.Requirements;
 
 internal class ItemsRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		var supportsArrays = false;
 
@@ -39,13 +39,13 @@ internal class ItemsRequirementsGatherer : IRequirementsGatherer
 			if (items.RawValue.ValueKind is JsonValueKind.Object or JsonValueKind.True or JsonValueKind.False)
 			{
 				if (context.RemainingItems != null)
-					context.RemainingItems.And(items.Subschemas[0].GetRequirements(options));
+					context.RemainingItems.And(items.Subschemas[0].GetRequirements(context.CreateBranchContext()));
 				else
-					context.RemainingItems = items.Subschemas[0].GetRequirements(options);
+					context.RemainingItems = items.Subschemas[0].GetRequirements(context.CreateBranchContext());
 			}
 			else
 			{
-				var incomingSequentialItems = items.Subschemas.Select(x => x.GetRequirements(options)).ToList();
+				var incomingSequentialItems = items.Subschemas.Select(x => x.GetRequirements(context.CreateBranchContext())).ToList();
 				if (context.SequentialItems != null)
 					context.And(new RequirementsContext { SequentialItems = incomingSequentialItems });
 				else
@@ -57,7 +57,7 @@ internal class ItemsRequirementsGatherer : IRequirementsGatherer
 		var prefixItems = schema.GetKeyword<PrefixItemsKeyword>();
 		if (prefixItems != null)
 		{
-			var incomingSequentialItems = prefixItems.Subschemas.Select(x => x.GetRequirements(options)).ToList();
+			var incomingSequentialItems = prefixItems.Subschemas.Select(x => x.GetRequirements(context.CreateBranchContext())).ToList();
 			if (context.SequentialItems != null)
 				context.And(new RequirementsContext { SequentialItems = incomingSequentialItems });
 			else
@@ -69,9 +69,9 @@ internal class ItemsRequirementsGatherer : IRequirementsGatherer
 		if (additionalItems != null)
 		{
 			if (context.RemainingItems != null)
-				context.RemainingItems.And(additionalItems.Subschemas[0].GetRequirements(options));
+				context.RemainingItems.And(additionalItems.Subschemas[0].GetRequirements(context.CreateBranchContext()));
 			else
-				context.RemainingItems = additionalItems.Subschemas[0].GetRequirements(options);
+				context.RemainingItems = additionalItems.Subschemas[0].GetRequirements(context.CreateBranchContext());
 			supportsArrays = true;
 		}
 
@@ -79,9 +79,9 @@ internal class ItemsRequirementsGatherer : IRequirementsGatherer
 		if (additionalItems != null)
 		{
 			if (context.RemainingItems != null)
-				context.RemainingItems.And(additionalItems.Subschemas[0].GetRequirements(options));
+				context.RemainingItems.And(additionalItems.Subschemas[0].GetRequirements(context.CreateBranchContext()));
 			else
-				context.RemainingItems = additionalItems.Subschemas[0].GetRequirements(options);
+				context.RemainingItems = additionalItems.Subschemas[0].GetRequirements(context.CreateBranchContext());
 			supportsArrays = true;
 		}
 

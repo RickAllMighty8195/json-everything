@@ -16,6 +16,6 @@ public class DevTests
 			.Maximum(100)
 			.Not(new JsonSchemaBuilder().MultipleOf(3));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

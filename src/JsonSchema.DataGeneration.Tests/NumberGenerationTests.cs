@@ -13,7 +13,7 @@ public class NumberGenerationTests
 		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
 			.Type(SchemaValueType.Number);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -24,7 +24,7 @@ public class NumberGenerationTests
 			.Type(SchemaValueType.Number)
 			.Minimum(0.2m);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -35,7 +35,7 @@ public class NumberGenerationTests
 			.Type(SchemaValueType.Number)
 			.ExclusiveMinimum(0.2m);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -46,7 +46,7 @@ public class NumberGenerationTests
 			.Type(SchemaValueType.Number)
 			.Maximum(0.8m);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -57,7 +57,7 @@ public class NumberGenerationTests
 			.Type(SchemaValueType.Number)
 			.ExclusiveMaximum(0.8m);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -68,7 +68,7 @@ public class NumberGenerationTests
 			.Type(SchemaValueType.Number)
 			.MultipleOf(0.3m);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -79,7 +79,7 @@ public class NumberGenerationTests
 			.Type(SchemaValueType.Number)
 			.Not(new JsonSchemaBuilder().MultipleOf(0.6m));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -91,7 +91,7 @@ public class NumberGenerationTests
 			.MultipleOf(0.3m)
 			.Not(new JsonSchemaBuilder().MultipleOf(0.6m));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -109,6 +109,6 @@ public class NumberGenerationTests
 			.Maximum(20)
 			.MultipleOf(2.3m);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

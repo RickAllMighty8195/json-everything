@@ -13,19 +13,19 @@ internal class RefTests
 		var schema = JsonSchema.FromText(
 			"""
 			{
-			    "type": "array",
-			    "items": { "$ref": "#/$defs/positiveInteger" },
-			    "$defs": {
-			        "positiveInteger": {
-			            "type": "integer",
-			            "exclusiveMinimum": 0
-			        }
-			    },
-			    "minItems": 2
+			  "type": "array",
+			  "items": { "$ref": "#/$defs/positiveInteger" },
+			  "$defs": {
+			    "positiveInteger": {
+			      "type": "integer",
+			      "exclusiveMinimum": 0
+			    }
+			  },
+			  "minItems": 2
 			}
 			""", buildOptions);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -35,20 +35,20 @@ internal class RefTests
 		var schema = JsonSchema.FromText(
 			"""
 			{
-			    "type": "array",
-			    "items": { "$ref": "#positiveInteger" },
-			    "$defs": {
-			        "positiveInteger": {
-			            "$anchor": "positiveInteger",
-			            "type": "integer",
-			            "exclusiveMinimum": 0
-			        }
-			    },
-			    "minItems": 2
+			  "type": "array",
+			  "items": { "$ref": "#positiveInteger" },
+			  "$defs": {
+			    "positiveInteger": {
+			      "$anchor": "positiveInteger",
+			      "type": "integer",
+			      "exclusiveMinimum": 0
+			    }
+			  },
+			  "minItems": 2
 			}
 			""", buildOptions);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -64,13 +64,13 @@ internal class RefTests
 		var schema = JsonSchema.FromText(
 			"""
 			{
-			    "type": "array",
-			    "items": { "$ref": "https://json-everything.test/foo" },
-			    "minItems": 2
+			  "type": "array",
+			  "items": { "$ref": "https://json-everything.test/foo" },
+			  "minItems": 2
 			}
 			""", buildOptions);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -90,13 +90,13 @@ internal class RefTests
 		var schema = JsonSchema.FromText(
 			"""
 			{
-			    "type": "array",
-			    "items": { "$ref": "https://json-everything.test/foo#/$defs/positiveInteger" },
-			    "minItems": 2
+			  "type": "array",
+			  "items": { "$ref": "https://json-everything.test/foo#/$defs/positiveInteger" },
+			  "minItems": 2
 			}
 			""", buildOptions);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -117,12 +117,96 @@ internal class RefTests
 		var schema = JsonSchema.FromText(
 			"""
 			{
-			    "type": "array",
-			    "items": { "$ref": "https://json-everything.test/foo#positiveInteger" },
-			    "minItems": 2
+			  "type": "array",
+			  "items": { "$ref": "https://json-everything.test/foo#positiveInteger" },
+			  "minItems": 2
 			}
 			""", buildOptions);
 
-		Run(schema, buildOptions);
+		Run(schema);
+	}
+
+	[Test]
+	public void RecursiveLinkedListRef()
+	{
+		var buildOptions = new BuildOptions { SchemaRegistry = new() };
+		var schema = JsonSchema.FromText(
+			"""
+			{
+			  "$ref": "#/$defs/node",
+			  "$defs": {
+			    "node": {
+			      "type": ["object", "null"],
+			      "properties": {
+			        "value": { "type": "integer" },
+			        "next": { "$ref": "#/$defs/node" }
+			      },
+			      "required": ["value", "next"],
+			      "additionalProperties": false
+			    }
+			  }
+			}
+			""", buildOptions);
+
+		Run(schema);
+	}
+
+	[Test]
+	public void DynamicRefResolvesByEntryPoint()
+	{
+		var buildOptions = new BuildOptions
+		{
+			SchemaRegistry = new(),
+			Dialect = Dialect.Draft202012
+		};
+
+		_ = JsonSchema.FromText(
+			"""
+			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
+			  "$id": "https://json-everything.test/tree-core",
+			  "$defs": {
+			    "node": {
+			      "$dynamicRef": "#nodeType"
+			    }
+			  },
+			  "$ref": "#/$defs/node"
+			}
+			""", buildOptions);
+
+		var integerEntry = JsonSchema.FromText(
+			"""
+			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
+			  "$id": "https://json-everything.test/entry-int",
+			  "$defs": {
+			    "intNode": {
+			      "$dynamicAnchor": "nodeType",
+			      "type": "integer",
+			      "minimum": 0
+			    }
+			  },
+			  "$ref": "https://json-everything.test/tree-core"
+			}
+			""", buildOptions);
+
+		var stringEntry = JsonSchema.FromText(
+			"""
+			{
+			  "$schema": "https://json-schema.org/draft/2020-12/schema",
+			  "$id": "https://json-everything.test/entry-string",
+			  "$defs": {
+			    "stringNode": {
+			      "$dynamicAnchor": "nodeType",
+			      "type": "string",
+			      "minLength": 1
+			    }
+			  },
+			  "$ref": "https://json-everything.test/tree-core"
+			}
+			""", buildOptions);
+
+		Run(integerEntry);
+		Run(stringEntry);
 	}
 }

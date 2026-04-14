@@ -13,6 +13,6 @@ public class NullGenerationTests
 		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
 			.Type(SchemaValueType.Null);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

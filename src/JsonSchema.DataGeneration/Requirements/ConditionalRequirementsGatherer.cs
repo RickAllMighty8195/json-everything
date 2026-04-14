@@ -5,7 +5,7 @@ namespace Json.Schema.DataGeneration.Requirements;
 
 internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		RequirementsContext GetBranchRequirements(KeywordData keyword, JsonPointer branchPath)
 		{
@@ -19,7 +19,7 @@ internal class ConditionalRequirementsGatherer : IRequirementsGatherer
 			};
 
 			var branchNode = JsonSchema.BuildNode(branchBuildContext);
-			return branchNode.GetRequirements(options);
+			return branchNode.GetRequirements(context.CreateBranchContext());
 		}
 
 		void AddOptions(params RequirementsContext[] optionContexts)

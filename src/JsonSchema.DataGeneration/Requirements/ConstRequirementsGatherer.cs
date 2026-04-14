@@ -5,7 +5,7 @@ namespace Json.Schema.DataGeneration.Requirements;
 
 internal class ConstRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		var constKeyword = schema.GetKeyword<ConstKeyword>()?.RawValue;
 		#pragma warning disable CS0618 // Type or member is obsolete

@@ -4,7 +4,7 @@ namespace Json.Schema.DataGeneration.Requirements;
 
 internal class FalseRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		if (schema.Source.ValueKind is JsonValueKind.False)
 			context.IsFalse = true;

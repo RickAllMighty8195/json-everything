@@ -21,7 +21,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -38,7 +38,7 @@ public class ArrayGenerationTests
 			)
 			.MinItems(3);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -61,7 +61,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -84,7 +84,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -104,7 +104,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -125,7 +125,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -146,7 +146,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -168,7 +168,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -189,7 +189,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(10);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 
 	[Test]
@@ -213,7 +213,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.MaxItems(3);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -237,7 +237,7 @@ public class ArrayGenerationTests
 			.MinItems(5)
 			.MaxItems(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -266,7 +266,7 @@ public class ArrayGenerationTests
 				.Maximum(200)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -289,7 +289,7 @@ public class ArrayGenerationTests
 			)
 			.MaxItems(2);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -318,7 +318,7 @@ public class ArrayGenerationTests
 				.Maximum(100)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -341,7 +341,7 @@ public class ArrayGenerationTests
 			)
 			.Items(false);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -365,7 +365,7 @@ public class ArrayGenerationTests
 			.MinItems(3)
 			.Items(false);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -389,7 +389,7 @@ public class ArrayGenerationTests
 			.MinItems(4)
 			.Items(false);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 
 	[Test]
@@ -411,7 +411,7 @@ public class ArrayGenerationTests
 			.MinItems(2)
 			.MaxItems(2);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -431,6 +431,6 @@ public class ArrayGenerationTests
 			.MinItems(1)
 			.MaxItems(1);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 }

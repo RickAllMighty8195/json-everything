@@ -1,10 +1,11 @@
-﻿using Json.Schema.Keywords;
+﻿using System;
+using Json.Schema.Keywords;
 
 namespace Json.Schema.DataGeneration.Requirements;
 
 internal class PropertiesRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		var supportsObjects = false;
 
@@ -47,10 +48,15 @@ internal class PropertiesRequirementsGatherer : IRequirementsGatherer
 			foreach (var property in properties.Subschemas)
 			{
 				var propertyName = property.RelativePath[0].ToString();
+				var propertyRequirements = property.GetRequirements(context.CreateBranchContext());
+				var isRequired = requiredProperties != null && Array.IndexOf(requiredProperties, propertyName) >= 0;
+				if (!isRequired && propertyRequirements.ReachedRefDepthCutoff)
+					propertyRequirements.IsFalse = true;
+
 				if (context.Properties.TryGetValue(propertyName, out var subschema))
-					subschema.And(property.GetRequirements(options));
+					subschema.And(propertyRequirements);
 				else
-					context.Properties.Add(propertyName, property.GetRequirements(options));
+					context.Properties.Add(propertyName, propertyRequirements);
 			}
 			supportsObjects = true;
 		}
@@ -59,9 +65,9 @@ internal class PropertiesRequirementsGatherer : IRequirementsGatherer
 		if (additionalProperties != null)
 		{
 			if (context.RemainingProperties != null)
-				context.RemainingProperties.And(additionalProperties.Subschemas[0].GetRequirements(options));
+				context.RemainingProperties.And(additionalProperties.Subschemas[0].GetRequirements(context.CreateBranchContext()));
 			else
-				context.RemainingProperties = additionalProperties.Subschemas[0].GetRequirements(options);
+				context.RemainingProperties = additionalProperties.Subschemas[0].GetRequirements(context.CreateBranchContext());
 			supportsObjects = true;
 		}
 
@@ -69,9 +75,9 @@ internal class PropertiesRequirementsGatherer : IRequirementsGatherer
 		if (propertyNames != null)
 		{
 			if (context.PropertyNames != null)
-				context.PropertyNames.And(propertyNames.Subschemas[0].GetRequirements(options));
+				context.PropertyNames.And(propertyNames.Subschemas[0].GetRequirements(context.CreateBranchContext()));
 			else
-				context.PropertyNames = propertyNames.Subschemas[0].GetRequirements(options);
+				context.PropertyNames = propertyNames.Subschemas[0].GetRequirements(context.CreateBranchContext());
 			supportsObjects = true;
 		}
 
@@ -79,9 +85,9 @@ internal class PropertiesRequirementsGatherer : IRequirementsGatherer
 		if (additionalProperties != null)
 		{
 			if (context.RemainingProperties != null)
-				context.RemainingProperties.And(additionalProperties.Subschemas[0].GetRequirements(options));
+				context.RemainingProperties.And(additionalProperties.Subschemas[0].GetRequirements(context.CreateBranchContext()));
 			else
-				context.RemainingProperties = additionalProperties.Subschemas[0].GetRequirements(options);
+				context.RemainingProperties = additionalProperties.Subschemas[0].GetRequirements(context.CreateBranchContext());
 			supportsObjects = true;
 		}
 

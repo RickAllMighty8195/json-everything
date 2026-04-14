@@ -18,9 +18,9 @@ public static class TestRunner
 			TypeInfoResolverChain = { DataGenerationTestsSerializerContext.Default }
 		};
 
-	public static void Run(JsonSchema schema, BuildOptions options)
+	public static void Run(JsonSchema schema)
 	{
-		var result = schema.GenerateData(options);
+		var result = schema.GenerateData();
 		if (!result.IsSuccess)
 		{
 			if (!string.IsNullOrWhiteSpace(result.ErrorMessage))
@@ -43,9 +43,9 @@ public static class TestRunner
 		Assert.That(validation.IsValid, Is.True, "failed validation");
 	}
 
-	public static void RunFailure(JsonSchema schema, BuildOptions options)
+	public static void RunFailure(JsonSchema schema)
 	{
-		var result = schema.GenerateData(options);
+		var result = schema.GenerateData();
 		if (!result.IsSuccess)
 		{
 			if (!string.IsNullOrWhiteSpace(result.ErrorMessage))

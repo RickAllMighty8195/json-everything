@@ -5,7 +5,7 @@ namespace Json.Schema.DataGeneration.Requirements;
 
 internal class TypeRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		var typeKeyword = schema.GetKeyword<TypeKeyword>();
 		if (typeKeyword == null) return;

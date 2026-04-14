@@ -11,6 +11,8 @@ internal readonly record struct ErrorReason(string Message, JsonPointer? LeftSch
 
 internal class RequirementsContext
 {
+	public const int RecursiveRefHardStop = 5;
+
 	private const SchemaValueType _allTypes =
 		SchemaValueType.Array |
 		SchemaValueType.Boolean |
@@ -21,6 +23,8 @@ internal class RequirementsContext
 		SchemaValueType.String;
 
 	public bool IsFalse { get; set; }
+	public int RemainingRefDepth { get; set; } = RecursiveRefHardStop;
+	public bool ReachedRefDepthCutoff { get; set; }
 
 	public SchemaValueType? Type { get; set; }
 	public SchemaValueType InferredType { get; set; }
@@ -69,6 +73,8 @@ internal class RequirementsContext
 
 	public RequirementsContext(RequirementsContext other, bool copyOptions = true)
 	{
+		RemainingRefDepth = other.RemainingRefDepth;
+		ReachedRefDepthCutoff = other.ReachedRefDepthCutoff;
 		Type = other.Type;
 		InferredType = other.InferredType;
 		IsFalse = other.IsFalse;
@@ -128,6 +134,22 @@ internal class RequirementsContext
 			RequiredProperties = [.. other.RequiredProperties];
 		if (other.AvoidProperties != null)
 			AvoidProperties = [.. other.AvoidProperties];
+	}
+
+	public RequirementsContext CreateBranchContext()
+	{
+		return new RequirementsContext
+		{
+			RemainingRefDepth = RemainingRefDepth
+		};
+	}
+
+	public RequirementsContext CreateRefBranchContext()
+	{
+		return new RequirementsContext
+		{
+			RemainingRefDepth = Math.Max(0, RemainingRefDepth - 1)
+		};
 	}
 
 	public IEnumerable<RequirementsContext> GetAllVariations()
