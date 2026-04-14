@@ -11,6 +11,14 @@ internal readonly record struct ErrorReason(string Message, JsonPointer? LeftSch
 
 internal class RequirementsContext
 {
+	internal class DynamicRefCaptureState
+	{
+		public Stack<Uri> ResourceScope { get; } = new();
+		public Dictionary<string, (Uri Resource, JsonSchemaNode Node)> CapturedAnchors { get; } = [];
+	}
+
+	public const int RecursiveRefHardStop = 5;
+
 	private const SchemaValueType _allTypes =
 		SchemaValueType.Array |
 		SchemaValueType.Boolean |
@@ -21,6 +29,9 @@ internal class RequirementsContext
 		SchemaValueType.String;
 
 	public bool IsFalse { get; set; }
+	public int RemainingRefDepth { get; set; } = RecursiveRefHardStop;
+	public bool ReachedRefDepthCutoff { get; set; }
+	public DynamicRefCaptureState? DynamicRefState { get; set; }
 
 	public SchemaValueType? Type { get; set; }
 	public SchemaValueType InferredType { get; set; }
@@ -69,6 +80,9 @@ internal class RequirementsContext
 
 	public RequirementsContext(RequirementsContext other, bool copyOptions = true)
 	{
+		RemainingRefDepth = other.RemainingRefDepth;
+		ReachedRefDepthCutoff = other.ReachedRefDepthCutoff;
+		DynamicRefState = other.DynamicRefState;
 		Type = other.Type;
 		InferredType = other.InferredType;
 		IsFalse = other.IsFalse;
@@ -128,6 +142,72 @@ internal class RequirementsContext
 			RequiredProperties = [.. other.RequiredProperties];
 		if (other.AvoidProperties != null)
 			AvoidProperties = [.. other.AvoidProperties];
+	}
+
+	public RequirementsContext CreateBranchContext()
+	{
+		return new RequirementsContext
+		{
+			RemainingRefDepth = RemainingRefDepth,
+			DynamicRefState = DynamicRefState
+		};
+	}
+
+	public RequirementsContext CreateRefBranchContext()
+	{
+		return new RequirementsContext
+		{
+			RemainingRefDepth = Math.Max(0, RemainingRefDepth - 1),
+			DynamicRefState = DynamicRefState
+		};
+	}
+
+	public bool EnterDynamicResource(Uri resourceUri)
+	{
+		DynamicRefState ??= new DynamicRefCaptureState();
+
+		if (DynamicRefState.ResourceScope.Count != 0 && DynamicRefState.ResourceScope.Peek() == resourceUri)
+			return false;
+
+		DynamicRefState.ResourceScope.Push(resourceUri);
+		return true;
+	}
+
+	public void ExitDynamicResource()
+	{
+		if (DynamicRefState == null || DynamicRefState.ResourceScope.Count == 0) return;
+
+		var exitingResource = DynamicRefState.ResourceScope.Pop();
+		var keysToRemove = DynamicRefState.CapturedAnchors
+			.Where(x => x.Value.Resource == exitingResource)
+			.Select(x => x.Key)
+			.ToArray();
+
+		foreach (var key in keysToRemove)
+		{
+			DynamicRefState.CapturedAnchors.Remove(key);
+		}
+	}
+
+	public bool CaptureDynamicAnchor(string anchor, JsonSchemaNode node)
+	{
+		DynamicRefState ??= new DynamicRefCaptureState();
+		if (DynamicRefState.ResourceScope.Count == 0) return false;
+		if (DynamicRefState.CapturedAnchors.ContainsKey(anchor)) return false;
+
+		DynamicRefState.CapturedAnchors[anchor] = (DynamicRefState.ResourceScope.Peek(), node);
+		return true;
+	}
+
+	public bool TryResolveDynamicAnchor(string anchor, out JsonSchemaNode node)
+	{
+		node = null!;
+		if (DynamicRefState == null) return false;
+
+		if (!DynamicRefState.CapturedAnchors.TryGetValue(anchor, out var capture)) return false;
+
+		node = capture.Node;
+		return true;
 	}
 
 	public IEnumerable<RequirementsContext> GetAllVariations()

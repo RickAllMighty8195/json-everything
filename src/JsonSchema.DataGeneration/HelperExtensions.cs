@@ -14,4 +14,9 @@ internal static class HelperExtensions
 	public static KeywordData? GetKeyword<T>(this JsonSchemaNode schema)
 		where T : IKeywordHandler =>
 		schema.Keywords.FirstOrDefault(x => x.Handler.GetType() == typeof(T));
+
+	public static KeywordData? GetKeyword(this JsonSchemaNode schema, string keywordName)
+	{
+		return schema.Keywords.FirstOrDefault(x => x.Handler.Name == keywordName);
+	}
 }

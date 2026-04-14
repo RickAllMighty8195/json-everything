@@ -14,7 +14,7 @@ public class ConstGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Const("this is totally a random string");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -25,7 +25,7 @@ public class ConstGenerationTests
 			.Not(new JsonSchemaBuilder()
 				.Const("anything but this value"));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -38,7 +38,7 @@ public class ConstGenerationTests
 				new JsonSchemaBuilder().Const("same value")
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -51,7 +51,7 @@ public class ConstGenerationTests
 				new JsonSchemaBuilder().Const("value 2")
 			);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 
 	[Test]
@@ -61,7 +61,7 @@ public class ConstGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Const((JsonNode?)null);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -71,7 +71,7 @@ public class ConstGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Const(true);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -81,6 +81,6 @@ public class ConstGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Const(42);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

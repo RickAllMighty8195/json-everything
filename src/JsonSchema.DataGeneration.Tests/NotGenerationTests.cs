@@ -13,7 +13,7 @@ public class NotGenerationTests
 		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
 			.Not(new JsonSchemaBuilder().Type(SchemaValueType.Object));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -30,7 +30,7 @@ public class NotGenerationTests
 					  SchemaValueType.Boolean)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -44,7 +44,7 @@ public class NotGenerationTests
 				.Maximum(500)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -60,7 +60,7 @@ public class NotGenerationTests
 				.Maximum(500)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// TODO: verify that array generation is checking bound type for min/max items (and props, too)
@@ -76,7 +76,7 @@ public class NotGenerationTests
 				.MaxItems(10)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -90,7 +90,7 @@ public class NotGenerationTests
 				.Items(new JsonSchemaBuilder().Type(SchemaValueType.String))
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -104,7 +104,7 @@ public class NotGenerationTests
 				.Contains(new JsonSchemaBuilder().Type(SchemaValueType.String))
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -119,7 +119,7 @@ public class NotGenerationTests
 				)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -142,7 +142,7 @@ public class NotGenerationTests
 					)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -152,7 +152,7 @@ public class NotGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Not(new JsonSchemaBuilder().Required("foo"));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -166,7 +166,7 @@ public class NotGenerationTests
 				.MaxLength(20)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -177,6 +177,6 @@ public class NotGenerationTests
 			.Type(SchemaValueType.String)
 			.Not(new JsonSchemaBuilder().Format(Formats.Date));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

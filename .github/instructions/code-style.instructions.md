@@ -66,6 +66,7 @@ This document covers C# style conventions that complement `.editorconfig`.
 - Preserve `System.Text.Json`-centric patterns used by the repository.
 - Use shared serializer contexts/options when already established by the package.
 - Avoid introducing alternate JSON stacks unless explicitly requested.
+- For inline JSON literals in C# source (for example raw string text blocks), use two-space indentation.
 
 ## Compatibility Mindset
 

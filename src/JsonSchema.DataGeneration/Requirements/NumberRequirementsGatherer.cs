@@ -5,7 +5,7 @@ namespace Json.Schema.DataGeneration.Requirements;
 
 internal class NumberRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		var supportsNumbers = false;
 		JsonPointer? rangeSource = null;

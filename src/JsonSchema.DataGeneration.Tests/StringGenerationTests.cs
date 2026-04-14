@@ -14,7 +14,7 @@ public class StringGenerationTests
 		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
 			.Type(SchemaValueType.String);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -25,7 +25,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.MinLength(30);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -36,7 +36,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -48,7 +48,7 @@ public class StringGenerationTests
 			.MinLength(10)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -59,7 +59,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern("dog");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -72,7 +72,7 @@ public class StringGenerationTests
 			.MinLength(10)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -83,7 +83,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Not(new JsonSchemaBuilder().Pattern("dog"));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -96,7 +96,7 @@ public class StringGenerationTests
 			.MinLength(10)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -110,7 +110,7 @@ public class StringGenerationTests
 			.MinLength(10)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -126,7 +126,7 @@ public class StringGenerationTests
 			.MinLength(10)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -142,7 +142,7 @@ public class StringGenerationTests
 			.MinLength(10)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -153,7 +153,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Date);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -164,7 +164,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.DateTime);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -175,7 +175,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Duration);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -186,7 +186,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Email);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -197,7 +197,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Hostname);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -208,7 +208,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.IdnEmail);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -219,7 +219,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.IdnHostname);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -230,7 +230,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Ipv4);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -241,7 +241,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Ipv6);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -252,7 +252,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Iri);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -263,7 +263,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.IriReference);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -274,7 +274,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.JsonPointer);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -285,7 +285,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.RelativeJsonPointer);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -296,7 +296,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Time);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -307,7 +307,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Uri);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -318,7 +318,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.UriReference);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -329,7 +329,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Format(Formats.Uuid);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -346,7 +346,7 @@ public class StringGenerationTests
 					.Format(Formats.Uuid)
 			);
 
-		var result = schema.GenerateData(buildOptions);
+		var result = schema.GenerateData();
 
 		TestConsole.WriteLine(result.ErrorMessage);
 		Assert.That(result.IsSuccess, Is.False);
@@ -360,7 +360,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern(@"^\d+$");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -371,7 +371,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern(@"^\w{5,10}$");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -382,7 +382,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern(@"^[a-z]{3}$");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -393,7 +393,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern(@"^(foo|bar|baz)$");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -404,7 +404,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern(@"^\d{4}-\d{2}-\d{2}$");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -415,7 +415,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern(@"^https?://\S+$");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -426,7 +426,7 @@ public class StringGenerationTests
 			.Type(SchemaValueType.String)
 			.Pattern(@"^[^0-9]+$");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- Pattern + length ----
@@ -440,7 +440,7 @@ public class StringGenerationTests
 			.Pattern("cat")
 			.MinLength(5);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -453,7 +453,7 @@ public class StringGenerationTests
 			.MinLength(5)
 			.MaxLength(15);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- allOf: multiple required patterns (AND) ----
@@ -471,7 +471,7 @@ public class StringGenerationTests
 			.MinLength(6)
 			.MaxLength(30);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -484,7 +484,7 @@ public class StringGenerationTests
 				new JsonSchemaBuilder().Type(SchemaValueType.String).MaxLength(20)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -498,7 +498,7 @@ public class StringGenerationTests
 				new JsonSchemaBuilder().Pattern("dog")
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- not: anti-pattern (NOT) ----
@@ -513,7 +513,7 @@ public class StringGenerationTests
 			.MinLength(5)
 			.MaxLength(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -526,7 +526,7 @@ public class StringGenerationTests
 			.MinLength(5)
 			.MaxLength(30);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- Positive AND negative combined ----
@@ -542,7 +542,7 @@ public class StringGenerationTests
 			.MinLength(5)
 			.MaxLength(30);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -559,7 +559,7 @@ public class StringGenerationTests
 			.MinLength(6)
 			.MaxLength(30);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- anyOf / oneOf ----
@@ -575,7 +575,7 @@ public class StringGenerationTests
 				new JsonSchemaBuilder().Pattern("dog")
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -589,7 +589,7 @@ public class StringGenerationTests
 				new JsonSchemaBuilder().Pattern("dog")
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- pattern + format ----
@@ -603,7 +603,7 @@ public class StringGenerationTests
 			.Pattern(@"\w+")
 			.Format(Formats.Email);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- pattern inside structural keywords ----
@@ -622,7 +622,7 @@ public class StringGenerationTests
 			.MinItems(2)
 			.MaxItems(5);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -640,7 +640,7 @@ public class StringGenerationTests
 			)
 			.Required("name");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	// ---- failure cases ----
@@ -654,6 +654,6 @@ public class StringGenerationTests
 			.Pattern(@"^\d{100}$")
 			.MaxLength(5);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 }

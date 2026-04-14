@@ -16,7 +16,7 @@ internal class AnyOfGenerationTests
 				new JsonSchemaBuilder().Type(SchemaValueType.String)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -32,7 +32,7 @@ internal class AnyOfGenerationTests
 				new JsonSchemaBuilder().Type(SchemaValueType.String)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -49,6 +49,6 @@ internal class AnyOfGenerationTests
 					.Not(new JsonSchemaBuilder().Type(SchemaValueType.String))
 			);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 }

@@ -19,6 +19,7 @@ This repository uses NUnit-based test projects for package validation.
 - Place tests in the corresponding `src/<PackageName>.Tests/` project.
 - Keep test file and class names clear and behavior-oriented.
 - For regression fixes, add or update a test that fails before the fix and passes after.
+- For pending functionality, do not mark new tests with `[Ignore]` or equivalent skip attributes; keep them failing to preserve TDD red-green flow unless the user explicitly requests otherwise.
 
 ## Data-Driven And Spec Tests
 

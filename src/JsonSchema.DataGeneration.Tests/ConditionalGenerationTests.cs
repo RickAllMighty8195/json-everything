@@ -15,7 +15,7 @@ public class ConditionalGenerationTests
 			.Then(new JsonSchemaBuilder().MultipleOf(3))
 			.Else(new JsonSchemaBuilder().Type(SchemaValueType.String));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -27,7 +27,7 @@ public class ConditionalGenerationTests
 			.Then(new JsonSchemaBuilder().MultipleOf(3))
 			.Else(new JsonSchemaBuilder().Type(SchemaValueType.String));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -38,7 +38,7 @@ public class ConditionalGenerationTests
 			.If(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			.Then(new JsonSchemaBuilder().MultipleOf(3));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -50,7 +50,7 @@ public class ConditionalGenerationTests
 			.If(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			.Then(new JsonSchemaBuilder().MultipleOf(3));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -61,7 +61,7 @@ public class ConditionalGenerationTests
 			.If(new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			.Else(new JsonSchemaBuilder().Type(SchemaValueType.String));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -73,7 +73,7 @@ public class ConditionalGenerationTests
 			.Then(new JsonSchemaBuilder().Const("foo"))
 			.Else(new JsonSchemaBuilder().Type(SchemaValueType.String));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -85,7 +85,7 @@ public class ConditionalGenerationTests
 			.Then(new JsonSchemaBuilder().Type(SchemaValueType.Object))
 			.Else(true);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -117,7 +117,7 @@ public class ConditionalGenerationTests
 			)
 			.Required("people");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -140,6 +140,6 @@ public class ConditionalGenerationTests
 					.Then(new JsonSchemaBuilder().Properties(("value", new JsonSchemaBuilder().Const(2))).Required("value"))
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

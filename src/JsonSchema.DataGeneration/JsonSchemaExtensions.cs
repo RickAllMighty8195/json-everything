@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Bogus;
 using Json.Pointer;
 using Json.Schema.DataGeneration.Generators;
 using Json.Schema.DataGeneration.Requirements;
+using Json.Schema.Keywords;
 
 namespace Json.Schema.DataGeneration;
 
@@ -40,13 +42,19 @@ public static class JsonSchemaExtensions
 	/// Attempts to generate sample data that meets the requirements of the schema.
 	/// </summary>
 	/// <param name="schema">The schema.</param>
-	/// <param name="options">A set of build options.</param>
+	/// <param name="options">not used</param>
 	/// <returns>A result object indicating success and containing the result or error message.</returns>
-	public static GenerationResult GenerateData(this JsonSchema schema, BuildOptions? options = null)
+	[Obsolete("Options is no longer used.  Parameter will be removed at next major version.")]
+	public static GenerationResult GenerateData(this JsonSchema schema, BuildOptions? options) => schema.GenerateData();
+
+	/// <summary>
+	/// Attempts to generate sample data that meets the requirements of the schema.
+	/// </summary>
+	/// <param name="schema">The schema.</param>
+	/// <returns>A result object indicating success and containing the result or error message.</returns>
+	public static GenerationResult GenerateData(this JsonSchema schema)
 	{
-		options ??= BuildOptions.Default;
-		options.SchemaRegistry.Register(schema);
-		var requirements = schema.Root.GetRequirements(options);
+		var requirements = schema.Root.GetRequirements(new RequirementsContext { RemainingRefDepth = RequirementsContext.RecursiveRefHardStop });
 
 		return requirements.GenerateData();
 	}
@@ -134,14 +142,53 @@ public static class JsonSchemaExtensions
 				new TypeRequirementsGatherer()
 	];
 
-	internal static RequirementsContext GetRequirements(this JsonSchemaNode schema, BuildOptions options)
+	internal static RequirementsContext GetRequirements(this JsonSchemaNode schema, RequirementsContext? context = null)
 	{
-		var context = new RequirementsContext();
-		foreach (var gatherer in _requirementsGatherers)
+		context ??= new RequirementsContext { RemainingRefDepth = RequirementsContext.RecursiveRefHardStop };
+
+		var enteredResource = context.EnterDynamicResource(schema.BaseUri);
+		if (enteredResource)
+			CaptureDynamicAnchors(context, schema, schema.BaseUri);
+
+		try
 		{
-			gatherer.AddRequirements(context, schema, options);
+			foreach (var gatherer in _requirementsGatherers)
+			{
+				gatherer.AddRequirements(context, schema);
+			}
+		}
+		finally
+		{
+			if (enteredResource)
+				context.ExitDynamicResource();
 		}
 
 		return context;
+	}
+
+	private static void CaptureDynamicAnchors(RequirementsContext context, JsonSchemaNode resourceRoot, Uri resourceUri)
+	{
+		var toCheck = new Queue<JsonSchemaNode>();
+		toCheck.Enqueue(resourceRoot);
+
+		var checkedNodes = new HashSet<JsonSchemaNode>();
+		while (toCheck.Count != 0)
+		{
+			var current = toCheck.Dequeue();
+			if (!checkedNodes.Add(current)) continue;
+			if (current.BaseUri != resourceUri) continue;
+
+			var dynamicAnchorKeyword = current.GetKeyword<DynamicAnchorKeyword>();
+			if (dynamicAnchorKeyword?.Value is string anchor)
+				context.CaptureDynamicAnchor(anchor, current);
+
+			foreach (var keyword in current.Keywords)
+			{
+				foreach (var subschema in keyword.Subschemas)
+				{
+					toCheck.Enqueue(subschema);
+				}
+			}
+		}
 	}
 }

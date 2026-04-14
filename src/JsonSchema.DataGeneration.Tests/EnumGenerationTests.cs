@@ -13,7 +13,7 @@ public class EnumGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Enum("these", "are", "all", "the", "options");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -23,7 +23,7 @@ public class EnumGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Enum("only");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -33,6 +33,6 @@ public class EnumGenerationTests
 		var schema = new JsonSchemaBuilder(buildOptions)
 			.Enum(1, "two", true, null);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

@@ -17,7 +17,7 @@ internal class AllOfGenerationTests
 				new JsonSchemaBuilder().Maximum(20)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -30,7 +30,7 @@ internal class AllOfGenerationTests
 				new JsonSchemaBuilder().Type(SchemaValueType.String)
 			);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 
 	[Test]
@@ -43,7 +43,7 @@ internal class AllOfGenerationTests
 				new JsonSchemaBuilder().Maximum(5)
 			);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 
 	[Test]
@@ -58,7 +58,7 @@ internal class AllOfGenerationTests
 				new JsonSchemaBuilder().MultipleOf(5)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -91,6 +91,6 @@ internal class AllOfGenerationTests
 					))
 			);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 }

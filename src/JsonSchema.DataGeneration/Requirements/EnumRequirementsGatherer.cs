@@ -6,7 +6,7 @@ namespace Json.Schema.DataGeneration.Requirements;
 
 internal class EnumRequirementsGatherer : IRequirementsGatherer
 {
-	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema, BuildOptions options)
+	public void AddRequirements(RequirementsContext context, JsonSchemaNode schema)
 	{
 		var enumKeyword = schema.GetKeyword<EnumKeyword>();
 		#pragma warning disable CS0618 // Type or member is obsolete

@@ -13,7 +13,7 @@ public class IntegerGenerationTests
 		JsonSchema schema = new JsonSchemaBuilder(buildOptions)
 			.Type(SchemaValueType.Integer);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -24,7 +24,7 @@ public class IntegerGenerationTests
 			.Type(SchemaValueType.Integer)
 			.Minimum(10);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -35,7 +35,7 @@ public class IntegerGenerationTests
 			.Type(SchemaValueType.Integer)
 			.Maximum(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -46,7 +46,7 @@ public class IntegerGenerationTests
 			.Type(SchemaValueType.Integer)
 			.MultipleOf(20);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -57,7 +57,7 @@ public class IntegerGenerationTests
 			.Type(SchemaValueType.Integer)
 			.MultipleOf(0.84m);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -69,6 +69,6 @@ public class IntegerGenerationTests
 			.MultipleOf(3)
 			.Not(new JsonSchemaBuilder().MultipleOf(6));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }

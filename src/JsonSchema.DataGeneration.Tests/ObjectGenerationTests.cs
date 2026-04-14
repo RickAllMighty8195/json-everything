@@ -16,7 +16,7 @@ public class ObjectGenerationTests
 				("foo", true)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -30,7 +30,7 @@ public class ObjectGenerationTests
 				("bar", new JsonSchemaBuilder().Type(SchemaValueType.Integer))
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -45,7 +45,7 @@ public class ObjectGenerationTests
 			)
 			.AdditionalProperties(false);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -60,7 +60,7 @@ public class ObjectGenerationTests
 			)
 			.Required("baz");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -76,7 +76,7 @@ public class ObjectGenerationTests
 			)
 			.MaxProperties(2);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -93,7 +93,7 @@ public class ObjectGenerationTests
 			.Required("baz")
 			.MaxProperties(2);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -104,7 +104,7 @@ public class ObjectGenerationTests
 			.Type(SchemaValueType.Object)
 			.MinProperties(3);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -116,7 +116,7 @@ public class ObjectGenerationTests
 			.MinProperties(2)
 			.MaxProperties(4);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -130,7 +130,7 @@ public class ObjectGenerationTests
 			)
 			.AdditionalProperties(new JsonSchemaBuilder().Type(SchemaValueType.String));
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -148,7 +148,7 @@ public class ObjectGenerationTests
 			)
 			.Required("name");
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -160,7 +160,7 @@ public class ObjectGenerationTests
 			.MinProperties(3)
 			.MaxProperties(1);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 
 	[Test]
@@ -176,7 +176,7 @@ public class ObjectGenerationTests
 				.Pattern("^[a-z]{3,8}$")
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -193,7 +193,7 @@ public class ObjectGenerationTests
 				.MaxLength(6)
 			);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 
 	[Test]
@@ -211,7 +211,7 @@ public class ObjectGenerationTests
 				.Pattern("^[a-z]+$")
 			);
 
-		RunFailure(schema, buildOptions);
+		RunFailure(schema);
 	}
 
 	[Test]
@@ -228,6 +228,6 @@ public class ObjectGenerationTests
 			)
 			.AdditionalProperties(true);
 
-		Run(schema, buildOptions);
+		Run(schema);
 	}
 }
