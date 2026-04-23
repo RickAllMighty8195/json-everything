@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -99,7 +100,7 @@ public class JsonSchema : IBaseDocument
 	/// <param name="jsonOptions">(optional) Options for parsing a <see cref="JsonDocument"/>.</param>
 	/// <returns>A new <see cref="JsonSchema"/>.</returns>
 	/// <exception cref="JsonException">Could not deserialize a portion of the schema.</exception>
-	public static JsonSchema FromText(string jsonText, BuildOptions? buildOptions = null, Uri? baseUri = null, JsonDocumentOptions? jsonOptions = null)
+	public static JsonSchema FromText([StringSyntax(StringSyntaxAttribute.Json)] string jsonText, BuildOptions? buildOptions = null, Uri? baseUri = null, JsonDocumentOptions? jsonOptions = null)
 	{
 		var element = JsonDocument.Parse(jsonText, jsonOptions ?? default).RootElement;
 		return Build(element, buildOptions, baseUri);
